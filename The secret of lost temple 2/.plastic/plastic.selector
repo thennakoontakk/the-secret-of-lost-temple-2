@@ -1,4 +1,0 @@
-repository "The secret of lost temple 2/The secret of lost temple 2@18968325710567@cloud"
-  path "/"
-    br "/main"
-    co "/main"

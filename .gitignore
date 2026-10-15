@@ -50,3 +50,7 @@ desktop.ini
 
 # Temporary backup folders
 *2026-08-29*
+
+# Plastic SCM
+**/.plastic/
+
