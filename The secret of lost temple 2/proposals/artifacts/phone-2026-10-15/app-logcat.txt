@@ -1,0 +1,338 @@
+--------- beginning of system
+10-15 13:33:57.739 I/ForceDarkHelperStubImpl( 9375): initialize for com.UnityTechnologies.com.unity.template.urpblank , ForceDarkOrigin
+10-15 13:33:57.808 D/ViewScrollStubImpl( 9375): the value of mScrollFrictionRes is: 0.015
+10-15 13:33:57.839 D/MiuiMultiWindowUtils( 9375): freeform resolution args raw data:{  "zizhan":{    "freeform_args": {      "inner":{        "vertical_portrait":{"aspect_ratio":0.626, "original_ratio":0.5643,"original_scale":0.74,"top_margin":0.168,"left_margin":0.484},        "horizontal_portrait":{"aspect_ratio":0.626, "original_ratio":0.5643,"original_scale":0.74,"top_margin":0.1222,"left_margin":0.59745},        "vertical_landscape":{"aspect_ratio":1.6, "original_ratio":1,"original_scale":0.604,"top_margin":0.2596,"left_margin":0.2624},        "horizontal_landscape":{"aspect_ratio":1.6, "original_ratio":1,"original_scale":0.604,"top_margin":0.213,"left_margin":0.3758}      },      "outer":{        "vertical_portrait":{"aspect_ratio":0.626, "original_ratio":1,"original_scale":0.74,"top_margin":0.0753,"left_margin":-1},        "horizontal_portrait":{"aspect_ratio":0.626, "original_ratio":1,"original_scale":0.5756,"top_margin":-1,"left_margin":0.0753},        "vertical_landscape":{"aspect_ratio":1.6, "original_ratio":0.6847,"original_scale":0.587,"top_margin":0.0753,"left_margin":-1},        "horizontal_landscape":{"aspect_ratio":1.6, "original_ratio":0.6847,"original_scale":0.587,"top_margin":-1,"left_margin":0.0753}}    },    "mini_freeform_args":{      "inner":{        "vertical_portrait":{"aspect_ratio":0.626, "original_ratio":0.147},        "horizontal_portrait":{"aspect_ratio":0.626, "original_ratio":0.147},        "vertical_landscape":{"aspect_ratio":1.6, "original_ratio":0.165},        "horizontal_landscape":{"aspect_ratio":1.6, "original_ratio":0.165}      },      "outer":{        "vertical_portrait":{"aspect_ratio":0.626, "original_ratio":0.26},        "horizontal_portrait":{"aspect_ratio":0.626, "original_ratio":0.26},        "vertical_landscape":{"aspect_ratio":1.6, "original_ratio":0.293},        "horizontal_landscape":{"aspect_ratio":1.6, "original_ratio":0.293}}    }  },  "wide_default":{    "freeform_args": {        "vertical_portrait":{"aspect_ratio":0.625, "original_ratio":0.58,"original_scale":0.7574,"top_margin":0.125,"left_margin":-1},        "horizontal_portrait":{"aspect_ratio":0.625, "original_ratio":0.58,"original_scale":0.7574,"top_margin":-1,"left_margin":0.0714},        "vertical_landscape":{"aspect_ratio":1.6, "original_ratio":1,"original_scale":0.5153,"top_margin":0.125,"left_margin":-1},        "horizontal_landscape":{"aspect_ratio":1.6, "original_ratio":1,"original_scale":0.5153,"top_margin":-1,"left_margin":0.0714}    },    "mini_freeform_args":{        "vertical_portrait":{"aspect_ratio":0.5625, "original_ratio":0.144},        "horizontal_portrait":{"aspect_ratio":0.5625, "original_ratio":0.144},        "vertical_landscape":{"aspect_ratio":-1, "original_ratio":0.144},        "horizontal_landscape":{"aspect_ratio":-1, "original_ratio":0.144}    }  },  "narrow_default": {    "freeform_args": {        "vertical_portrait":{"aspect_ratio":0.5625, "original_ratio":1,"original_scale":0.7182,"top_margin":0.142,"left_margin":-1},        "horizontal_portrait":{"aspect_ratio":0.8, "original_ratio":1,"original_scale":0.7182,"top_margin":-1,"left_margin":0.05},        "vertical_landscape":{"aspect_ratio":1.6, "original_ratio":0.6545,"original_scale":0.4473,"top_margin":0.142,"left_margin":-1},        "horizontal_landscape":{"aspect_ratio":1.6, "original_ratio":0.6545,"original_scale":0.4473,"top_margin":-1,"left_margin":0.05}    },    "mini_freeform_args":{        "vertical_portrait":{"aspect_ratio":0.5625, "original_ratio":0.3},        "horizontal_portrait":{"aspect_ratio":0.5625, "original_ratio":0.3},        "vertical_landscape":{"aspect_ratio":1.7778, "original_ratio":0.3},        "horizontal_landscape":{"aspect_ratio":1.7778, "original_ratio":0.3}    }  },  "regular_default": {    "freeform_args": {      "vertical_portrait":{"aspect_ratio":0.625, "original_ratio":1,"original_scale":0.7,"top_margin":0.109,"left_margin":-1},      "horizontal_portrait":{"aspect_ratio":0.6667, "original_ratio":1,"original_scale":0.6102,"top_margin":-1,"left_margin":0.026},      "vertical_landscape":{"aspect_ratio
+10-15 13:33:58.160 W/Looper  ( 9375): PerfMonitor looperActivity : package=com.UnityTechnologies.com.unity.template.urpblank/com.unity3d.player.appui.AppUIGameActivity time=0ms latency=592ms running=0ms  procState=-1  historyMsgCount=4 (msgIndex=3 wall=180ms seq=3 running=149ms runnable=8ms io=11ms h=android.app.ActivityThread$H w=110) (msgIndex=4 wall=402ms seq=4 running=226ms runnable=31ms io=90ms h=android.app.ActivityThread$H w=159)
+--------- beginning of main
+10-15 13:35:53.890 I/native  ( 9375): I0000 00:00:1792051553.890025    9995 vio_estimator.cc:1448] [VioEstimator] [PauseResume] HandleInitializationStage with feature tracks at timestamp: 86965304188885 ns.
+10-15 13:35:53.891 I/native  ( 9375): I0000 00:00:1792051553.891009   10002 data_manager_base.cc:845] [M] VisualInertialState is kNotTracking. Wait.
+10-15 13:35:53.956 E/native  ( 9375): E0000 00:00:1792051553.956299    9989 motion_tracking_context.cc:2597] NOT_FOUND: Not able to find any depth measurements on feature measurements at timestamp 86965304188885
+10-15 13:35:53.956 E/native  ( 9375): === Source Location Trace: ===
+10-15 13:35:53.956 E/native  ( 9375): third_party/arcore/ar/perception/feature_track_ml_depth_provider_utils.cc:408
+10-15 13:35:53.956 E/native  ( 9375): third_party/arcore/ar/perception/feature_track_ml_depth_provider.cc:231
+10-15 13:35:53.990 I/native  ( 9375): I0000 00:00:1792051553.990575    9995 vio_estimator.cc:1448] [VioEstimator] [PauseResume] HandleInitializationStage with feature tracks at timestamp: 86965404087687 ns.
+10-15 13:35:53.992 I/native  ( 9375): I0000 00:00:1792051553.991961   10002 data_manager_base.cc:845] [M] VisualInertialState is kNotTracking. Wait.
+10-15 13:35:54.058 E/native  ( 9375): E0000 00:00:1792051554.058681    9994 motion_tracking_context.cc:2597] NOT_FOUND: Not able to find any depth measurements on feature measurements at timestamp 86965404087687
+10-15 13:35:54.058 E/native  ( 9375): === Source Location Trace: ===
+10-15 13:35:54.058 E/native  ( 9375): third_party/arcore/ar/perception/feature_track_ml_depth_provider_utils.cc:408
+10-15 13:35:54.058 E/native  ( 9375): third_party/arcore/ar/perception/feature_track_ml_depth_provider.cc:231
+10-15 13:35:54.094 I/native  ( 9375): I0000 00:00:1792051554.094596    9995 vio_estimator.cc:1448] [VioEstimator] [PauseResume] HandleInitializationStage with feature tracks at timestamp: 86965503986489 ns.
+10-15 13:35:54.098 I/native  ( 9375): I0000 00:00:1792051554.098265   10002 data_manager_base.cc:845] [M] VisualInertialState is kNotTracking. Wait.
+10-15 13:35:54.156 E/native  ( 9375): E0000 00:00:1792051554.156650    9992 motion_tracking_context.cc:2597] NOT_FOUND: Not able to find any depth measurements on feature measurements at timestamp 86965503986489
+10-15 13:35:54.156 E/native  ( 9375): === Source Location Trace: ===
+10-15 13:35:54.156 E/native  ( 9375): third_party/arcore/ar/perception/feature_track_ml_depth_provider_utils.cc:408
+10-15 13:35:54.156 E/native  ( 9375): third_party/arcore/ar/perception/feature_track_ml_depth_provider.cc:231
+10-15 13:35:54.194 I/native  ( 9375): I0000 00:00:1792051554.194258    9995 vio_estimator.cc:1448] [VioEstimator] [PauseResume] HandleInitializationStage with feature tracks at timestamp: 86965603885291 ns.
+10-15 13:35:54.195 I/native  ( 9375): I0000 00:00:1792051554.195592   10002 data_manager_base.cc:845] [M] VisualInertialState is kNotTracking. Wait.
+10-15 13:35:54.237 E/native  ( 9375): E0000 00:00:1792051554.237743   10312 android_data_source.cc:816] [Live DS] Callback list for SENSOR_TYPE_ACCELEROMETER at ordinal 0 not found.
+10-15 13:35:54.252 I/native  ( 9375): I0000 00:00:1792051554.252744   10312 logging_helper.h:101] [Live DS] [Sensor][SENSOR_TYPE_ACCELEROMETER_0] Accumulative count: 5126
+10-15 13:35:54.292 E/native  ( 9375): E0000 00:00:1792051554.292596    9989 motion_tracking_context.cc:2597] NOT_FOUND: Not able to find any depth measurements on feature measurements at timestamp 86965603885291
+10-15 13:35:54.292 E/native  ( 9375): === Source Location Trace: ===
+10-15 13:35:54.292 E/native  ( 9375): third_party/arcore/ar/perception/feature_track_ml_depth_provider_utils.cc:408
+10-15 13:35:54.292 E/native  ( 9375): third_party/arcore/ar/perception/feature_track_ml_depth_provider.cc:231
+10-15 13:35:54.319 I/native  ( 9375): I0000 00:00:1792051554.319531   10312 logging_helper.h:101] [Live DS] [Sensor][SENSOR_TYPE_GYROSCOPE_UNCALIBRATED_0] Accumulative count: 5131
+10-15 13:35:54.333 I/native  ( 9375): I0000 00:00:1792051554.332997    9995 vio_estimator.cc:1448] [VioEstimator] [PauseResume] HandleInitializationStage with feature tracks at timestamp: 86965703784093 ns.
+10-15 13:35:54.335 I/native  ( 9375): I0000 00:00:1792051554.335065   10002 data_manager_base.cc:845] [M] VisualInertialState is kNotTracking. Wait.
+10-15 13:35:54.394 I/Unity   ( 9375): onPause
+10-15 13:35:54.396 I/Unity   ( 9375): pauseUnity
+10-15 13:35:54.406 E/native  ( 9375): E0000 00:00:1792051554.406057    9993 motion_tracking_context.cc:2597] NOT_FOUND: Not able to find any depth measurements on feature measurements at timestamp 86965703784093
+10-15 13:35:54.406 E/native  ( 9375): === Source Location Trace: ===
+10-15 13:35:54.406 E/native  ( 9375): third_party/arcore/ar/perception/feature_track_ml_depth_provider_utils.cc:408
+10-15 13:35:54.406 E/native  ( 9375): third_party/arcore/ar/perception/feature_track_ml_depth_provider.cc:231
+10-15 13:35:54.406 I/native  ( 9375): I0000 00:00:1792051554.406594    9995 vio_estimator.cc:1448] [VioEstimator] [PauseResume] HandleInitializationStage with feature tracks at timestamp: 86965803682895 ns.
+10-15 13:35:54.406 I/native  ( 9375): I0000 00:00:1792051554.406921   10002 data_manager_base.cc:845] [M] VisualInertialState is kNotTracking. Wait.
+10-15 13:35:54.409 I/Unity   ( 9375): Handle cmd APP_CMD_PAUSE(14)
+10-15 13:35:54.459 I/native  ( 9375): I0000 00:00:1792051554.459320    9406 arpresto_api.cc:80] ArPresto::ArPresto_handleActivityPause
+10-15 13:35:54.459 I/native  ( 9375): I0000 00:00:1792051554.459445    9406 session.cc:1714] Entering Session::Pause.
+10-15 13:35:54.460 I/native  ( 9375): I0000 00:00:1792051554.460202    9406 plane_manager.cc:981] PopulatePlaneEstimationStatistics  number_of_normal_segmentations: 0, number_of_plane_normal_segment_matches: 0, vertical_planes_boundary_area: 0, vertical_planes_ml_boundary_growth: 0, number_of_vertical_planes: 0, number_of_vertical_planes_with_ml_boundary_growth: 0, avg_duration_in_seconds: 0, tof_merge_quality_stats_.Empty(): true, tof_merge_quality_stats_.hist_area_overlap_ratio_: [0.750, 0.760): 0.000000, [0.760, 0.770): 0.000000, [0.770, 0.780): 0.000000, [0.780, 0.790): 0.000000, [0.790, 0.800): 0.000000, [0.800, 0.810): 0.000000, [0.810, 0.820): 0.000000, [0.820, 0.830): 0.000000, [0.830, 0.840): 0.000000, [0.840, 0.850): 0.000000, [0.850, 0.860): 0.000000, [0.860, 0.870): 0.000000, [0.870, 0.880): 0.000000, [0.880, 0.890): 0.000000, [0.890, 0.900): 0.000000, [0.900, 0.910): 0.000000, [0.910, 0.920): 0.000000, [0.920, 0.930): 0.000000, [0.930, 0.940): 0.000000, [0.940, 0.950): 0.000000, [0.950, 0.960): 0.000000, [0.960, 0.970): 0.000000, [0.970, 0.980): 0.000000, [0.980, 0.990): 0.000000, [0.990, 1.000): 0.000000, [1.000, inf): 0.000000, , tof_merge_quality_stats_.hist_feature_overlap_ratio_: [0.900, 0.905): 0.000000, [0.905, 0.910): 0.000000, [0.910, 0.915): 0.000000, [0.915, 0.920): 0.000000, [0.920, 0.925): 0.000000, [0.925, 0.930): 0.000000, [0.930, 0.935): 0.000000, [0.935, 0.940): 0.000000, [0.940, 0.945): 0.000000, [0.945, 0.950): 0.000000, [0.950, 0.955): 0.000000, [0.955, 0.960): 0.000000, [0.960, 0.965): 0.000000, [0.965, 0.970): 0.000000, [0.970, 0.975): 0.000000, [0.975, 0.980): 0.000000, [0.980, 0.985): 0.000000, [0.985, 0.990): 0.000000, [0.990, 0.995): 0.000000, [0.995, 1.000): 0.000000, [1.000, inf): 0.000000, , tof_merge_quality_stats_.hist_normal_closeness_: [0.900, 0.905): 0.000000, [0.905, 0.910): 0.000000, [0.910, 0.915): 0.000000, [0.915, 0.920): 0.000000, [0.920, 0.925): 0.000000, [0.925, 0.930): 0.000000, [0.930, 0.935): 0.000000, [0.935, 0.940): 0.000000, [0.940, 0.945): 0.000000, [0.945, 0.950): 0.000000, [0.950, 0.955): 0.000000, [0.955, 0.960): 0.000000, [0.960, 0.965): 0.000000, [0.965, 0.970): 0.000000, [0.970, 0.975): 0.000000, [0.975, 0.980): 0.000000, [0.980, 0.985): 0.000000, [0.985, 0.990): 0.000000, [0.990, 0.995): 0.000000, [0.995, 1.000): 0.000000, [1.000, inf): 0.000000, , tof_merge_quality_stats_.hist_plane_distance_: [0.000, 0.010): 0.000000, [0.010, 0.020): 0.000000, [0.020, 0.030): 0.000000, [0.030, 0.040): 0.000000, [0.040, 0.050): 0.000000, [0.050, 0.060): 0.000000, [0.060, 0.070): 0.000000, [0.070, 0.080): 0.000000, [0.080, 0.090): 0.000000, [0.090, 0.100): 0.000000, [0.100, 0.110): 0.000000, [0.110, 0.120): 0.000000, [0.120, 0.130): 0.000000, [0.130, 0.140): 0.000000, [0.140, 0.150): 0.000000, [0.150, 0.160): 0.000000, [0.160, 0.170): 0.000000, [0.170, 0.180): 0.000000, [0.180, 0.190): 0.000000, [0.190, 0.200): 0.000000, [0.200, 0.210): 0.000000, [0.210, 0.220): 0.000000, [0.220, 0.230): 0.000000, [0.230, 0.240): 0.000000, [0.240, 0.250): 0.000000, [0.250, 0.260): 0.000000, [0.260, 0.270): 0.000000, [0.270, 0.280): 0.000000, [0.280, 0.290): 0.000000, [0.290, 0.300): 0.000000, [0.300, 0.310): 0.000000, [0.310, 0.320): 0.000000, [0.320, 0.330): 0.000000, [0.330, 0.340): 0.000000, [0.340, 0.350): 0.000000, [0.350, 0.360): 0.000000, [0.360, 0.370): 0.000000, [0.370, 0.380): 0.000000, [0.380, 0.390): 0.000000, [0.390, 0.400): 0.000000, [0.400, 0.410): 0.000000, [0.410, 0.420): 0.000000, [0.420, 0.430): 0.000000, [0.430, 0.440): 0.000000, [0.440, 0.450): 0.000000, [0.450, 0.460): 0.000000, [0.460, 0.470): 0.000000, [0.470, 0.480): 0.000000, [0.480, 0.490): 0.000000, [0.490, 0.500): 0.000000, [0.500, inf): 0.000000, , ms_merge_quality_stats_.Empty(): true, ms_merge_quality_stats_.hist_area_overlap_ratio_: [0.750, 0.760): 0.000000, [0.760, 0.770): 0.000000, [0.770, 0.780): 0.000000, [0.780, 0.790): 0.000000, [0.790, 0.800): 0.000000, [0.800, 0.810): 0.000000, [0.810, 0.820): 0.000000, [0.820, 0.830): 0.000000, [0.830, 0.840): 0.000000, [0.840, 0.8
+10-15 13:35:54.460 I/native  ( 9375): 
+10-15 13:35:54.461 I/native  ( 9375): I0000 00:00:1792051554.460996    9406 online_calibration_manager.cc:167] OnlineCalibrationManager: Discarding the new online recalibration estimates.
+10-15 13:35:54.461 I/native  ( 9375): I0000 00:00:1792051554.461352    9406 android_sensor_event_source.cc:107] [Live DS] AndroidSensorEventSourceConfig: lsm6ds3c Gyroscope-Uncalibrated Non-wakeup [type 16, ordinal 0] en=false, period= 0 us, override_found=false, types_checked=2, map_entries=0
+10-15 13:35:54.464 I/native  ( 9375): I0000 00:00:1792051554.461433    9406 sensor_ndk_wrapper.cc:149] [Live DS] DisableSensor called for: lsm6ds3c Gyroscope-Uncalibrated Non-wakeup
+10-15 13:35:54.472 I/native  ( 9375): I0000 00:00:1792051554.472576    9406 direct_channel_provider.cc:225] [Live DS] SetSleepDuration called with duration: inf
+10-15 13:35:54.472 I/native  ( 9375): I0000 00:00:1792051554.472656    9406 android_sensor_event_source.cc:107] [Live DS] AndroidSensorEventSourceConfig: ak0991x Magnetometer-Uncalibrated Non-wakeup [type 14, ordinal 0] en=false, period= 0 us, override_found=false, types_checked=2, map_entries=0
+10-15 13:35:54.472 I/native  ( 9375): I0000 00:00:1792051554.472715    9406 direct_channel_provider.cc:225] [Live DS] SetSleepDuration called with duration: inf
+10-15 13:35:54.472 I/native  ( 9375): I0000 00:00:1792051554.472735    9406 android_sensor_event_source.cc:107] [Live DS] AndroidSensorEventSourceConfig: gravity  Non-wakeup [type 9, ordinal 0] en=false, period= 0 us, override_found=false, types_checked=1, map_entries=0
+10-15 13:35:54.472 I/native  ( 9375): I0000 00:00:1792051554.472766    9406 direct_channel_provider.cc:225] [Live DS] SetSleepDuration called with duration: inf
+10-15 13:35:54.472 I/native  ( 9375): I0000 00:00:1792051554.472778    9406 android_sensor_event_source.cc:107] [Live DS] AndroidSensorEventSourceConfig: stk_stk3x3x Proximity Sensor Wakeup [type 8, ordinal 0] en=false, period= 0 us, override_found=false, types_checked=1, map_entries=0
+10-15 13:35:54.472 I/native  ( 9375): I0000 00:00:1792051554.472831    9406 direct_channel_provider.cc:225] [Live DS] SetSleepDuration called with duration: inf
+10-15 13:35:54.472 I/native  ( 9375): I0000 00:00:1792051554.472844    9406 android_sensor_event_source.cc:107] [Live DS] AndroidSensorEventSourceConfig: ak0991x Magnetometer Non-wakeup [type 2, ordinal 0] en=false, period= 0 us, override_found=false, types_checked=2, map_entries=0
+10-15 13:35:54.472 I/native  ( 9375): I0000 00:00:1792051554.472871    9406 direct_channel_provider.cc:225] [Live DS] SetSleepDuration called with duration: inf
+10-15 13:35:54.472 I/native  ( 9375): I0000 00:00:1792051554.472884    9406 android_sensor_event_source.cc:107] [Live DS] AndroidSensorEventSourceConfig: lsm6ds3c Accelerometer-Uncalibrated Non-wakeup [type 1, ordinal 0] en=false, period= 0 us, override_found=false, types_checked=2, map_entries=0
+10-15 13:35:54.472 I/native  ( 9375): I0000 00:00:1792051554.472910    9406 sensor_ndk_wrapper.cc:149] [Live DS] DisableSensor called for: lsm6ds3c Accelerometer-Uncalibrated Non-wakeup
+10-15 13:35:54.486 I/native  ( 9375): I0000 00:00:1792051554.486344    9406 standard_event_provider.cc:276] [Live DS] SetPollTimeout called with timeout: inf
+10-15 13:35:54.486 I/native  ( 9375): I0000 00:00:1792051554.486397    9406 direct_channel_provider.cc:225] [Live DS] SetSleepDuration called with duration: inf
+10-15 13:35:54.486 I/native  ( 9375): I0000 00:00:1792051554.486414    9406 android_sensor_event_source.cc:107] [Live DS] AndroidSensorEventSourceConfig: sns_geomag_rv  Non-wakeup [type 20, ordinal 0] en=false, period= 0 us, override_found=false, types_checked=1, map_entries=0
+10-15 13:35:54.486 I/native  ( 9375): I0000 00:00:1792051554.486447    9406 direct_channel_provider.cc:225] [Live DS] SetSleepDuration called with duration: inf
+10-15 13:35:54.486 I/native  ( 9375): I0000 00:00:1792051554.486459    9406 android_sensor_event_source.cc:107] [Live DS] AndroidSensorEventSourceConfig: Rotation Vector  Non-wakeup [type 11, ordinal 0] en=false, period= 0 us, override_found=false, types_checked=1, map_entries=0
+10-15 13:35:54.486 I/native  ( 9375): I0000 00:00:1792051554.486476    9406 direct_channel_provider.cc:225] [Live DS] SetSleepDuration called with duration: inf
+10-15 13:35:54.486 I/native  ( 9375): I0000 00:00:1792051554.486488    9406 android_sensor_event_source.cc:107] [Live DS] AndroidSensorEventSourceConfig: pedometer  Non-wakeup [type 18, ordinal 0] en=false, period= 0 us, override_found=false, types_checked=1, map_entries=0
+10-15 13:35:54.486 I/native  ( 9375): I0000 00:00:1792051554.486504    9406 direct_channel_provider.cc:225] [Live DS] SetSleepDuration called with duration: inf
+10-15 13:35:54.486 I/native  ( 9375): I0000 00:00:1792051554.486516    9406 android_sensor_event_source.cc:107] [Live DS] AndroidSensorEventSourceConfig: Game Rotation Vector  Non-wakeup [type 15, ordinal 0] en=false, period= 0 us, override_found=false, types_checked=1, map_entries=0
+10-15 13:35:54.486 I/native  ( 9375): I0000 00:00:1792051554.486532    9406 direct_channel_provider.cc:225] [Live DS] SetSleepDuration called with duration: inf
+10-15 13:35:54.486 I/native  ( 9375): I0000 00:00:1792051554.486544    9406 android_sensor_event_source.cc:107] [Live DS] AndroidSensorEventSourceConfig: stk_stk3x3x Ambient Light Sensor Non-wakeup [type 5, ordinal 0] en=false, period= 0 us, override_found=false, types_checked=1, map_entries=0
+10-15 13:35:54.486 I/native  ( 9375): I0000 00:00:1792051554.486560    9406 direct_channel_provider.cc:225] [Live DS] SetSleepDuration called with duration: inf
+10-15 13:35:54.496 D/CameraExtImplXiaoMi( 9375): releaseCameraDevice: 0
+10-15 13:35:54.496 D/CameraDevice-JV-0( 9375): close: E. id = 0
+10-15 13:35:54.501 E/native  ( 9375): E0000 00:00:1792051554.501630    9994 motion_tracking_context.cc:2597] NOT_FOUND: Not able to find any depth measurements on feature measurements at timestamp 86965803682895
+10-15 13:35:54.501 E/native  ( 9375): === Source Location Trace: ===
+10-15 13:35:54.501 E/native  ( 9375): third_party/arcore/ar/perception/feature_track_ml_depth_provider_utils.cc:408
+10-15 13:35:54.501 E/native  ( 9375): third_party/arcore/ar/perception/feature_track_ml_depth_provider.cc:231
+10-15 13:35:54.510 I/mplate.urpblan( 9375): NativeAlloc concurrent copying GC freed 1487KB AllocSpace bytes, 0(0B) LOS objects, 49% free, 5562KB/10MB, paused 5.059ms,35us total 48.565ms
+10-15 13:35:54.521 I/native  ( 9375): I0000 00:00:1792051554.521467    9995 vio_estimator.cc:1448] [VioEstimator] [PauseResume] HandleInitializationStage with feature tracks at timestamp: 86965903581697 ns.
+10-15 13:35:54.521 I/native  ( 9375): I0000 00:00:1792051554.521898   10002 data_manager_base.cc:845] [M] VisualInertialState is kNotTracking. Wait.
+10-15 13:35:54.528 D/gti.InputConnection( 9375): onApplyWindowInsetsfalse
+10-15 13:35:54.528 V/GameActivity( 9375): onImeInsetsChanged from Text Listener
+10-15 13:35:54.528 D/gti.InputConnection( 9375): onApplyWindowInsetsfalse
+10-15 13:35:54.528 V/GameActivity( 9375): onImeInsetsChanged from Text Listener
+10-15 13:35:54.528 D/gti.InputConnection( 9375): onApplyWindowInsetsfalse
+10-15 13:35:54.528 V/GameActivity( 9375): onImeInsetsChanged from Text Listener
+10-15 13:35:54.578 I/Unity   ( 9375): windowFocusChanged: false
+10-15 13:35:54.578 D/DecorView[]( 9375): onWindowFocusChanged hasWindowFocus false
+10-15 13:35:54.693 E/CameraManagerGlobal( 9375): Camera 61 is not available. Ignore physical camera status change
+10-15 13:35:54.694 D/CameraDevice-JV-0( 9375): close: X
+10-15 13:35:54.696 W/CameraDevice-JV-0( 9375): Device error received, code 4, frame number 150, request ID 0, subseq ID 0
+10-15 13:35:54.697 W/CameraDevice-JV-0( 9375): Device error received, code 4, frame number 149, request ID 0, subseq ID 0
+10-15 13:35:54.697 W/CameraDevice-JV-0( 9375): Device error received, code 4, frame number 146, request ID 0, subseq ID 0
+10-15 13:35:54.697 W/CameraDevice-JV-0( 9375): Device error received, code 4, frame number 148, request ID 0, subseq ID 0
+10-15 13:35:54.697 W/CameraDevice-JV-0( 9375): Device error received, code 4, frame number 147, request ID 0, subseq ID 0
+10-15 13:35:54.698 W/CameraDevice-JV-0( 9375): Device error received, code 5, frame number 146, request ID 0, subseq ID 0
+10-15 13:35:54.698 W/CameraDevice-JV-0( 9375): Device error received, code 5, frame number 146, request ID 0, subseq ID 0
+10-15 13:35:54.698 W/CameraDevice-JV-0( 9375): Device error received, code 5, frame number 147, request ID 0, subseq ID 0
+10-15 13:35:54.698 W/CameraDevice-JV-0( 9375): Device error received, code 5, frame number 147, request ID 0, subseq ID 0
+10-15 13:35:54.698 W/CameraDevice-JV-0( 9375): Device error received, code 5, frame number 148, request ID 0, subseq ID 0
+10-15 13:35:54.698 W/CameraDevice-JV-0( 9375): Device error received, code 5, frame number 148, request ID 0, subseq ID 0
+10-15 13:35:54.698 W/CameraDevice-JV-0( 9375): Device error received, code 5, frame number 149, request ID 0, subseq ID 0
+10-15 13:35:54.698 W/CameraDevice-JV-0( 9375): Device error received, code 5, frame number 149, request ID 0, subseq ID 0
+10-15 13:35:54.698 W/CameraDevice-JV-0( 9375): Device error received, code 5, frame number 150, request ID 0, subseq ID 0
+10-15 13:35:54.699 W/CameraDevice-JV-0( 9375): Device error received, code 5, frame number 150, request ID 0, subseq ID 0
+10-15 13:35:54.706 W/mplate.urpblan( 9375): Long monitor contention with owner Thread-2 (9406) at void cvi.b()(PG:157) waiters=0 in void cva.onImageAvailable(android.media.ImageReader) for 188ms
+10-15 13:35:54.707 I/native  ( 9375): I0000 00:00:1792051554.707030    9406 logger.h:29] DataSourceMetrics: kStopImageSubSystem: 218.523541ms
+10-15 13:35:54.720 E/native  ( 9375): E0000 00:00:1792051554.720549    9406 scheduler.cc:281] INTERNAL: RET_CHECK failure (third_party/mediapipe/framework/scheduler.cc:281) state_ != STATE_NOT_STARTED (0 vs. 0) 
+10-15 13:35:54.720 E/native  ( 9375): Stack trace:
+10-15 13:35:54.720 E/native  ( 9375): E0000 00:00:1792051554.720660    9406 normal_detector_cpu.cc:236] Error graph_->WaitUntilIdle():INTERNAL: RET_CHECK failure (third_party/mediapipe/framework/scheduler.cc:281) state_ != STATE_NOT_STARTED (0 vs. 0) 
+10-15 13:35:54.720 E/native  ( 9375): === Source Location Trace: ===
+10-15 13:35:54.720 E/native  ( 9375): third_party/mediapipe/framework/scheduler.cc:281
+10-15 13:35:54.720 E/native  ( 9375): third_party/mediapipe/framework/calculator_graph.cc:941
+10-15 13:35:54.720 I/native  ( 9375): I0000 00:00:1792051554.720689    9406 session.cc:1822] Session::PauseWithAnalytics returning OK.
+10-15 13:35:54.724 E/native  ( 9375): E0000 00:00:1792051554.724142    9989 motion_tracking_context.cc:2597] NOT_FOUND: Not able to find any depth measurements on feature measurements at timestamp 86965903581697
+10-15 13:35:54.724 E/native  ( 9375): === Source Location Trace: ===
+10-15 13:35:54.724 E/native  ( 9375): third_party/arcore/ar/perception/feature_track_ml_depth_provider_utils.cc:408
+10-15 13:35:54.724 E/native  ( 9375): third_party/arcore/ar/perception/feature_track_ml_depth_provider.cc:231
+10-15 13:35:54.729 I/native  ( 9375): I0000 00:00:1792051554.729386    9406 session_manager.cc:223] ArPresto::Moving from ArPrestoStatus 101 to 102
+10-15 13:35:54.743 D/Unity   ( 9375): ChoreographerNDK: Ignoring event, since Choreographer is disabled
+10-15 13:35:54.743 D/AAudio  ( 9375): AAudioStream_requestStop(s#1) called
+10-15 13:35:54.743 D/AAudioStream( 9375): setState(s#1) from 4 to 9
+10-15 13:35:54.743 D/AudioTrack( 9375): stop(825): called with 133440 frames delivered
+10-15 13:35:54.746 D/AAudioStream( 9375): setState(s#1) from 9 to 10
+10-15 13:35:54.749 D/Unity   ( 9375): Sensor :        Accelerometer ( 1) ; 0.002393 / 0.00s ; lsm6ds3c Accelerometer Non-wakeup / STMicro 
+10-15 13:35:54.749 I/Unity   ( 9375): Handle cmd APP_CMD_WINDOW_INSETS_CHANGED(17)
+10-15 13:35:54.749 I/Unity   ( 9375): Handle cmd APP_CMD_WINDOW_INSETS_CHANGED(17)
+10-15 13:35:54.749 I/Unity   ( 9375): Handle cmd APP_CMD_WINDOW_INSETS_CHANGED(17)
+10-15 13:35:54.749 I/Unity   ( 9375): Handle cmd APP_CMD_LOST_FOCUS(8)
+10-15 13:35:54.816 D/gti.InputConnection( 9375): onApplyWindowInsetsfalse
+10-15 13:35:54.816 V/GameActivity( 9375): onImeInsetsChanged from Text Listener
+10-15 13:35:54.817 I/Unity   ( 9375): Handle cmd APP_CMD_WINDOW_INSETS_CHANGED(17)
+10-15 13:35:54.818 D/gti.InputConnection( 9375): onApplyWindowInsetsfalse
+10-15 13:35:54.818 V/GameActivity( 9375): onImeInsetsChanged from Text Listener
+10-15 13:35:54.819 I/Unity   ( 9375): Handle cmd APP_CMD_WINDOW_INSETS_CHANGED(17)
+10-15 13:35:54.819 D/gti.InputConnection( 9375): onApplyWindowInsetsfalse
+10-15 13:35:54.819 V/GameActivity( 9375): onImeInsetsChanged from Text Listener
+10-15 13:35:54.819 I/Unity   ( 9375): Handle cmd APP_CMD_WINDOW_INSETS_CHANGED(17)
+10-15 13:35:54.821 I/Unity   ( 9375): windowFocusChanged: true
+10-15 13:35:54.821 I/Unity   ( 9375): Handle cmd APP_CMD_GAINED_FOCUS(7)
+10-15 13:35:54.821 D/DecorView[]( 9375): onWindowFocusChanged hasWindowFocus true
+10-15 13:35:54.841 I/Unity   ( 9375): onResume
+10-15 13:35:54.841 I/Unity   ( 9375): resumeUnity
+10-15 13:35:54.848 I/Unity   ( 9375): Handle cmd APP_CMD_RESUME(12)
+10-15 13:35:54.852 W/ContextImpl( 9375): Failed to ensure /storage/756D-08DD/Android/obb/com.UnityTechnologies.com.unity.template.urpblank: android.os.ServiceSpecificException:  (code -22)
+10-15 13:35:54.859 D/Unity   ( 9375): Sensor :        Accelerometer ( 1) ; 0.002393 / 0.00s ; lsm6ds3c Accelerometer Non-wakeup / STMicro 
+10-15 13:35:54.859 D/Unity   ( 9375): Found 2 interfaces on host Xiaomi_Redmi_Note_9_Pro@192.168.8.160:
+10-15 13:35:54.859 D/Unity   ( 9375):  0) 10.206.104.236
+10-15 13:35:54.859 D/Unity   ( 9375):  1) 192.168.8.160
+10-15 13:35:54.859 D/Unity   ( 9375): 
+10-15 13:35:54.860 D/Unity   ( 9375): Player connection [479005711408]  Target information:
+10-15 13:35:54.860 D/Unity   ( 9375): 
+10-15 13:35:54.860 D/Unity   ( 9375): Player connection [479005711408]  * "[IP] 10.206.104.236 [Port] 55000 [Flags] 2 [Guid] 3200909812 [EditorId] 78484410 [Version] 1048832 [Id] AndroidPlayer(11,Xiaomi_Redmi_Note_9_Pro@192.168.8.160) [Debug] 1 [PackageName] AndroidPlayer [ProjectName] The secret of lost temple 2" 
+10-15 13:35:54.860 D/Unity   ( 9375): 
+10-15 13:35:54.860 D/Unity   ( 9375): Player connection [479005711408]  * "[IP] 192.168.8.160 [Port] 55000 [Flags] 2 [Guid] 3200909812 [EditorId] 78484410 [Version] 1048832 [Id] AndroidPlayer(11,Xiaomi_Redmi_Note_9_Pro@192.168.8.160) [Debug] 1 [PackageName] AndroidPlayer [ProjectName] The secret of lost temple 2" 
+10-15 13:35:54.860 D/Unity   ( 9375): 
+10-15 13:35:54.860 D/Unity   ( 9375): Player connection [479005711408] Started UDP target info broadcast (1) on [225.0.0.222:54997].
+10-15 13:35:54.860 D/Unity   ( 9375): 
+10-15 13:35:54.861 D/Unity   ( 9375): Player connection [479005711408] Started UDP target info broadcast (1) on [225.0.0.222:54997].
+10-15 13:35:54.861 D/Unity   ( 9375): 
+10-15 13:35:54.861 I/native  ( 9375): I0000 00:00:1792051554.861314    9406 arpresto_api.cc:70] ArPresto::ArPresto_handleActivityResume
+10-15 13:35:54.861 I/native  ( 9375): I0000 00:00:1792051554.861395    9406 session.cc:1296] Entering Session::Resume.
+10-15 13:35:54.868 D/gti.InputConnection( 9375): onApplyWindowInsetsfalse
+10-15 13:35:54.868 V/GameActivity( 9375): onImeInsetsChanged from Text Listener
+10-15 13:35:54.868 D/gti.InputConnection( 9375): onApplyWindowInsetsfalse
+10-15 13:35:54.868 V/GameActivity( 9375): onImeInsetsChanged from Text Listener
+10-15 13:35:54.872 I/native  ( 9375): I0000 00:00:1792051554.872860    9406 estimator_impl.cc:850] [EstimatorImpl] Resetting motion tracking from user request.
+10-15 13:35:54.873 I/native  ( 9375): I0000 00:00:1792051554.873004    9995 vio_estimator.cc:922] [VioEstimator] Resetting VIO per user request. Num of requests: 2
+10-15 13:35:54.873 I/native  ( 9375): I0000 00:00:1792051554.873140    9406 estimator_impl.cc:854] [EstimatorImpl] Tracking reset completed.
+10-15 13:35:54.873 W/native  ( 9375): W0000 00:00:1792051554.873183    9406 data_manager_base.cc:469] [M] Reset was called with an invalid map. MultiMapManager won't take ownershp of this map with id 86922dc7-2b60-249f-89f8-f412527324e1, non-marginalized keyframes 0, landmarks 0.
+10-15 13:35:54.874 I/native  ( 9375): I0000 00:00:1792051554.874899    9406 visual_inertial_wls.cc:233] [M] Initializing VisualInertialWLS with viwls_config_.enable_loop_closure: true
+10-15 13:35:54.874 I/native  ( 9375): I0000 00:00:1792051554.874956    9406 visual_inertial_wls.cc:237] [M] Initializing VisualInertialWLS with viwls_config_.run_pgo_before_bundle_adjustment: false
+10-15 13:35:54.875 I/native  ( 9375): I0000 00:00:1792051554.875254    9406 fused_pose_provider.cc:429] [FusedPoseProvider] Resetting FusedPoseProvider
+10-15 13:35:54.875 I/native  ( 9375): I0000 00:00:1792051554.875323    9406 pose_manager.cc:193] [PoseManager] Reset
+10-15 13:35:54.875 I/native  ( 9375): I0000 00:00:1792051554.875338    9406 latest_pose_tracker.cc:326] [LatestPoseTracker] Reset
+10-15 13:35:54.875 I/native  ( 9375): I0000 00:00:1792051554.875347    9406 travel_latest_pose_tracker.cc:265] [TravelLatestPoseTracker] Reset
+10-15 13:35:54.875 I/native  ( 9375): I0000 00:00:1792051554.875359    9406 pose_node_graph.cc:155] [PoseNodeGraph]  Device nodes: 21 Map nodes: 0 VIO nodes: 1 Anchor nodes: 19 Map Nodes: 0 Map ids: 0 Total edges:40
+10-15 13:35:54.875 I/native  ( 9375): I0000 00:00:1792051554.875410    9406 anchor_node_tracker.cc:860] [AnchorNodeTracker] 21 Keyframes, 19 Anchors, 0 Persistent maps. Removed keyframes: 0
+10-15 13:35:54.877 I/native  ( 9375): I0000 00:00:1792051554.877422    9406 session.cc:3670] Update Frame Delay to 3 frames.
+10-15 13:35:54.879 W/libc    ( 9375): pthread_create sched_setscheduler(1, {1}) call failed: Operation not permitted
+10-15 13:35:54.880 W/libc    ( 9375): pthread_create sched_setscheduler(1, {1}) call failed: Operation not permitted
+10-15 13:35:54.880 E/native  ( 9375): E0000 00:00:1792051554.880555    9406 sensors_provider.cc:171] [Live DS] Dynamic sensor methods are not available, skipping update.
+10-15 13:35:54.880 I/native  ( 9375): I0000 00:00:1792051554.880597    9406 android_sensors.cc:593] [Live DS] ReconfigureAfterDynamicSensorsUpdate called
+10-15 13:35:54.880 I/native  ( 9375): I0000 00:00:1792051554.880622    9406 android_sensor_event_source.cc:107] [Live DS] AndroidSensorEventSourceConfig: lsm6ds3c Gyroscope-Uncalibrated Non-wakeup [type 16, ordinal 0] en=true, period= 5000 us, override_found=false, types_checked=2, map_entries=0
+10-15 13:35:54.880 I/native  ( 9375): I0000 00:00:1792051554.880713    9406 android_sensor_event_source.cc:205] [Live DS] ShouldEnableDirectBuffer returns: false for sensor: lsm6ds3c Gyroscope-Uncalibrated Non-wakeup, is_direct_buffer_supported: true, use_direct_buffer: false, desired_report_delay: 5ms, min_delay: 5ms, highest_direct_report_rate_level: 0, is_hw_buffer_supported: false
+10-15 13:35:54.881 D/BufferPoolAccessor2.0( 9375): evictor expired: 2, evicted: 0
+10-15 13:35:54.881 I/native  ( 9375): I0000 00:00:1792051554.881245    9406 standard_event_provider.cc:163] AddSensor: sensor=lsm6ds3c Gyroscope-Uncalibrated Non-wakeup, ordinal=0, enabled=false, param_changed=true, desired_period=5000 us
+10-15 13:35:54.883 I/native  ( 9375): I0000 00:00:1792051554.883063    9406 sensor_ndk_wrapper.cc:144] [Live DS] EnableSensor called for: lsm6ds3c Gyroscope-Uncalibrated Non-wakeup
+10-15 13:35:54.921 I/native  ( 9375): I0000 00:00:1792051554.921477    9406 standard_event_provider.cc:276] [Live DS] SetPollTimeout called with timeout: 5ms
+10-15 13:35:54.921 I/native  ( 9375): I0000 00:00:1792051554.921569    9406 direct_channel_provider.cc:225] [Live DS] SetSleepDuration called with duration: inf
+10-15 13:35:54.921 I/native  ( 9375): I0000 00:00:1792051554.921686    9406 android_sensor_event_source.cc:107] [Live DS] AndroidSensorEventSourceConfig: sns_geomag_rv  Non-wakeup [type 20, ordinal 0] en=false, period= 5000 us, override_found=false, types_checked=1, map_entries=0
+10-15 13:35:54.921 I/native  ( 9375): I0000 00:00:1792051554.921733    9406 direct_channel_provider.cc:225] [Live DS] SetSleepDuration called with duration: inf
+10-15 13:35:54.921 I/native  ( 9375): I0000 00:00:1792051554.921771    9406 android_sensor_event_source.cc:107] [Live DS] AndroidSensorEventSourceConfig: lsm6ds3c Accelerometer-Uncalibrated Non-wakeup [type 1, ordinal 0] en=true, period= 5000 us, override_found=false, types_checked=2, map_entries=0
+10-15 13:35:54.921 I/native  ( 9375): I0000 00:00:1792051554.921799    9406 android_sensor_event_source.cc:205] [Live DS] ShouldEnableDirectBuffer returns: false for sensor: lsm6ds3c Accelerometer-Uncalibrated Non-wakeup, is_direct_buffer_supported: true, use_direct_buffer: false, desired_report_delay: 5ms, min_delay: 5ms, highest_direct_report_rate_level: 0, is_hw_buffer_supported: false
+10-15 13:35:54.921 I/native  ( 9375): I0000 00:00:1792051554.921819    9406 standard_event_provider.cc:163] AddSensor: sensor=lsm6ds3c Accelerometer-Uncalibrated Non-wakeup, ordinal=0, enabled=false, param_changed=true, desired_period=5000 us
+10-15 13:35:54.921 I/native  ( 9375): I0000 00:00:1792051554.921835    9406 sensor_ndk_wrapper.cc:144] [Live DS] EnableSensor called for: lsm6ds3c Accelerometer-Uncalibrated Non-wakeup
+10-15 13:35:54.933 I/native  ( 9375): I0000 00:00:1792051554.933384    9406 direct_channel_provider.cc:225] [Live DS] SetSleepDuration called with duration: inf
+10-15 13:35:54.933 I/native  ( 9375): I0000 00:00:1792051554.933457    9406 android_sensor_event_source.cc:107] [Live DS] AndroidSensorEventSourceConfig: Rotation Vector  Non-wakeup [type 11, ordinal 0] en=false, period= 5000 us, override_found=false, types_checked=1, map_entries=0
+10-15 13:35:54.933 I/native  ( 9375): I0000 00:00:1792051554.933491    9406 direct_channel_provider.cc:225] [Live DS] SetSleepDuration called with duration: inf
+10-15 13:35:54.933 I/native  ( 9375): I0000 00:00:1792051554.933545    9406 android_sensor_event_source.cc:107] [Live DS] AndroidSensorEventSourceConfig: stk_stk3x3x Ambient Light Sensor Non-wakeup [type 5, ordinal 0] en=false, period= 5000 us, override_found=false, types_checked=1, map_entries=0
+10-15 13:35:54.933 I/native  ( 9375): I0000 00:00:1792051554.933580    9406 direct_channel_provider.cc:225] [Live DS] SetSleepDuration called with duration: inf
+10-15 13:35:54.933 I/native  ( 9375): I0000 00:00:1792051554.933599    9406 android_sensor_event_source.cc:107] [Live DS] AndroidSensorEventSourceConfig: pedometer  Non-wakeup [type 18, ordinal 0] en=false, period= 5000 us, override_found=false, types_checked=1, map_entries=0
+10-15 13:35:54.933 I/native  ( 9375): I0000 00:00:1792051554.933620    9406 direct_channel_provider.cc:225] [Live DS] SetSleepDuration called with duration: inf
+10-15 13:35:54.933 I/native  ( 9375): I0000 00:00:1792051554.933639    9406 android_sensor_event_source.cc:107] [Live DS] AndroidSensorEventSourceConfig: stk_stk3x3x Proximity Sensor Wakeup [type 8, ordinal 0] en=false, period= 5000 us, override_found=false, types_checked=1, map_entries=0
+10-15 13:35:54.933 I/native  ( 9375): I0000 00:00:1792051554.933661    9406 direct_channel_provider.cc:225] [Live DS] SetSleepDuration called with duration: inf
+10-15 13:35:54.933 I/native  ( 9375): I0000 00:00:1792051554.933679    9406 android_sensor_event_source.cc:107] [Live DS] AndroidSensorEventSourceConfig: ak0991x Magnetometer-Uncalibrated Non-wakeup [type 14, ordinal 0] en=false, period= 5000 us, override_found=false, types_checked=2, map_entries=0
+10-15 13:35:54.933 I/native  ( 9375): I0000 00:00:1792051554.933700    9406 direct_channel_provider.cc:225] [Live DS] SetSleepDuration called with duration: inf
+10-15 13:35:54.933 I/native  ( 9375): I0000 00:00:1792051554.933717    9406 android_sensor_event_source.cc:107] [Live DS] AndroidSensorEventSourceConfig: gravity  Non-wakeup [type 9, ordinal 0] en=false, period= 5000 us, override_found=false, types_checked=1, map_entries=0
+10-15 13:35:54.933 I/native  ( 9375): I0000 00:00:1792051554.933738    9406 direct_channel_provider.cc:225] [Live DS] SetSleepDuration called with duration: inf
+10-15 13:35:54.933 I/native  ( 9375): I0000 00:00:1792051554.933755    9406 android_sensor_event_source.cc:107] [Live DS] AndroidSensorEventSourceConfig: ak0991x Magnetometer Non-wakeup [type 2, ordinal 0] en=false, period= 5000 us, override_found=false, types_checked=2, map_entries=0
+10-15 13:35:54.933 I/native  ( 9375): I0000 00:00:1792051554.933771    9406 direct_channel_provider.cc:225] [Live DS] SetSleepDuration called with duration: inf
+10-15 13:35:54.933 I/native  ( 9375): I0000 00:00:1792051554.933787    9406 android_sensor_event_source.cc:107] [Live DS] AndroidSensorEventSourceConfig: Game Rotation Vector  Non-wakeup [type 15, ordinal 0] en=false, period= 5000 us, override_found=false, types_checked=1, map_entries=0
+10-15 13:35:54.933 I/native  ( 9375): I0000 00:00:1792051554.933802    9406 direct_channel_provider.cc:225] [Live DS] SetSleepDuration called with duration: inf
+10-15 13:35:54.938 I/native  ( 9375): I0000 00:00:1792051554.938880    9406 logger.h:29] DataSourceMetrics: kStartImageSubSystem: 5.048177ms
+10-15 13:35:54.939 I/native  ( 9375): I0000 00:00:1792051554.939026    9406 session.cc:1484] Session::ResumeWithAnalytics returning OK.
+10-15 13:35:54.939 W/libc    ( 9375): Access denied finding property "persist.vendor.camera.privapp.list"
+10-15 13:35:54.940 D/CameraExtImplXiaoMi( 9375): initCameraDevice: 0
+10-15 13:35:54.943 I/native  ( 9375): I0000 00:00:1792051554.943542    9406 session_manager.cc:223] ArPresto::Moving from ArPrestoStatus 102 to 101
+10-15 13:35:54.954 I/Unity   ( 9375): Handle cmd APP_CMD_WINDOW_INSETS_CHANGED(17)
+10-15 13:35:54.954 I/Unity   ( 9375): Handle cmd APP_CMD_WINDOW_INSETS_CHANGED(17)
+10-15 13:35:54.956 D/AAudio  ( 9375): AAudioStream_requestStart(s#1) called --------------
+10-15 13:35:54.956 D/AAudioStream( 9375): setState(s#1) from 10 to 3
+10-15 13:35:54.961 E/CameraManagerGlobal( 9375): Camera 61 is not available. Ignore physical camera status change
+10-15 13:35:54.971 D/CameraDevice-JV-0( 9375): waitUntilIdle: E. id = 0
+10-15 13:35:54.972 D/CameraDevice-JV-0( 9375): waitUntilIdle: X
+10-15 13:35:55.000 D/AAudio  ( 9375): AAudioStream_requestStart(s#1) returned 0 ---------
+10-15 13:35:55.000 D/AudioStreamLegacy( 9375): onAudioDeviceUpdate(deviceId = 3)
+10-15 13:35:55.001 D/MediaRouter( 9375): onRestoreRoute() : route=RouteInfo{ name=Phone, description=null, status=null, category=RouteCategory{ name=System types=ROUTE_TYPE_LIVE_AUDIO ROUTE_TYPE_LIVE_VIDEO  groupable=false }, supportedTypes=ROUTE_TYPE_LIVE_AUDIO ROUTE_TYPE_LIVE_VIDEO , presentationDisplay=null }
+10-15 13:35:55.001 V/MediaRouter( 9375): Selecting route: RouteInfo{ name=Phone, description=null, status=null, category=RouteCategory{ name=System types=ROUTE_TYPE_LIVE_AUDIO ROUTE_TYPE_LIVE_VIDEO  groupable=false }, supportedTypes=ROUTE_TYPE_LIVE_AUDIO ROUTE_TYPE_LIVE_VIDEO , presentationDisplay=null }
+10-15 13:35:55.018 I/native  ( 9375): I0000 00:00:1792051555.018881   10417 input_synchronizer.cc:78] [InputSynchronizer] Received first IMU sample at timestamp: 86966488737956
+10-15 13:35:55.019 I/native  ( 9375): I0000 00:00:1792051555.019003   10417 pose_manager.cc:354] First IMU measurement processed, timestamp: 86966488737956 is_tracking: false
+10-15 13:35:55.065 D/AAudioStream( 9375): setState(s#1) from 3 to 4
+10-15 13:35:55.087 I/native  ( 9375): I0000 00:00:1792051555.087846    9406 session.cc:3670] Update Frame Delay to 3 frames.
+10-15 13:35:55.255 I/native  ( 9375): I0000 00:00:1792051555.255823   10417 logging_helper.h:101] [Live DS] [Sensor][SENSOR_TYPE_ACCELEROMETER_0] Accumulative count: 5236
+10-15 13:35:55.322 I/native  ( 9375): I0000 00:00:1792051555.322857   10417 logging_helper.h:101] [Live DS] [Sensor][SENSOR_TYPE_GYROSCOPE_UNCALIBRATED_0] Accumulative count: 5224
+10-15 13:35:55.417 I/native  ( 9375): I0000 00:00:1792051555.417926   10016 logger.h:29] DataSourceMetrics: kFirstGlCallback: 484.096145ms
+10-15 13:35:55.422 I/native  ( 9375): I0000 00:00:1792051555.422332   10079 logging_helper.h:101] [Live DS] [Camera][0] Accumulative count: 724
+10-15 13:35:55.422 I/native  ( 9375): I0000 00:00:1792051555.422406   10079 logger.h:29] DataSourceMetrics: kFirstImageCallback: 488.577031ms
+10-15 13:35:55.436 I/native  ( 9375): I0000 00:00:1792051555.436472   10440 performance_monitor.cc:117] Event: FeatureExtraction is taking too long, it took 184.071ms
+10-15 13:35:55.437 I/native  ( 9375): I0000 00:00:1792051555.437846   10001 input_synchronizer.cc:38] [InputSynchronizer] Received first frame sample at timestamp: 86966843763028
+10-15 13:35:55.439 W/native  ( 9375): W0000 00:00:1792051555.439510    9995 vio_initializer.cc:633] [VioInitializer] Dropped initialization window due to skip in data. Frame gap:940ms > 400ms
+10-15 13:35:55.439 I/native  ( 9375): I0000 00:00:1792051555.439621    9995 vio_estimator.cc:1421] [VioEstimator] [PauseResume] First features after user reset timestamp: 86966843763028 ns. Time elapsed: 566.567291ms
+10-15 13:35:55.439 I/native  ( 9375): I0000 00:00:1792051555.439642    9995 vio_estimator.cc:1448] [VioEstimator] [PauseResume] HandleInitializationStage with feature tracks at timestamp: 86966843763028 ns.
+10-15 13:35:55.439 E/native  ( 9375): E0000 00:00:1792051555.439669    9995 critical_event_logging.cc:312]                    [CELog Instant] [VIO_OUTPUT_NOT_TRACKING] [1792051555_439659] VIO Tracking state is not tracking.
+10-15 13:35:55.440 I/native  ( 9375): I0000 00:00:1792051555.439924    9986 pose_manager.cc:419] [PoseManager] First VIO state received after device loading. TrackingSource: Inertial TrackingState: NotTracking
+10-15 13:35:55.441 I/native  ( 9375): I0000 00:00:1792051555.441846   10002 data_manager_base.cc:845] [M] VisualInertialState is kNotTracking. Wait.
+10-15 13:35:55.540 I/native  ( 9375): I0000 00:00:1792051555.540035    9995 vio_estimator.cc:1448] [VioEstimator] [PauseResume] HandleInitializationStage with feature tracks at timestamp: 86966945328548 ns.
+10-15 13:35:55.540 I/native  ( 9375): I0000 00:00:1792051555.540943   10002 data_manager_base.cc:845] [M] VisualInertialState is kNotTracking. Wait.
+10-15 13:35:55.551 E/native  ( 9375): E0000 00:00:1792051555.551449    9992 motion_tracking_context.cc:2597] NOT_FOUND: Not able to find any depth measurements on feature measurements at timestamp 86966843763028
+10-15 13:35:55.551 E/native  ( 9375): === Source Location Trace: ===
+10-15 13:35:55.551 E/native  ( 9375): third_party/arcore/ar/perception/feature_track_ml_depth_provider_utils.cc:408
+10-15 13:35:55.551 E/native  ( 9375): third_party/arcore/ar/perception/feature_track_ml_depth_provider.cc:231
+10-15 13:35:55.639 I/native  ( 9375): I0000 00:00:1792051555.639682    9995 vio_estimator.cc:1448] [VioEstimator] [PauseResume] HandleInitializationStage with feature tracks at timestamp: 86967043635913 ns.
+10-15 13:35:55.640 I/native  ( 9375): I0000 00:00:1792051555.640082   10002 data_manager_base.cc:845] [M] VisualInertialState is kNotTracking. Wait.
+10-15 13:35:55.655 E/native  ( 9375): E0000 00:00:1792051555.655036    9990 motion_tracking_context.cc:2597] NOT_FOUND: Not able to find any depth measurements on feature measurements at timestamp 86966945328548
+10-15 13:35:55.655 E/native  ( 9375): === Source Location Trace: ===
+10-15 13:35:55.655 E/native  ( 9375): third_party/arcore/ar/perception/feature_track_ml_depth_provider_utils.cc:408
+10-15 13:35:55.655 E/native  ( 9375): third_party/arcore/ar/perception/feature_track_ml_depth_provider.cc:231
+10-15 13:35:55.738 I/native  ( 9375): I0000 00:00:1792051555.738303    9995 vio_estimator.cc:1448] [VioEstimator] [PauseResume] HandleInitializationStage with feature tracks at timestamp: 86967143534767 ns.
+10-15 13:35:55.738 I/native  ( 9375): I0000 00:00:1792051555.738715   10002 data_manager_base.cc:845] [M] VisualInertialState is kNotTracking. Wait.
+10-15 13:35:55.814 E/native  ( 9375): E0000 00:00:1792051555.813974    9992 motion_tracking_context.cc:2597] NOT_FOUND: Not able to find any depth measurements on feature measurements at timestamp 86967043635913
+10-15 13:35:55.814 E/native  ( 9375): === Source Location Trace: ===
+10-15 13:35:55.814 E/native  ( 9375): third_party/arcore/ar/perception/feature_track_ml_depth_provider_utils.cc:408
+10-15 13:35:55.814 E/native  ( 9375): third_party/arcore/ar/perception/feature_track_ml_depth_provider.cc:231
+10-15 13:35:55.840 I/native  ( 9375): I0000 00:00:1792051555.840666    9995 vio_estimator.cc:1448] [VioEstimator] [PauseResume] HandleInitializationStage with feature tracks at timestamp: 86967243433569 ns.
+10-15 13:35:55.841 I/native  ( 9375): I0000 00:00:1792051555.841203   10002 data_manager_base.cc:845] [M] VisualInertialState is kNotTracking. Wait.
+10-15 13:35:55.944 I/native  ( 9375): I0000 00:00:1792051555.944431    9995 vio_estimator.cc:1448] [VioEstimator] [PauseResume] HandleInitializationStage with feature tracks at timestamp: 86967343332319 ns.
+10-15 13:35:55.944 I/native  ( 9375): I0000 00:00:1792051555.944829   10002 data_manager_base.cc:845] [M] VisualInertialState is kNotTracking. Wait.
+10-15 13:35:55.960 E/native  ( 9375): E0000 00:00:1792051555.960455    9993 motion_tracking_context.cc:2597] NOT_FOUND: Not able to find any depth measurements on feature measurements at timestamp 86967143534767
+10-15 13:35:55.960 E/native  ( 9375): === Source Location Trace: ===
+10-15 13:35:55.960 E/native  ( 9375): third_party/arcore/ar/perception/feature_track_ml_depth_provider_utils.cc:408
+10-15 13:35:55.960 E/native  ( 9375): third_party/arcore/ar/perception/feature_track_ml_depth_provider.cc:231
+10-15 13:35:56.034 I/native  ( 9375): I0000 00:00:1792051556.034552    9995 vio_estimator.cc:1448] [VioEstimator] [PauseResume] HandleInitializationStage with feature tracks at timestamp: 86967443231121 ns.
+10-15 13:35:56.035 I/native  ( 9375): I0000 00:00:1792051556.035222   10002 data_manager_base.cc:845] [M] VisualInertialState is kNotTracking. Wait.
+10-15 13:35:56.047 E/native  ( 9375): E0000 00:00:1792051556.047717    9991 motion_tracking_context.cc:2597] NOT_FOUND: Not able to find any depth measurements on feature measurements at timestamp 86967243433569
+10-15 13:35:56.047 E/native  ( 9375): === Source Location Trace: ===
+10-15 13:35:56.047 E/native  ( 9375): third_party/arcore/ar/perception/feature_track_ml_depth_provider_utils.cc:408
+10-15 13:35:56.047 E/native  ( 9375): third_party/arcore/ar/perception/feature_track_ml_depth_provider.cc:231
+10-15 13:35:56.139 E/native  ( 9375): E0000 00:00:1792051556.139130    9989 motion_tracking_context.cc:2597] NOT_FOUND: Not able to find any depth measurements on feature measurements at timestamp 86967343332319
+10-15 13:35:56.139 E/native  ( 9375): === Source Location Trace: ===
+10-15 13:35:56.139 E/native  ( 9375): third_party/arcore/ar/perception/feature_track_ml_depth_provider_utils.cc:408
+10-15 13:35:56.139 E/native  ( 9375): third_party/arcore/ar/perception/feature_track_ml_depth_provider.cc:231
+10-15 13:35:56.143 I/native  ( 9375): I0000 00:00:1792051556.143717    9995 vio_estimator.cc:1448] [VioEstimator] [PauseResume] HandleInitializationStage with feature tracks at timestamp: 86967543129924 ns.
+10-15 13:35:56.144 I/native  ( 9375): I0000 00:00:1792051556.144648   10002 data_manager_base.cc:845] [M] VisualInertialState is kNotTracking. Wait.
+10-15 13:35:56.214 E/native  ( 9375): E0000 00:00:1792051556.214705    9993 motion_tracking_context.cc:2597] NOT_FOUND: Not able to find any depth measurements on feature measurements at timestamp 86967443231121
+10-15 13:35:56.214 E/native  ( 9375): === Source Location Trace: ===
+10-15 13:35:56.214 E/native  ( 9375): third_party/arcore/ar/perception/feature_track_ml_depth_provider_utils.cc:408
+10-15 13:35:56.214 E/native  ( 9375): third_party/arcore/ar/perception/feature_track_ml_depth_provider.cc:231
+10-15 13:35:56.233 I/native  ( 9375): I0000 00:00:1792051556.233789    9995 vio_estimator.cc:1448] [VioEstimator] [PauseResume] HandleInitializationStage with feature tracks at timestamp: 86967643028726 ns.
+10-15 13:35:56.234 I/native  ( 9375): I0000 00:00:1792051556.234481   10002 data_manager_base.cc:845] [M] VisualInertialState is kNotTracking. Wait.
+10-15 13:35:56.258 I/native  ( 9375): I0000 00:00:1792051556.258835   10417 logging_helper.h:101] [Live DS] [Sensor][SENSOR_TYPE_ACCELEROMETER_0] Accumulative count: 5444
+10-15 13:35:56.270 E/native  ( 9375): E0000 00:00:1792051556.270475    9991 motion_tracking_context.cc:2597] NOT_FOUND: Not able to find any depth measurements on feature measurements at timestamp 86967543129924
+10-15 13:35:56.270 E/native  ( 9375): === Source Location Trace: ===
+10-15 13:35:56.270 E/native  ( 9375): third_party/arcore/ar/perception/feature_track_ml_depth_provider_utils.cc:408
+10-15 13:35:56.270 E/native  ( 9375): third_party/arcore/ar/perception/feature_track_ml_depth_provider.cc:231
+10-15 13:35:56.326 I/native  ( 9375): I0000 00:00:1792051556.326567   10417 logging_helper.h:101] [Live DS] [Sensor][SENSOR_TYPE_GYROSCOPE_UNCALIBRATED_0] Accumulative count: 5432
+10-15 13:35:56.338 I/native  ( 9375): I0000 00:00:1792051556.338667    9995 vio_estimator.cc:1448] [VioEstimator] [PauseResume] HandleInitializationStage with feature tracks at timestamp: 86967742927528 ns.
+10-15 13:35:56.341 I/native  ( 9375): I0000 00:00:1792051556.341748   10002 data_manager_base.cc:845] [M] VisualInertialState is kNotTracking. Wait.
+10-15 13:35:56.355 E/native  ( 9375): E0000 00:00:1792051556.355652    9990 motion_tracking_context.cc:2597] NOT_FOUND: Not able to find any depth measurements on feature measurements at timestamp 86967643028726
+10-15 13:35:56.355 E/native  ( 9375): === Source Location Trace: ===
+10-15 13:35:56.355 E/native  ( 9375): third_party/arcore/ar/perception/feature_track_ml_depth_provider_utils.cc:408
+10-15 13:35:56.355 E/native  ( 9375): third_party/arcore/ar/perception/feature_track_ml_depth_provider.cc:231
+10-15 13:35:56.419 E/native  ( 9375): E0000 00:00:1792051556.419739    9991 motion_tracking_context.cc:2597] NOT_FOUND: Not able to find any depth measurements on feature measurements at timestamp 86967742927528
+10-15 13:35:56.419 E/native  ( 9375): === Source Location Trace: ===
+10-15 13:35:56.419 E/native  ( 9375): third_party/arcore/ar/perception/feature_track_ml_depth_provider_utils.cc:408
+10-15 13:35:56.419 E/native  ( 9375): third_party/arcore/ar/perception/feature_track_ml_depth_provider.cc:231
+10-15 13:35:56.426 I/native  ( 9375): I0000 00:00:1792051556.426896   10079 logging_helper.h:101] [Live DS] [Camera][0] Accumulative count: 754
+10-15 13:35:56.451 I/native  ( 9375): I0000 00:00:1792051556.451628    9995 vio_estimator.cc:1448] [VioEstimator] [PauseResume] HandleInitializationStage with feature tracks at timestamp: 86967842826330 ns.
+10-15 13:35:56.452 I/native  ( 9375): I0000 00:00:1792051556.452800   10002 data_manager_base.cc:845] [M] VisualInertialState is kNotTracking. Wait.
+10-15 13:35:56.488 D/MediaRouter( 9375): onRestoreRoute() : route=RouteInfo{ name=Phone, description=null, status=null, category=RouteCategory{ name=System types=ROUTE_TYPE_LIVE_AUDIO ROUTE_TYPE_LIVE_VIDEO  groupable=false }, supportedTypes=ROUTE_TYPE_LIVE_AUDIO ROUTE_TYPE_LIVE_VIDEO , presentationDisplay=null }
+10-15 13:35:56.490 V/MediaRouter( 9375): Selecting route: RouteInfo{ name=Phone, description=null, status=null, category=RouteCategory{ name=System types=ROUTE_TYPE_LIVE_AUDIO ROUTE_TYPE_LIVE_VIDEO  groupable=false }, supportedTypes=ROUTE_TYPE_LIVE_AUDIO ROUTE_TYPE_LIVE_VIDEO , presentationDisplay=null }
+10-15 13:35:56.516 D/gti.InputConnection( 9375): onApplyWindowInsetsfalse
+10-15 13:35:56.516 V/GameActivity( 9375): onImeInsetsChanged from Text Listener
+10-15 13:35:56.518 D/gti.InputConnection( 9375): onApplyWindowInsetsfalse
+10-15 13:35:56.518 V/GameActivity( 9375): onImeInsetsChanged from Text Listener
+10-15 13:35:56.519 D/gti.InputConnection( 9375): onApplyWindowInsetsfalse
+10-15 13:35:56.520 V/GameActivity( 9375): onImeInsetsChanged from Text Listener
+10-15 13:35:56.522 I/Unity   ( 9375): Handle cmd APP_CMD_WINDOW_INSETS_CHANGED(17)
+10-15 13:35:56.523 I/Unity   ( 9375): Handle cmd APP_CMD_WINDOW_INSETS_CHANGED(17)
+10-15 13:35:56.523 I/Unity   ( 9375): Handle cmd APP_CMD_WINDOW_INSETS_CHANGED(17)
+10-15 13:35:56.527 I/Unity   ( 9375): windowFocusChanged: false
+10-15 13:35:56.527 D/DecorView[]( 9375): onWindowFocusChanged hasWindowFocus false
+10-15 13:35:56.536 E/native  ( 9375): E0000 00:00:1792051556.536553    9994 motion_tracking_context.cc:2597] NOT_FOUND: Not able to find any depth measurements on feature measurements at timestamp 86967842826330
+10-15 13:35:56.536 E/native  ( 9375): === Source Location Trace: ===
+10-15 13:35:56.536 E/native  ( 9375): third_party/arcore/ar/perception/feature_track_ml_depth_provider_utils.cc:408
+10-15 13:35:56.536 E/native  ( 9375): third_party/arcore/ar/perception/feature_track_ml_depth_provider.cc:231
+10-15 13:35:56.549 I/Unity   ( 9375): Handle cmd APP_CMD_LOST_FOCUS(8)
+10-15 13:35:56.556 I/native  ( 9375): I0000 00:00:1792051556.556386    9995 vio_estimator.cc:1448] [VioEstimator] [PauseResume] HandleInitializationStage with feature tracks at timestamp: 86967942725132 ns.
+10-15 13:35:56.559 I/native  ( 9375): I0000 00:00:1792051556.558886   10002 data_manager_base.cc:845] [M] VisualInertialState is kNotTracking. Wait.
+10-15 13:35:56.661 I/native  ( 9375): I0000 00:00:1792051556.661352    9995 vio_estimator.cc:1448] [VioEstimator] [PauseResume] HandleInitializationStage with feature tracks at timestamp: 86968042623934 ns.
+10-15 13:35:56.661 I/native  ( 9375): I0000 00:00:1792051556.661759   10002 data_manager_base.cc:845] [M] VisualInertialState is kNotTracking. Wait.
+10-15 13:35:56.707 E/native  ( 9375): E0000 00:00:1792051556.707068    9991 motion_tracking_context.cc:2597] NOT_FOUND: Not able to find any depth measurements on feature measurements at timestamp 86967942725132
+10-15 13:35:56.707 E/native  ( 9375): === Source Location Trace: ===
+10-15 13:35:56.707 E/native  ( 9375): third_party/arcore/ar/perception/feature_track_ml_depth_provider_utils.cc:408
+10-15 13:35:56.707 E/native  ( 9375): third_party/arcore/ar/perception/feature_track_ml_depth_provider.cc:231

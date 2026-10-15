@@ -1,0 +1,47 @@
+var flags = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
+var sf = typeof(SecretOfLostTemple.Research.Research).GetField("store", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+var original = sf.GetValue(null);
+bool oldTracking = StudyPolicy.Tracking;
+var root = new UnityEngine.GameObject("ResearchAuditTemporary"); root.SetActive(false);
+var rows = new System.Collections.Generic.List<string>();
+System.Action<string,bool> check = (id,ok) => rows.Add(id + ": " + (ok ? "PASS" : "FAIL"));
+try {
+var path = System.IO.Path.Combine(UnityEngine.Application.dataPath,"../proposals/test-evidence-2026-10-15/synthetic-"+System.Guid.NewGuid().ToString("N"),"records.json");
+var store = new SecretOfLostTemple.Research.ResearchStore(path); sf.SetValue(null,store);
+store.BeginStudy("P99001","audit-only","passive",true,true);
+store.EnterExternalScore("pretest","synthetic","automated audit",1,6,true);store.StartLearning();
+StudyPolicy.Tracking=true;
+var c=root.AddComponent<SecretOfLostTemple.AR.LeverARScreenController>();
+var ct=c.GetType();
+System.Func<string,float> val = n => (float)ct.GetField(n,flags).GetValue(c);
+float force=val("currentEffortForceN"), fulcrum=val("fulcrumOffset");
+c.AdjustForce(10);c.MoveFulcrumStep(.1f);
+check("K01 passive force and fulcrum blocked",val("currentEffortForceN")==force && val("fulcrumOffset")==fulcrum);
+check("K02 passive mode override blocked",StudyPolicy.Resolve(SecretOfLostTemple.AR.InteractionMode.Interactive)==SecretOfLostTemple.AR.InteractionMode.ViewOnly);
+store.End();store.BeginStudy("P99002","audit-only","interactive",true,true);store.EnterExternalScore("pretest","synthetic","automated audit",1,6,true);store.StartLearning();
+c.AdjustForce(10);c.MoveFulcrumStep(.1f);
+check("K03 interactive force and fulcrum accepted",val("currentEffortForceN")>force && val("fulcrumOffset")>fulcrum);
+force=val("currentEffortForceN");fulcrum=val("fulcrumOffset");StudyPolicy.Tracking=false;c.AdjustForce(10);c.MoveFulcrumStep(.1f);
+check("K04 lost tracking blocks controls",val("currentEffortForceN")==force && val("fulcrumOffset")==fulcrum);
+var e=root.AddComponent<SecretOfLostTemple.Adaptive.AdaptiveDifficultyEngine>();e.ReloadParticipant();
+e.RecordTaskResult(true,1);e.RecordTaskResult(true,1);check("A01 no early promotion",(int)e.CurrentTier==1);
+e.RecordTaskResult(true,1);check("A02 third success promotes",(int)e.CurrentTier==2);
+e.RecordTaskResult(false,1);check("A03 no early demotion",(int)e.CurrentTier==2);
+e.RecordTaskResult(false,1);check("A04 second failure demotes",(int)e.CurrentTier==1);
+var display=ct.GetMethod("DisplayCurrentQuizQuestion",flags);
+ct.GetField("researchQuizRun",flags).SetValue(c,"audit-run");
+display.Invoke(c,null);
+c.SelectQuizAnswer(1);c.SelectQuizAnswer(0);c.SelectQuizAnswer(0);
+check("A05 hint retry and duplicate guard",store.Current.events.FindAll(x=>x.hasAnswer).Count==2 && store.Current.events.Exists(x=>x.kind=="hint") && store.Current.events.Exists(x=>x.kind=="story_transition" && x.context.StartsWith("support->rejoin")));
+ct.GetField("currentQuizIndex",flags).SetValue(c,1);display.Invoke(c,null);
+var bank=(System.Array)ct.GetField("quizQuestions",flags).GetValue(c);
+var q=bank.GetValue(1);var qt=q.GetType();
+check("A07 load question targets load hint",(string)qt.GetField("targetPart").GetValue(q)=="load");
+rows.Add("A07 actual question="+qt.GetField("question").GetValue(q)+"; targetPart="+qt.GetField("targetPart").GetValue(q));
+store.End();store.BeginStudy("P99003","audit-only","interactive",false,false);e.ReloadParticipant();
+e.RecordTaskResult(true,1);e.RecordTaskResult(true,1);e.RecordTaskResult(true,1);
+check("A06 adaptation off stays tier one",(int)e.CurrentTier==1);
+int count=store.Current.events.Count;c.OpenARQuiz();check("P01 embedded off blocks quiz opening",store.Current.events.Count==count);
+return string.Join("\n",rows.ToArray())+"\nSynthetic records: "+path;
+} finally {sf.SetValue(null,original);StudyPolicy.Tracking=oldTracking;UnityEngine.Object.DestroyImmediate(root);}
+

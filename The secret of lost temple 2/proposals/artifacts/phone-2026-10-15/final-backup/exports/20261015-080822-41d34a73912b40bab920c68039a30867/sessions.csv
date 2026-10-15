@@ -1,0 +1,2 @@
+﻿participant,session,started_utc,ended_utc,condition,event_count,answer_count,correct_count,mean_response_seconds,pretest,posttest,retention,learning_gain,formal_status
+"P99101","ae776111862141508287c9301228ea69","2026-10-15T08:02:46.8547390Z","","passive",22,0,,,100.0000,,,,baseline_collected

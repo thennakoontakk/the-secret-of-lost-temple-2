@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<QCARConfig>
+  <Tracking>
+    <ImageTarget name="inclined_plane_target" size="0.200000 0.111628" />
+    <ImageTarget name="pulley_target" size="0.200000 0.111632" />
+    <ImageTarget name="lever_target" size="0.200000 0.111628" />
+  </Tracking>
+</QCARConfig>

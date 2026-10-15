@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "417093223382",
+    "project_id": "the-secret-of-lost-temple",
+    "storage_bucket": "the-secret-of-lost-temple.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:417093223382:android:2fbb6f74b6ae7338c4da77",
+        "android_client_info": {
+          "package_name": "com.UnityTechnologies.com.unity.template.urpblank"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBMUo0u0C0mzhQ2WaZZgc43X3HWc0b-ULE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

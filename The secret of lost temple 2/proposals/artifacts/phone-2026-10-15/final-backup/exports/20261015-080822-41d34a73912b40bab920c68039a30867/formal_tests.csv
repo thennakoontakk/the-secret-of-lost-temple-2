@@ -1,0 +1,2 @@
+﻿participant,session,assessment,stage,version,source,started_utc,completed_utc,score,denominator,percent,replaces,correction_reason,confirmed,days_since_learning,recorded_at_utc
+"P99101","ae776111862141508287c9301228ea69","bb81a2cc00c2431388215c610b9f9a33","pretest","lever-pilot-v1","in_app","2026-10-15T08:03:09.3844220Z","2026-10-15T08:05:24.9875240Z",6,6,100.0000,"","",False,,"2026-10-15T08:05:24.9875240Z"

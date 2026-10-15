@@ -1,0 +1,2 @@
+﻿participant,session,protocol,app_version,content_version,condition,adaptive,embedded_assessment,learning_started,learning_completed
+"P99101","ae776111862141508287c9301228ea69","lever-pilot-1","0.1.0","lever-pilot-v1","passive",True,True,"2026-10-15T08:05:28.0951870Z",""

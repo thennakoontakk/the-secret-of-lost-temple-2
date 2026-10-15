@@ -1,0 +1,49 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 848409ee8ba454f42a5ddff137688a27, type: 3}
+  m_Name: SimpleMachinesReferenceImageLibrary
+  m_EditorClassIdentifier: 
+  m_GuidLow: 5171314700049741729
+  m_GuidHigh: 9549307823258947729
+  m_DataStore:
+    m_Storage: []
+  m_Images:
+  - m_SerializedGuid:
+      m_GuidLow: 4943133554867995351
+      m_GuidHigh: 9212651842099445141
+    m_SerializedTextureGuid:
+      m_GuidLow: 8454535214112052366
+      m_GuidHigh: 7704728993723305849
+    m_Size: {x: 0.2, y: 0.2}
+    m_SpecifySize: 1
+    m_Name: lever_target
+    m_Texture: {fileID: 2800000, guid: b22e148e8afb755479cf87c932b2ec6a, type: 3}
+  - m_SerializedGuid:
+      m_GuidLow: 4711608977240428650
+      m_GuidHigh: 14258850496479297409
+    m_SerializedTextureGuid:
+      m_GuidLow: 4491356095148572162
+      m_GuidHigh: 5004625963152653529
+    m_Size: {x: 0.2, y: 0.2}
+    m_SpecifySize: 1
+    m_Name: pulley_target
+    m_Texture: {fileID: 2800000, guid: 831dbe0280923e54d93c693fcc007445, type: 3}
+  - m_SerializedGuid:
+      m_GuidLow: 4628144488602819573
+      m_GuidHigh: 15025391535677779135
+    m_SerializedTextureGuid:
+      m_GuidLow: 15290874791443140040
+      m_GuidHigh: 14229712244271766616
+    m_Size: {x: 0.2, y: 0.2}
+    m_SpecifySize: 1
+    m_Name: inclined_plane_target
+    m_Texture: {fileID: 2800000, guid: b8f18dc8199bd434585cd8d7e4177ac5, type: 3}

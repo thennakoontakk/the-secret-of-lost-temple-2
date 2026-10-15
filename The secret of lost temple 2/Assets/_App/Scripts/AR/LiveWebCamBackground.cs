@@ -1,0 +1,81 @@
+using System.Collections;
+using UnityEngine;
+using UnityEngine.UI;
+using UnityEngine.XR.ARFoundation;
+
+namespace SecretOfLostTemple.AR
+{
+    /// <summary>
+    /// Manages AR Camera background rendering and WebCam fallbacks.
+    /// </summary>
+    public class LiveWebCamBackground : MonoBehaviour
+    {
+        [Header("WebCam Raw Image (For Editor / PC)")]
+        [SerializeField] private RawImage webCamDisplayImage;
+        [SerializeField] private AspectRatioFitter aspectRatioFitter;
+
+        private WebCamTexture webCamTexture;
+        private ARCameraBackground arCameraBackground;
+        private ARCameraManager arCameraManager;
+        private Camera arCamera;
+
+        private void Awake()
+        {
+            arCameraBackground = GetComponent<ARCameraBackground>();
+            arCameraManager = GetComponent<ARCameraManager>();
+            arCamera = GetComponent<Camera>();
+            // A RawImage without a texture renders opaque white over ARCameraBackground.
+            // This project uses AR Foundation on device, not a second WebCamTexture feed.
+            if (webCamDisplayImage != null) webCamDisplayImage.gameObject.SetActive(false);
+        }
+
+        private IEnumerator Start()
+        {
+            string appMode = PlayerPrefs.GetString("LostTemple_App_Mode", "Sandbox");
+            bool isQuestMode = (appMode == "Quest");
+
+            if (!isQuestMode)
+            {
+                // SANDBOX MODE: Pure 3D virtual temple environment
+                if (arCameraBackground != null) arCameraBackground.enabled = false;
+                if (arCameraManager != null) arCameraManager.enabled = false;
+                if (webCamDisplayImage != null) webCamDisplayImage.gameObject.SetActive(false);
+
+                var arSession = FindFirstObjectByType<ARSession>();
+                if (arSession != null) arSession.enabled = false;
+
+                if (arCamera != null)
+                {
+                    arCamera.clearFlags = CameraClearFlags.SolidColor;
+                    arCamera.backgroundColor = new Color(0.05f, 0.07f, 0.10f, 1f);
+                }
+
+                yield break;
+            }
+
+            // QUEST MODE
+            if (arCamera != null)
+            {
+                arCamera.clearFlags = CameraClearFlags.SolidColor;
+                arCamera.backgroundColor = Color.black;
+            }
+
+            var session = FindFirstObjectByType<ARSession>();
+            if (session != null) session.enabled = true;
+            if (arCameraBackground != null) arCameraBackground.enabled = true;
+            if (arCameraManager != null) arCameraManager.enabled = true;
+
+            yield break;
+        }
+
+        private void OnDestroy()
+        {
+            if (webCamTexture != null && webCamTexture.isPlaying)
+            {
+                webCamTexture.Stop();
+            }
+        }
+
+        public WebCamTexture GetWebCamTexture() => webCamTexture;
+    }
+}

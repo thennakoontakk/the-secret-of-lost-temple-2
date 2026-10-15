@@ -1,0 +1,17 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "{\"success\":true,\"message\":\"Code executed successfully.\",\"data\":{\"result\":\"K01 passive force and fulcrum blocked: PASS\\nK02 passive mode override blocked: PASS\\nK03 interactive force and fulcrum accepted: PASS\\nK04 lost tracking blocks controls: PASS\\nA01 no early promotion: PASS\\nA02 third success promotes: PASS\\nA03 no early demotion: PASS\\nA04 second failure demotes: PASS\\nA05 hint retry and duplicate guard: PASS\\nA07 load question targets load hint: FAIL\\nA07 actual question=Which part is the object being lifted?; targetPart=fulcrum\\nA06 adaptation off stays tier one: PASS\\nP01 embedded off blocks quiz opening: PASS\\nSynthetic records: C:/Users/thenn/OneDrive/Desktop/the secret of lost temple/The secret of lost temple 2/Assets\\\\../proposals/test-evidence-2026-10-15/synthetic-5d3e7b45600a460495afe8c723fafca3\\\\records.json\",\"compiler\":\"codedom\"}}"
+    }
+  ],
+  "structuredContent": {
+    "success": true,
+    "message": "Code executed successfully.",
+    "data": {
+      "result": "K01 passive force and fulcrum blocked: PASS\nK02 passive mode override blocked: PASS\nK03 interactive force and fulcrum accepted: PASS\nK04 lost tracking blocks controls: PASS\nA01 no early promotion: PASS\nA02 third success promotes: PASS\nA03 no early demotion: PASS\nA04 second failure demotes: PASS\nA05 hint retry and duplicate guard: PASS\nA07 load question targets load hint: FAIL\nA07 actual question=Which part is the object being lifted?; targetPart=fulcrum\nA06 adaptation off stays tier one: PASS\nP01 embedded off blocks quiz opening: PASS\nSynthetic records: C:/Users/thenn/OneDrive/Desktop/the secret of lost temple/The secret of lost temple 2/Assets\\../proposals/test-evidence-2026-10-15/synthetic-5d3e7b45600a460495afe8c723fafca3\\records.json",
+      "compiler": "codedom"
+    }
+  },
+  "isError": false
+}

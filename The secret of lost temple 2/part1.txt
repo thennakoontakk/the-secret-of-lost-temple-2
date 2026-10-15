@@ -1,0 +1,37 @@
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UI;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using SecretOfLostTemple.Home;
+using SecretOfLostTemple.Story;
+
+namespace SecretOfLostTemple.Editor
+{
+    public static class HomeMapQuestSetup
+    {
+        [MenuItem("Tools/Lost Temple/Build Quest Modal and Story Book")]
+        public static void BuildQuestAndStoryBookUI()
+        {
+            var scene = EditorSceneManager.OpenScene("Assets/_App/Scenes/HomeMapScene.unity");
+            var canvasGo = GameObject.Find("HomeMapCanvas");
+            if (canvasGo == null)
+            {
+                Debug.LogError("HomeMapCanvas not found in HomeMapScene!");
+                return;
+            }
+
+            var homeCtrl = canvasGo.GetComponent<HomeMapController>();
+            if (homeCtrl == null) homeCtrl = canvasGo.AddComponent<HomeMapController>();
+
+            Font defaultFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+
+            // 1. BUILD QUEST ADVENTURE SELECTION MODAL
+            var questModalTr = canvasGo.transform.Find("QuestAdventureModal");
+            GameObject questModalGo = questModalTr != null ? questModalTr.gameObject : new GameObject("QuestAdventureModal", typeof(RectTransform));
+            questModalGo.transform.SetParent(canvasGo.transform, false);
+            var rtQModal = questModalGo.GetComponent<RectTransform>() ?? questModalGo.AddComponent<RectTransform>();
+            rtQModal.anchorMin = Vector2.zero;
+            rtQModal.anchorMax = Vector2.one;
+            rtQModal.sizeDelta = Vector2.zero;
+

@@ -1,0 +1,26 @@
+            // Card 1: Lever (Unlocked)
+            var cardLeverTr = cardContGo.transform.Find("Card_Lever");
+            GameObject cardLeverGo = cardLeverTr != null ? cardLeverTr.gameObject : new GameObject("Card_Lever", typeof(RectTransform));
+            cardLeverGo.transform.SetParent(cardContGo.transform, false);
+            var rtCL = cardLeverGo.GetComponent<RectTransform>() ?? cardLeverGo.AddComponent<RectTransform>();
+            rtCL.anchorMin = new Vector2(0.5f, 0.5f);
+            rtCL.anchorMax = new Vector2(0.5f, 0.5f);
+            rtCL.anchoredPosition = new Vector2(-330f, -25f);
+            rtCL.sizeDelta = new Vector2(300f, 380f);
+            var imgCL = cardLeverGo.GetComponent<Image>() ?? cardLeverGo.AddComponent<Image>();
+            imgCL.color = new Color(0.35f, 0.25f, 0.15f, 1f);
+            var btnCL = cardLeverGo.GetComponent<Button>() ?? cardLeverGo.AddComponent<Button>();
+
+            var clTxtTr = cardLeverGo.transform.Find("Text");
+            GameObject clTxtGo = clWHtTr != null ? clWHtTr.gameObject : new GameObject("Text", typeof(RectTransform));
+            clTxtGo.transform.SetParent(cardLeverGo.transform, false);
+            var txtCL = clTxtGo.GetComponent<Text>() ?? clWHtGo.AddComponent<Text>();
+            txtCL.text = "<size=52>⚖️</size>\n\n<b>CHAPTER 1</b>\n<color=#ffdd66><b>THE LEVER</b></color>\n\n<size=15><color=#a8d5ba>⭐ UNLOCKED</color>\nPages 1 - 9\nAR Marker Inside</size>";
+            txtCL.font = defaultFont;
+            txtCL.fontSize = 20;
+            txtCL.alignment = TextAnchor.MiddleCenter;
+            txtCL.color = Color.white;
+            txtCL.rectTransform.anchorMin = Vector2.zero;
+            txtCL.rectTransform.anchorMax = Vector2.one;
+            txtCL.rectTransform.sizeDelta = Vector2.zero;
+
