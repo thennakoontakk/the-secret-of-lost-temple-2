@@ -31,11 +31,28 @@ namespace SecretOfLostTemple.Adaptive
     /// </summary>
     public class AdaptiveDifficultyEngine : MonoBehaviour
     {
-        public static AdaptiveDifficultyEngine Instance { get; private set; }
+        private static AdaptiveDifficultyEngine instance;
+        public static AdaptiveDifficultyEngine Instance
+        {
+            get
+            {
+                if (instance == null)
+                {
+                    instance = FindFirstObjectByType<AdaptiveDifficultyEngine>();
+                    if (instance == null && Application.isPlaying)
+                    {
+                        var go = new GameObject("AdaptiveDifficultyEngine");
+                        instance = go.AddComponent<AdaptiveDifficultyEngine>();
+                    }
+                }
+                return instance;
+            }
+            private set { instance = value; }
+        }
         
         [SerializeField] private DifficultyTier currentTier = DifficultyTier.Apprentice;
         public DifficultyTier CurrentTier => currentTier;
-        [SerializeField] private int consecutiveSuccessToPromote = 3;
+        [SerializeField] private int consecutiveSuccessToPromote = 2;
         [SerializeField] private int consecutiveFailuresToDemote = 2;
 
         private int consecutiveSuccesses;
@@ -54,10 +71,10 @@ namespace SecretOfLostTemple.Adaptive
 
         private void Awake()
         {
-            if (Instance == null)
+            if (instance == null || instance == this)
             {
-                Instance = this;
-                DontDestroyOnLoad(gameObject);
+                instance = this;
+                if (Application.isPlaying) DontDestroyOnLoad(gameObject);
                 LoadProgress();
             }
             else

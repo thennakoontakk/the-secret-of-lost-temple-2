@@ -82,8 +82,15 @@ namespace SecretOfLostTemple.AR
                 leverPhysics.OnPhysicsUpdated += UpdateDashboard;
             }
 
+            OnForceSliderChanged(appliedForceSlider != null ? appliedForceSlider.value : 0f);
+            OnFulcrumSliderChanged(fulcrumPositionSlider != null ? fulcrumPositionSlider.value : .8f);
             // Initially show scanner prompt
             ShowScannerPrompt("lever_target");
+        }
+
+        private void OnDestroy()
+        {
+            if (leverPhysics != null) leverPhysics.OnPhysicsUpdated -= UpdateDashboard;
         }
 
         private void InitializePlayerProfile()
@@ -113,7 +120,9 @@ namespace SecretOfLostTemple.AR
             if (simulateTargetFoundBtn != null)
             {
                 simulateTargetFoundBtn.onClick.RemoveAllListeners();
-                simulateTargetFoundBtn.onClick.AddListener(OnTargetDetected);
+                simulateTargetFoundBtn.gameObject.SetActive(true);
+                simulateTargetFoundBtn.interactable = true;
+                simulateTargetFoundBtn.onClick.AddListener(() => { ResearchData.Record("marker_simulated", "physics_lab;manual"); OnTargetDetected(); });
             }
 
             if (presetHighMAButton != null)
@@ -142,8 +151,8 @@ namespace SecretOfLostTemple.AR
 
             // Target tabs
             if (leverTargetTab != null) leverTargetTab.onClick.AddListener(() => SelectTarget("lever_target"));
-            if (pulleyTargetTab != null) pulleyTargetTab.onClick.AddListener(() => SelectTarget("pulley_target"));
-            if (inclinedPlaneTargetTab != null) inclinedPlaneTargetTab.onClick.AddListener(() => SelectTarget("inclined_plane_target"));
+            if (pulleyTargetTab != null) pulleyTargetTab.interactable = false;
+            if (inclinedPlaneTargetTab != null) inclinedPlaneTargetTab.interactable = false;
         }
 
         private void SetupSliders()
@@ -169,6 +178,7 @@ namespace SecretOfLostTemple.AR
 
         public void SelectTarget(string targetName)
         {
+            if (targetName != "lever_target") return;
             currentActiveTarget = targetName;
             PlaySound(buttonClickClip);
             ShowScannerPrompt(targetName);
@@ -198,6 +208,7 @@ namespace SecretOfLostTemple.AR
         /// </summary>
         public void OnTargetDetected()
         {
+            if (isTargetTracked) return;
             isTargetTracked = true;
             PlaySound(targetDetectedClip != null ? targetDetectedClip : successClip);
 
@@ -322,12 +333,12 @@ namespace SecretOfLostTemple.AR
 
             if (mechanicalAdvantageValueText != null)
             {
-                mechanicalAdvantageValueText.text = $"<b>MA = {ma:F2}x</b>\n<size=15><color=#d5c59f>Effort Arm ({lp.EffortArmLength:F2}m) / Load Arm ({lp.LoadArmLength:F2}m)</color></size>";
+                mechanicalAdvantageValueText.text = $"<b>MA = d_e / d_l = {ma:F2}x | Load {loadForce:F0} N</b>\n<size=15><color=#d5c59f>Effort Arm ({lp.EffortArmLength:F2}m) / Load Arm ({lp.LoadArmLength:F2}m)</color></size>";
             }
 
             if (loadForceValueText != null)
             {
-                loadForceValueText.text = $"<b>{loadForce:F0} N</b> (100 kg Boulder)";
+                loadForceValueText.text = $"<b>{loadForce:F0} N</b> (Boulder weight)";
             }
 
             if (requiredForceValueText != null)
@@ -338,7 +349,7 @@ namespace SecretOfLostTemple.AR
             if (torqueEquationText != null)
             {
                 torqueEquationText.text =
-                    $"<b>Torque Balance Equation:</b>\n" +
+                    $"<b>TORQUE BALANCE</b>\n" +
                     $"• Load Torque (τ₁): {lp.LoadTorque:F0} N·m\n" +
                     $"• Effort Torque (τ₂): {lp.EffortTorque:F0} N·m  (Net: {lp.NetTorque:+0;-0;0} N·m)";
             }

@@ -209,6 +209,9 @@ namespace SecretOfLostTemple.AR
             SetInteractionMode(InteractionMode.ViewOnly);
             SetViewOnlySubMode(ViewOnlySubMode.ForcesAndMotion);
             ApplyAppModeVisibility();
+            UpdateAdaptiveTierHUD();
+            SecretOfLostTemple.Adaptive.EngagementTracker.Instance?.StartTracking(ResearchData.Store.ParticipantCode);
+            InitializeInteractiveStoryBranchUI();
         }
 
         private void ApplyAppModeVisibility()
@@ -572,6 +575,7 @@ namespace SecretOfLostTemple.AR
             if (beamPivot != null)
             {
                 Vector3 targetPos = isExplodedView ? beamExplodedLocalPos : beamAssembledLocalPos;
+                if (!isExplodedView) targetPos += new Vector3(fulcrumOffset, 0, 0) - beamPivot.localRotation * new Vector3(fulcrumOffset, 0, 0);
                 beamPivot.localPosition = Vector3.Lerp(beamPivot.localPosition, targetPos, speed);
             }
 
@@ -590,76 +594,94 @@ namespace SecretOfLostTemple.AR
 
         private void UpdateInWorldBadgesAndArrows()
         {
-            Vector3 leverUp = leverRoot != null ? leverRoot.up : Vector3.up;
-            float scaleRatio = leverRoot != null ? (leverRoot.lossyScale.y / 2.0f) : 1f;
-
-            // Keep in-world badges floating above their respective 3D objects
-            if (loadAnnotationBadge != null && boulderRoot != null)
-                loadAnnotationBadge.transform.position = boulderRoot.position + leverUp * (0.45f * scaleRatio);
-
-            if (fulcrumAnnotationBadge != null && fulcrumRoot != null)
-                fulcrumAnnotationBadge.transform.position = fulcrumRoot.position - leverUp * (0.25f * scaleRatio);
-
-            if (effortAnnotationBadge != null && effortPoint != null)
-                effortAnnotationBadge.transform.position = effortPoint.position + leverUp * (0.35f * scaleRatio);
-
-            // Animate dynamic 3D Force Direction Arrows when in Forces & Motion view
-            bool showForces = (currentMode == InteractionMode.ViewOnly && currentViewOnlySubMode == ViewOnlySubMode.ForcesAndMotion) ||
-                              (currentMode == InteractionMode.Interactive);
-
-            if (forceVectorsRoot != null)
-            {
-                forceVectorsRoot.SetActive(showForces);
+            if (leverRoot == null) return;
+            var cam = Camera.main;
+            Vector3 up = leverRoot.up;
+            float scale = Mathf.Abs(leverRoot.lossyScale.y);
+            bool show = (currentMode == InteractionMode.ViewOnly && currentViewOnlySubMode == ViewOnlySubMode.ForcesAndMotion)
+                        || currentMode == InteractionMode.Interactive;
+            if (forceVectorsRoot == null) {
+                forceVectorsRoot = new GameObject("ForceVectorsRoot");
+                forceVectorsRoot.transform.SetParent(leverRoot, false);
             }
+            forceVectorsRoot.SetActive(show);
+            UpdateBadge(loadAnnotationBadge, boulderRoot, up * .45f * scale, cam);
+            UpdateBadge(effortAnnotationBadge, effortPoint, up * .4f * scale, cam);
+            UpdateBadge(fulcrumAnnotationBadge, fulcrumRoot, -up * .3f * scale, cam);
+            if (!show) return;
+            UpdateForceArrow(ref effortVectorObject, ref effortVectorText, "Vector_EffortForce", effortPoint,
+                -up, new Color(1f, .85f, .2f), "EFFORT " + currentEffortForceN.ToString("F0") + " N", scale, cam);
+            UpdateForceArrow(ref loadVectorObject, ref loadVectorText, "Vector_LoadWeight", boulderRoot,
+                -up, new Color(1f, .35f, .35f), "LOAD 100 N", scale, cam);
+            UpdateForceArrow(ref fulcrumVectorObject, ref fulcrumVectorText, "Vector_FulcrumReaction", fulcrumRoot,
+                up, new Color(.4f, 1f, .6f), "SUPPORT " + (100f + currentEffortForceN).ToString("F0") + " N", scale, cam);
+            // Legacy lines are replaced by arrows with visible heads.
+            if (effortArrowLine != null) effortArrowLine.enabled = false;
+            if (loadArrowLine != null) loadArrowLine.enabled = false;
+            if (fulcrumReactionArrowLine != null) fulcrumReactionArrowLine.enabled = false;
+        }
 
-            if (showForces)
-            {
-                float pulse = 0.94f + 0.06f * Mathf.Sin(Time.time * 4f);
-                var cam = Camera.main;
-
-                // 1. Effort Vector: Positioned above effort point, pointing DOWNWARDS (Push force)
-                if (effortVectorObject != null && effortPoint != null)
-                {
-                    effortVectorObject.gameObject.SetActive(true);
-                    effortVectorObject.position = effortPoint.position + leverUp * (0.32f * pulse * scaleRatio);
-                    if (effortVectorText != null)
-                    {
-                        effortVectorText.text = $"<b>⚡ EFFORT FORCE</b>\n<color=#ffe066>{currentEffortForceN:F0} N ↓</color>";
-                        if (cam != null) effortVectorText.transform.rotation = cam.transform.rotation;
-                    }
-                }
-
-                // 2. Load Vector: Positioned above load boulder, pointing DOWNWARDS (Gravity weight)
-                if (loadVectorObject != null && boulderRoot != null)
-                {
-                    loadVectorObject.gameObject.SetActive(true);
-                    loadVectorObject.position = boulderRoot.position + leverUp * (0.34f * pulse * scaleRatio);
-                    if (loadVectorText != null)
-                    {
-                        loadVectorText.text = "<b>🪨 LOAD WEIGHT</b>\n<color=#ff8080>100 N ↓</color>";
-                        if (cam != null) loadVectorText.transform.rotation = cam.transform.rotation;
-                    }
-                }
-
-                // 3. Fulcrum Support Vector: Positioned below fulcrum, pointing UPWARDS (Support normal force)
-                if (fulcrumVectorObject != null && fulcrumRoot != null)
-                {
-                    fulcrumVectorObject.gameObject.SetActive(true);
-                    fulcrumVectorObject.position = fulcrumRoot.position - leverUp * (0.30f * pulse * scaleRatio);
-                    if (fulcrumVectorText != null)
-                    {
-                        float reactionN = currentEffortForceN + 100f;
-                        fulcrumVectorText.text = $"<b>🏔️ FULCRUM SUPPORT</b>\n<color=#80ffaa>{reactionN:F0} N ↑</color>";
-                        if (cam != null) fulcrumVectorText.transform.rotation = cam.transform.rotation;
-                    }
-                }
+        private static void UpdateBadge(GameObject badge, Transform anchor, Vector3 offset, Camera cam)
+        {
+            if (badge == null || anchor == null) return;
+            badge.transform.position = anchor.position + offset;
+            var canvas = badge.GetComponentInParent<Canvas>();
+            if (canvas != null && canvas.renderMode == RenderMode.WorldSpace && cam != null) {
+                badge.transform.rotation = cam.transform.rotation;
+                SetWorldScale(badge.transform, Vector3.one * WorldUnitsPerPixel(cam, badge.transform.position));
             }
-            else
-            {
-                if (effortVectorObject != null) effortVectorObject.gameObject.SetActive(false);
-                if (loadVectorObject != null) loadVectorObject.gameObject.SetActive(false);
-                if (fulcrumVectorObject != null) fulcrumVectorObject.gameObject.SetActive(false);
+        }
+
+        private static float WorldUnitsPerPixel(Camera cam, Vector3 position)
+        {
+            float height = cam.orthographic ? 2f * cam.orthographicSize :
+                2f * Mathf.Max(.1f, Vector3.Dot(position - cam.transform.position, cam.transform.forward)) * Mathf.Tan(cam.fieldOfView * Mathf.Deg2Rad * .5f);
+            return height / Mathf.Max(1, cam.pixelHeight);
+        }
+
+        private static void SetWorldScale(Transform target, Vector3 size)
+        {
+            var parent = target.parent != null ? target.parent.lossyScale : Vector3.one;
+            target.localScale = new Vector3(size.x / Mathf.Max(.0001f, Mathf.Abs(parent.x)),
+                size.y / Mathf.Max(.0001f, Mathf.Abs(parent.y)), size.z / Mathf.Max(.0001f, Mathf.Abs(parent.z)));
+        }
+
+        private void UpdateForceArrow(ref Transform root, ref TextMesh label, string name, Transform anchor,
+            Vector3 direction, Color color, string caption, float scale, Camera cam)
+        {
+            if (anchor == null) return;
+            if (root == null) {
+                root = new GameObject(name).transform;
+                root.SetParent(forceVectorsRoot.transform, false);
             }
+            root.gameObject.SetActive(true);
+            root.position = anchor.position;
+            var line = root.GetComponent<LineRenderer>();
+            if (line == null) {
+                line = root.gameObject.AddComponent<LineRenderer>();
+                line.sharedMaterial = new Material(Shader.Find("Sprites/Default"));
+            }
+            line.useWorldSpace = true; line.positionCount = 5;
+            float unit = cam != null ? WorldUnitsPerPixel(cam, anchor.position) : .001f;
+            float length = Mathf.Max(.28f * scale, unit * 32f);
+            Vector3 tip = anchor.position;
+            Vector3 tail = tip - direction * length;
+            Vector3 side = cam != null ? cam.transform.right : leverRoot.right;
+            line.startWidth = line.endWidth = Mathf.Max(.008f * scale, unit * 2f);
+            line.startColor = line.endColor = color;
+            line.SetPosition(0, tail); line.SetPosition(1, tip);
+            line.SetPosition(2, tip - direction * length * .22f + side * length * .13f);
+            line.SetPosition(3, tip); line.SetPosition(4, tip - direction * length * .22f - side * length * .13f);
+            if (label == null) {
+                label = new GameObject("ForceLabel").AddComponent<TextMesh>();
+                label.transform.SetParent(root, false);
+                label.fontSize = 64; label.characterSize = 1f;
+                label.anchor = TextAnchor.MiddleCenter;
+            }
+            label.text = caption; label.color = color;
+            label.transform.position = tail - direction * unit * 14f;
+            if (cam != null) label.transform.rotation = cam.transform.rotation;
+            SetWorldScale(label.transform, Vector3.one * unit * 22f);
         }
 
         private void HandleDirect3DPartClicks()
@@ -1069,13 +1091,41 @@ namespace SecretOfLostTemple.AR
             }
         }
 
+        private void GetChallengeParametersForTier(out int tier, out float targetLoadN, out float maxAllowedEffortN, out string tierLabel)
+        {
+            bool useAdaptive = !StudyPolicy.Measured || (ResearchData.Store.Current != null && ResearchData.Store.Current.adaptive);
+            var engine = SecretOfLostTemple.Adaptive.AdaptiveDifficultyEngine.Instance;
+            tier = useAdaptive ? (engine != null ? (int)engine.CurrentTier : ResearchProgress.GetInt("AdaptiveDifficultyTier", 1)) : 2;
+            if (tier <= 1)
+            {
+                targetLoadN = 100f;
+                maxAllowedEffortN = 60f;
+                tierLabel = "Tier 1 (Apprentice)";
+            }
+            else if (tier == 2)
+            {
+                targetLoadN = 100f;
+                maxAllowedEffortN = 40f;
+                tierLabel = "Tier 2 (Scholar)";
+            }
+            else
+            {
+                targetLoadN = 120f;
+                maxAllowedEffortN = 40f;
+                tierLabel = "Tier 3 (Master)";
+            }
+        }
+
         public void OpenChallengeModal()
         {
             if (StudyPolicy.Passive) return;
             challengeResolved = false; challengeStarted = Time.time;
+            currentHintTierStep = 0;
             PlaySound(clickClip);
             isChallengeActive = true;
             challengeAttempts++;
+
+            GetChallengeParametersForTier(out int tier, out float targetLoadN, out float maxEffortN, out string tierLabel);
 
             if (challengeModalPanel != null)
             {
@@ -1083,10 +1133,10 @@ namespace SecretOfLostTemple.AR
             }
 
             if (challengeTitleText != null)
-                challengeTitleText.text = "⭐ TEMPLE LEVER CHALLENGE";
+                challengeTitleText.text = $"⭐ TEMPLE LEVER CHALLENGE — {tierLabel.ToUpper()}";
 
             if (challengeDescText != null)
-                challengeDescText.text = "<b>Mission:</b> Lift the heavy 100N temple boulder using <b>only 40 N or less</b> of applied effort force!\n\n<i>Hint: Adjust the Fulcrum slider closer to the Boulder to increase your Mechanical Advantage!</i>";
+                challengeDescText.text = $"<b>Mission ({tierLabel}):</b> Lift the heavy <b>{targetLoadN:F0} N</b> temple gate stone using <b>only {maxEffortN:F0} N or less</b> of applied effort force!\n\n<i>Hint: Adjust the Fulcrum slider closer to the Boulder to reach Mechanical Advantage ≥ {(targetLoadN / maxEffortN):F1}x!</i>";
 
             if (challengeFeedbackText != null)
                 challengeFeedbackText.text = "Set your configuration and tap <b>Check Solution</b>!";
@@ -1102,22 +1152,32 @@ namespace SecretOfLostTemple.AR
         public void EvaluateChallenge()
         {
             if (StudyPolicy.Measured && !StudyPolicy.InputAllowed) return;
+            GetChallengeParametersForTier(out int tier, out float targetLoadN, out float maxEffortN, out string tierLabel);
+
             float loadArm = Mathf.Abs(-0.90f - fulcrumOffset);
             float effortArm = Mathf.Abs(0.90f - fulcrumOffset);
             float ma = effortArm / loadArm;
-            float requiredForce = 100f / ma;
+            float requiredForce = targetLoadN / ma;
 
-            float loadTorque = 100f * loadArm;
+            float loadTorque = targetLoadN * loadArm;
             float effortTorque = currentEffortForceN * effortArm;
-            bool isSuccessful = (effortTorque > loadTorque + 5f && currentEffortForceN <= 40f);
+            bool isSuccessful = (effortTorque > loadTorque + 5f && currentEffortForceN <= maxEffortN);
             if (challengeResolved) return;
             challengeResolved = isSuccessful;
-            ResearchData.Record("challenge_attempt", "lever;success=" + isSuccessful, false, isSuccessful, Time.time - challengeStarted);
+            float challengeDuration = Time.time - challengeStarted;
+            ResearchData.Record("challenge_attempt", $"lever;tier={tier};load={targetLoadN:F0};max_effort={maxEffortN:F0};success={isSuccessful}", false, isSuccessful, challengeDuration);
             challengeStarted = Time.time;
+
+            if (!StudyPolicy.Measured || (ResearchData.Store.Current != null && ResearchData.Store.Current.adaptive))
+            {
+                SecretOfLostTemple.Adaptive.AdaptiveDifficultyEngine.Instance?.RecordTaskResult(isSuccessful, challengeDuration);
+                UpdateAdaptiveTierHUD();
+            }
 
             if (isSuccessful)
             {
                 PlaySound(successClip);
+                currentHintTierStep = 0;
 
                 int currentUnlocked = ResearchProgress.GetInt("LostTemple_Quest_Unlocked_Level", 1);
                 if (currentUnlocked < 2)
@@ -1128,7 +1188,7 @@ namespace SecretOfLostTemple.AR
 
                 if (challengeFeedbackText != null)
                 {
-                    challengeFeedbackText.text = $"<color=#00ff88><b>🎉 BRILLIANT DISCOVERY!</b>\nMechanical Advantage: <b>{ma:F1}x</b>!\nYou successfully hoisted the load with only {Mathf.RoundToInt(currentEffortForceN)}N effort!\n\n<b>LEVER TASK COMPLETE!</b></color>";
+                    challengeFeedbackText.text = $"<color=#00ff88><b>🎉 BRILLIANT DISCOVERY ({tierLabel})!</b>\nMechanical Advantage: <b>{ma:F1}x</b>!\nYou successfully hoisted the {targetLoadN:F0}N load with only {Mathf.RoundToInt(currentEffortForceN)}N effort!\n\n<b>LEVER TASK COMPLETE!</b></color>";
                 }
                 if (celebrationParticles != null)
                 {
@@ -1145,28 +1205,37 @@ namespace SecretOfLostTemple.AR
                 {
                     if (liftStatusBannerText != null)
                     {
-                        liftStatusBannerText.text = "<color=#00ff88><b>🎉 100 N BOULDER LIFTED!</b></color>\n<size=18><b>LEVER TASK COMPLETE! Continue learning or return to research.</b></size>";
+                        liftStatusBannerText.text = $"<color=#00ff88><b>🎉 {targetLoadN:F0} N BOULDER LIFTED!</b></color>\n<size=18><b>LEVER TASK COMPLETE! Choose your next Story Path or take the AR Quiz!</b></size>";
                     }
                     ResearchData.Record("lever_lifted", "lever");
                 }
 
-                CognitiveTelemetryLogger.Instance?.LogInteraction("challenge_completed", null, $"{{\"attempts\":{challengeAttempts},\"ma\":{ma:F2}}}");
+                CognitiveTelemetryLogger.Instance?.LogInteraction("challenge_completed", null, $"{{\"attempts\":{challengeAttempts},\"ma\":{ma:F2},\"tier\":{tier}}}");
             }
             else
             {
                 PlaySound(clickClip);
+                SecretOfLostTemple.Adaptive.HintSystem.Instance?.RecordError();
                 if (challengeFeedbackText != null)
                 {
-                    if (ma < 2.0f)
+                    float neededMa = targetLoadN / maxEffortN;
+                    if (ma < neededMa)
                     {
-                        challengeFeedbackText.text = "<color=#ffcc00>⚠️ Try moving the <b>FULCRUM</b> closer to the Boulder (slide left) to make it easier!</color>";
+                        lastFailedConceptPart = "fulcrum";
+                        challengeFeedbackText.text = $"<color=#ffcc00>⚠️ For {tierLabel}, you need MA ≥ {neededMa:F1}x (currently {ma:F1}x). Move the <b>FULCRUM</b> closer to the Boulder (slide left)!</color>";
+                    }
+                    else if (currentEffortForceN > maxEffortN)
+                    {
+                        lastFailedConceptPart = "effort";
+                        challengeFeedbackText.text = $"<color=#ffcc00>⚠️ Your MA is {ma:F1}x, which is enough! Now reduce Effort Force to <b>{maxEffortN:F0} N or less</b>!</color>";
                     }
                     else
                     {
-                        challengeFeedbackText.text = $"<color=#ffcc00>⚠️ Mechanical Advantage is {ma:F1}x! Increase Force to at least {Mathf.CeilToInt(requiredForce)} N to lift it!</color>";
+                        lastFailedConceptPart = "effort";
+                        challengeFeedbackText.text = $"<color=#ffcc00>⚠️ Mechanical Advantage is {ma:F1}x! Increase Force to at least {Mathf.CeilToInt(requiredForce)} N (while keeping ≤ {maxEffortN:F0} N)!</color>";
                     }
                 }
-                CognitiveTelemetryLogger.Instance?.LogInteraction("challenge_failed_attempt", null, $"{{\"attempts\":{challengeAttempts},\"ma\":{ma:F2}}}");
+                CognitiveTelemetryLogger.Instance?.LogInteraction("challenge_failed_attempt", null, $"{{\"attempts\":{challengeAttempts},\"ma\":{ma:F2},\"tier\":{tier}}}");
             }
         }
 
@@ -1238,11 +1307,11 @@ namespace SecretOfLostTemple.AR
             },
             new InSituQuizQuestion {
                 category = "Class 1 Lever Anatomy",
-                question = "In this temple Class 1 Lever, which crucial component is positioned in the middle between Load and Effort?",
-                options = new string[] { "A) Fulcrum Pivot Point", "B) Heavy Stone Boulder", "C) Effort Handle", "D) Rope Pulley" },
+                question = "In this temple Class 1 Lever, which crucial component represents the Load being lifted by the beam?",
+                options = new string[] { "A) Heavy Stone Boulder (Load)", "B) Fulcrum Pivot Point", "C) Effort Handle", "D) Rope Pulley" },
                 correctIndex = 0,
-                explanation = "In a Class 1 Lever, the Fulcrum is always positioned between the Load and the Effort (Load — Fulcrum — Effort).",
-                targetPart = "fulcrum"
+                explanation = "In a Class 1 Lever, the heavy stone boulder is the Load resisting the lever's movement and being lifted.",
+                targetPart = "load"
             }
         };
 
@@ -1439,8 +1508,51 @@ namespace SecretOfLostTemple.AR
         }
         private void HighlightConcept(string part)
         {
-            Transform target = part == "load" ? boulderRoot : part == "fulcrum" ? fulcrumRoot : part == "effort" ? effortPoint : beamPivot;
+            Transform target = (part == "load" || part == "boulder") ? boulderRoot : part == "fulcrum" ? fulcrumRoot : part == "effort" ? effortPoint : beamPivot;
             if (target != null) StartCoroutine(HighlightRoutine(target));
+
+            if (part == "load" || part == "boulder")
+            {
+                if (loadVectorObject != null)
+                {
+                    loadVectorObject.gameObject.SetActive(true);
+                    StartCoroutine(HighlightVectorPulse(loadVectorObject));
+                }
+                if (loadAnnotationBadge != null) loadAnnotationBadge.SetActive(true);
+            }
+            else if (part == "fulcrum")
+            {
+                if (fulcrumVectorObject != null)
+                {
+                    fulcrumVectorObject.gameObject.SetActive(true);
+                    StartCoroutine(HighlightVectorPulse(fulcrumVectorObject));
+                }
+                if (fulcrumAnnotationBadge != null) fulcrumAnnotationBadge.SetActive(true);
+            }
+            else if (part == "effort")
+            {
+                if (effortVectorObject != null)
+                {
+                    effortVectorObject.gameObject.SetActive(true);
+                    StartCoroutine(HighlightVectorPulse(effortVectorObject));
+                }
+                if (effortAnnotationBadge != null) effortAnnotationBadge.SetActive(true);
+            }
+        }
+
+        private IEnumerator HighlightVectorPulse(Transform vectorTr)
+        {
+            if (vectorTr == null) yield break;
+            Vector3 originalScale = vectorTr.localScale;
+            float elapsed = 0f;
+            while (elapsed < 2f)
+            {
+                elapsed += Time.deltaTime;
+                float pulse = 1f + 0.25f * Mathf.Sin(elapsed * 12f);
+                vectorTr.localScale = originalScale * pulse;
+                yield return null;
+            }
+            vectorTr.localScale = originalScale;
         }
         private IEnumerator HighlightRoutine(Transform target)
         {
@@ -1526,13 +1638,19 @@ namespace SecretOfLostTemple.AR
         }
 
         // ==========================================
-        // ABEYWICKRAMA: ADAPTIVE TIER & SMART HINTS
+        // ABEYWICKRAMA: ADAPTIVE TIER, 3-TIER HINTS & STORY BRANCHING
         // ==========================================
+
+        private int currentHintTierStep = 0;
+        private GameObject storyChoiceWidget;
+        private Text storyNarrativeLabel;
+        private Button storyChoiceBtnA;
+        private Button storyChoiceBtnB;
 
         public void UpdateAdaptiveTierHUD()
         {
             var engine = SecretOfLostTemple.Adaptive.AdaptiveDifficultyEngine.Instance;
-            int tier = engine != null ? (int)engine.CurrentTier : 1;
+            int tier = engine != null ? (int)engine.CurrentTier : ResearchProgress.GetInt("AdaptiveDifficultyTier", 1);
 
             if (adaptiveTierBadgeText != null)
             {
@@ -1551,10 +1669,156 @@ namespace SecretOfLostTemple.AR
             }
         }
 
+        private void InitializeInteractiveStoryBranchUI()
+        {
+            bool showAdaptiveStory = !StudyPolicy.Measured || (ResearchData.Store.Current != null && ResearchData.Store.Current.adaptive);
+            if (!showAdaptiveStory) return;
+
+            var sb = SecretOfLostTemple.Adaptive.StoryBranchManager.Instance;
+            if (sb == null) return;
+            if (sb.GetCurrentNode() == null)
+            {
+                string savedNode = ResearchProgress.GetString("StoryNode", "node_2");
+                if (string.IsNullOrEmpty(savedNode)) savedNode = "node_2";
+                sb.LoadNode(savedNode);
+            }
+
+            if (storyChoiceWidget != null) return;
+            var uiRoot = transform.Find("LeverAR_UIRoot") ?? transform;
+            Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+
+            storyChoiceWidget = new GameObject("StoryBranchChoiceBar", typeof(RectTransform));
+            storyChoiceWidget.transform.SetParent(uiRoot, false);
+            var rt = (RectTransform)storyChoiceWidget.transform;
+            rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 1f);
+            rt.anchoredPosition = new Vector2(0f, -108f);
+            rt.sizeDelta = new Vector2(920f, 84f);
+
+            var bg = storyChoiceWidget.AddComponent<Image>();
+            bg.color = new Color(0.11f, 0.08f, 0.04f, 0.90f);
+
+            var textGo = new GameObject("StoryText", typeof(RectTransform));
+            textGo.transform.SetParent(storyChoiceWidget.transform, false);
+            var trt = (RectTransform)textGo.transform;
+            trt.anchorMin = trt.anchorMax = trt.pivot = new Vector2(0.5f, 1f);
+            trt.anchoredPosition = new Vector2(0f, -6f);
+            trt.sizeDelta = new Vector2(890f, 32f);
+            storyNarrativeLabel = textGo.AddComponent<Text>();
+            storyNarrativeLabel.font = font;
+            storyNarrativeLabel.fontSize = 16;
+            storyNarrativeLabel.alignment = TextAnchor.MiddleCenter;
+            storyNarrativeLabel.color = new Color(1f, 0.92f, 0.72f);
+
+            storyChoiceBtnA = CreateStoryChoiceButton("ChoiceA", storyChoiceWidget.transform, font, -220f, -56f, 410f, 34f, () => SelectStoryBranchChoice(0));
+            storyChoiceBtnB = CreateStoryChoiceButton("ChoiceB", storyChoiceWidget.transform, font, 220f, -56f, 410f, 34f, () => SelectStoryBranchChoice(1));
+
+            RefreshStoryBranchBar();
+        }
+
+        private Button CreateStoryChoiceButton(string name, Transform parent, Font font, float x, float y, float w, float h, UnityEngine.Events.UnityAction onClick)
+        {
+            var go = new GameObject(name, typeof(RectTransform));
+            go.transform.SetParent(parent, false);
+            var rt = (RectTransform)go.transform;
+            rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(0.5f, 1f);
+            rt.anchoredPosition = new Vector2(x, y);
+            rt.sizeDelta = new Vector2(w, h);
+            var img = go.AddComponent<Image>();
+            img.color = new Color(0.32f, 0.22f, 0.09f, 0.95f);
+            var btn = go.AddComponent<Button>();
+            btn.onClick.AddListener(onClick);
+
+            var txtGo = new GameObject("Text", typeof(RectTransform));
+            txtGo.transform.SetParent(go.transform, false);
+            var trt = (RectTransform)txtGo.transform;
+            trt.anchorMin = Vector2.zero;
+            trt.anchorMax = Vector2.one;
+            trt.offsetMin = trt.offsetMax = Vector2.zero;
+            var txt = txtGo.AddComponent<Text>();
+            txt.font = font;
+            txt.fontSize = 15;
+            txt.alignment = TextAnchor.MiddleCenter;
+            txt.color = new Color(1f, 0.95f, 0.80f);
+            return btn;
+        }
+
+        private void SelectStoryBranchChoice(int choiceIndex)
+        {
+            PlaySound(clickClip);
+            var sb = SecretOfLostTemple.Adaptive.StoryBranchManager.Instance;
+            if (sb == null) return;
+            var node = sb.GetCurrentNode();
+            if (node == null || node.choices == null || choiceIndex >= node.choices.Count) return;
+
+            string prevId = node.nodeId;
+            string nextId = node.choices[choiceIndex].nextNodeId;
+            sb.MakeChoice(choiceIndex);
+            ResearchData.Record("story_transition", $"{prevId}->{nextId};choice={choiceIndex};rule=lever-pilot-1");
+            SecretOfLostTemple.Adaptive.EngagementTracker.Instance?.RecordStoryDecision($"{prevId}:{choiceIndex}");
+            RefreshStoryBranchBar();
+        }
+
+        private void RefreshStoryBranchBar()
+        {
+            if (storyChoiceWidget == null) return;
+            var sb = SecretOfLostTemple.Adaptive.StoryBranchManager.Instance;
+            var node = sb != null ? sb.GetCurrentNode() : null;
+            if (node == null)
+            {
+                storyChoiceWidget.SetActive(false);
+                return;
+            }
+            storyChoiceWidget.SetActive(true);
+            if (storyNarrativeLabel != null)
+            {
+                storyNarrativeLabel.text = $"📖 <b>{node.characterSpeaker} ({node.title}):</b> {node.narrativeText}";
+            }
+            if (node.choices != null && node.choices.Count > 0)
+            {
+                if (storyChoiceBtnA != null)
+                {
+                    storyChoiceBtnA.gameObject.SetActive(true);
+                    storyChoiceBtnA.GetComponentInChildren<Text>().text = "▶ " + node.choices[0].choiceText;
+                }
+                if (storyChoiceBtnB != null)
+                {
+                    if (node.choices.Count > 1)
+                    {
+                        storyChoiceBtnB.gameObject.SetActive(true);
+                        storyChoiceBtnB.GetComponentInChildren<Text>().text = "▶ " + node.choices[1].choiceText;
+                    }
+                    else
+                    {
+                        storyChoiceBtnB.gameObject.SetActive(false);
+                    }
+                }
+            }
+            else
+            {
+                if (storyChoiceBtnA != null)
+                {
+                    storyChoiceBtnA.gameObject.SetActive(true);
+                    storyChoiceBtnA.GetComponentInChildren<Text>().text = "🔄 Explore Another Temple Story Branch";
+                    storyChoiceBtnA.onClick.RemoveAllListeners();
+                    storyChoiceBtnA.onClick.AddListener(() =>
+                    {
+                        sb.LoadNode("node_2");
+                        storyChoiceBtnA.onClick.RemoveAllListeners();
+                        storyChoiceBtnA.onClick.AddListener(() => SelectStoryBranchChoice(0));
+                        RefreshStoryBranchBar();
+                    });
+                }
+                if (storyChoiceBtnB != null) storyChoiceBtnB.gameObject.SetActive(false);
+            }
+        }
+
         public void TriggerSmartHint()
         {
             if (ResearchData.Store.PendingTest != null) return;
-            ResearchData.Record("hint_requested", "lever:" + lastFailedConceptPart);
+            currentHintTierStep = Mathf.Clamp(currentHintTierStep + 1, 1, 3);
+            ResearchData.Record("hint_requested", $"lever:{lastFailedConceptPart}:tier{currentHintTierStep}");
+            ResearchData.Record("hint", $"lever:{lastFailedConceptPart}:level{currentHintTierStep}");
+            SecretOfLostTemple.Adaptive.EngagementTracker.Instance?.RecordHintRequest();
             HighlightConcept(lastFailedConceptPart);
             PlaySound(clickClip);
             lastInteractionTimestamp = Time.time;
@@ -1577,28 +1841,61 @@ namespace SecretOfLostTemple.AR
             }
 
             string charName = activeCharacter == "Senuk" ? "SENUK" : "MAYA";
+            string tierBadge = currentHintTierStep == 1 ? "TIER 1/3 (Visual Nudge)" :
+                               currentHintTierStep == 2 ? "TIER 2/3 (Character Clue)" :
+                                                          "TIER 3/3 (Direct Formula Walkthrough)";
             var titleTxt = smartHintModalPanel.transform.Find("ModalCard/TitleText")?.GetComponent<Text>();
             if (titleTxt != null)
             {
-                titleTxt.text = $"💬 <b>{charName}'S HINT:</b>";
+                titleTxt.text = $"💬 <b>{charName}'S SMART HINT — {tierBadge}</b>";
             }
 
             if (smartHintBodyText != null)
             {
-                if (currentMode == InteractionMode.Interactive)
+                if (currentHintTierStep == 1)
                 {
                     smartHintBodyText.text =
-                        "\"To lift the heavy 100 N stone seal, slide the triangular <b>Fulcrum</b> closer to the stone (left)! " +
-                        "This lengthens your Effort Arm, multiplying Mechanical Advantage so your force easily lifts the weight!\"";
+                        $"<b>🔍 Tier 1 — Visual Nudge ({lastFailedConceptPart.ToUpper()}):</b>\n" +
+                        "Watch the glowing yellow highlight on the 3D lever mechanism! Notice how the distances from the triangular <b>Fulcrum</b> to the <b>Boulder</b> and the <b>Handle</b> compare.\n\n" +
+                        "<i>(Need a deeper clue? Tap the Hint button again for Tier 2!)</i>";
+                }
+                else if (currentHintTierStep == 2)
+                {
+                    if (lastFailedConceptPart == "load")
+                    {
+                        smartHintBodyText.text =
+                            "<b>💡 Tier 2 — Character Clue:</b>\n" +
+                            "\"Find the heavy stone boulder on the left side of the beam! That object is the <b>Load</b> resisting movement. Keep the fulcrum closer to the load to shorten the Load Arm!\"\n\n" +
+                            "<i>(Tap Hint once more for the exact Tier 3 Formula Walkthrough!)</i>";
+                    }
+                    else if (lastFailedConceptPart == "effort")
+                    {
+                        smartHintBodyText.text =
+                            "<b>💡 Tier 2 — Character Clue:</b>\n" +
+                            "\"The <b>Effort</b> is your downward push at the right handle. A longer Effort Arm multiplies your torque so you need much less muscle force!\"\n\n" +
+                            "<i>(Tap Hint once more for the exact Tier 3 Formula Walkthrough!)</i>";
+                    }
+                    else
+                    {
+                        smartHintBodyText.text =
+                            "<b>💡 Tier 2 — Character Clue:</b>\n" +
+                            "\"Slide the triangular <b>Fulcrum</b> toward the left stone boulder! Lengthening the Effort Arm increases Mechanical Advantage!\"\n\n" +
+                            "<i>(Tap Hint once more for the exact Tier 3 Formula Walkthrough!)</i>";
+                    }
                 }
                 else
                 {
+                    GetChallengeParametersForTier(out int tier, out float targetLoadN, out float maxEffortN, out string tierLabel);
+                    float neededMa = targetLoadN / maxEffortN;
                     smartHintBodyText.text =
-                        "\"Tap <b>'360° Forces & Motion'</b> to see glowing vector arrows showing effort, load, and reaction forces, or tap <b>'Exploded View'</b> to inspect each separate temple mechanism and formula!\"";
+                        $"<b>📐 Tier 3 — Direct Formula Walkthrough ({tierLabel}):</b>\n" +
+                        $"• <b>Formula:</b> Mechanical Advantage (MA) = Effort Arm ÷ Load Arm\n" +
+                        $"• <b>Required Effort:</b> Load ({targetLoadN:F0} N) ÷ MA ≤ {maxEffortN:F0} N  ⇒  Need <b>MA ≥ {neededMa:F1}x</b>\n" +
+                        $"• <b>Exact Step-by-Step Solution:</b> Slide the Fulcrum left to <b>-0.40 m</b> (giving MA = 2.6x–3.0x), then set Force to <b>{maxEffortN:F0} N</b>!";
                 }
             }
 
-            CognitiveTelemetryLogger.Instance?.LogInteraction("smart_hint_opened", null, $"{{\"character\":\"{activeCharacter}\"}}");
+            CognitiveTelemetryLogger.Instance?.LogInteraction("smart_hint_opened", null, $"{{\"character\":\"{activeCharacter}\",\"hintTier\":{currentHintTierStep}}}");
         }
 
         private IEnumerator AnimateSpeechBubble(Transform bubbleTr)
@@ -1632,7 +1929,9 @@ namespace SecretOfLostTemple.AR
         public void OnBackClicked()
         {
             PlaySound(clickClip);
-            SceneManager.LoadScene("HomeMapScene");
+            if (StudyPolicy.Measured) ResearchSetupUI.ReturnToPanel();
+            else if (SecretOfLostTemple.Story.StoryBookViewerController.StoryActivityActive) SecretOfLostTemple.Story.StoryBookViewerController.ReturnToStory(false);
+            else SceneManager.LoadScene("HomeMapScene");
         }
 
         private void PlaySound(AudioClip clip)

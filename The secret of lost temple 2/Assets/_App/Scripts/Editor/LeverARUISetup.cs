@@ -774,7 +774,8 @@ namespace SecretOfLostTemple.Editor
                 var effortLineTr = vectorsRootGo.transform.Find("Line_EffortForce");
                 GameObject effortLineGo = effortLineTr != null ? effortLineTr.gameObject : new GameObject("Line_EffortForce");
                 effortLineGo.transform.SetParent(vectorsRootGo.transform, false);
-                var lrEffort = effortLineGo.GetComponent<LineRenderer>() ?? effortLineGo.AddComponent<LineRenderer>();
+                var lrEffort = effortLineGo.GetComponent<LineRenderer>();
+                if (lrEffort == null) lrEffort = effortLineGo.AddComponent<LineRenderer>();
                 lrEffort.material = new Material(Shader.Find("Sprites/Default"));
                 typeof(LeverARScreenController).GetField("effortArrowLine", flags).SetValue(controller, lrEffort);
 
@@ -782,7 +783,8 @@ namespace SecretOfLostTemple.Editor
                 var loadLineTr = vectorsRootGo.transform.Find("Line_LoadWeight");
                 GameObject loadLineGo = loadLineTr != null ? loadLineTr.gameObject : new GameObject("Line_LoadWeight");
                 loadLineGo.transform.SetParent(vectorsRootGo.transform, false);
-                var lrLoad = loadLineGo.GetComponent<LineRenderer>() ?? loadLineGo.AddComponent<LineRenderer>();
+                var lrLoad = loadLineGo.GetComponent<LineRenderer>();
+                if (lrLoad == null) lrLoad = loadLineGo.AddComponent<LineRenderer>();
                 lrLoad.material = new Material(Shader.Find("Sprites/Default"));
                 typeof(LeverARScreenController).GetField("loadArrowLine", flags).SetValue(controller, lrLoad);
 
@@ -790,7 +792,8 @@ namespace SecretOfLostTemple.Editor
                 var fulcLineTr = vectorsRootGo.transform.Find("Line_FulcrumReaction");
                 GameObject fulcLineGo = fulcLineTr != null ? fulcLineTr.gameObject : new GameObject("Line_FulcrumReaction");
                 fulcLineGo.transform.SetParent(vectorsRootGo.transform, false);
-                var lrFulc = fulcLineGo.GetComponent<LineRenderer>() ?? fulcLineGo.AddComponent<LineRenderer>();
+                var lrFulc = fulcLineGo.GetComponent<LineRenderer>();
+                if (lrFulc == null) lrFulc = fulcLineGo.AddComponent<LineRenderer>();
                 lrFulc.material = new Material(Shader.Find("Sprites/Default"));
                 typeof(LeverARScreenController).GetField("fulcrumReactionArrowLine", flags).SetValue(controller, lrFulc);
             }
@@ -2511,3 +2514,4 @@ namespace SecretOfLostTemple.Editor
         }
     }
 }
+

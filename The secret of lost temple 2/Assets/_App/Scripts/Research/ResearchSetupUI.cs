@@ -9,6 +9,7 @@ using Data = SecretOfLostTemple.Research.Research;
 
 public class ResearchSetupUI : MonoBehaviour
 {
+    public static ResearchSetupUI Instance { get; private set; }
     GameObject overlay, card;
     Font font;
     Text message;
@@ -17,6 +18,7 @@ public class ResearchSetupUI : MonoBehaviour
     bool adaptive=true, embedded=true, confirmed, focused=true, answering;
     float questionSeconds;
     static bool openPanelOnMap;
+    static bool openPendingTestOnMap;
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     static void Install()
     {
@@ -25,11 +27,23 @@ public class ResearchSetupUI : MonoBehaviour
     }
     static void OnScene(Scene scene,LoadSceneMode mode)
     {
+#if ENABLE_INPUT_SYSTEM
+        // GameActivity must route touch through the new Input System, including uGUI.
+        var events = UnityEngine.EventSystems.EventSystem.current;
+        if (events != null) {
+            foreach (var legacy in events.GetComponents<UnityEngine.EventSystems.StandaloneInputModule>()) legacy.enabled=false;
+            var input = events.GetComponent<UnityEngine.InputSystem.UI.InputSystemUIInputModule>();
+            if (input == null) input=events.gameObject.AddComponent<UnityEngine.InputSystem.UI.InputSystemUIInputModule>();
+            input.enabled=true;
+        }
+#endif
         Data.Record("scene_enter",scene.name);
         if((scene.name=="HomeMapScene" || scene.name=="AuthScene" || scene.name=="MainARScene") && FindFirstObjectByType<ResearchSetupUI>()==null)
             new GameObject("ResearchSetupUI").AddComponent<ResearchSetupUI>();
         if(scene.name=="MainARScene")new GameObject("StudyRuntime").AddComponent<StudyRuntime>();
     }
+    void Awake() { Instance = this; }
+    void OnDestroy() { if (Instance == this) Instance = null; }
     void Start()
     {
         font=Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
@@ -38,18 +52,42 @@ public class ResearchSetupUI : MonoBehaviour
         scale.referenceResolution=new Vector2(1920,1080);scale.matchWidthOrHeight=1;
         gameObject.AddComponent<GraphicRaycaster>();
         string scene=SceneManager.GetActiveScene().name;
-        var launcher=MakeButton(scene=="AuthScene"?"Research (offline)":scene=="MainARScene"?"Return to research":"Researcher Panel",transform,0,0,380,65,
-            ()=>{if(scene=="HomeMapScene")ShowSession();else {openPanelOnMap=true;SceneManager.LoadScene("HomeMapScene");}});
+        bool storyActivity=scene=="MainARScene" && SecretOfLostTemple.Story.StoryBookViewerController.StoryActivityActive && !Data.Store.IsStudy;
+        var launcher=MakeButton(storyActivity?"Continue Story":scene=="AuthScene"?"Research (offline)":scene=="MainARScene"?"Return to research":"Researcher Panel",transform,0,0,380,65,
+            ()=>{if(storyActivity)SecretOfLostTemple.Story.StoryBookViewerController.ReturnToStory(true);else if(scene=="HomeMapScene")ShowSession();else ReturnToPanel();});
         var rect=(RectTransform)launcher.transform;rect.anchorMin=rect.anchorMax=rect.pivot=new Vector2(.5f,0);rect.anchoredPosition=new Vector2(0,18);
         overlay=Box("StudyOverlay",transform,0,0,0,0);rect=(RectTransform)overlay.transform;
         rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=rect.offsetMax=Vector2.zero;
         overlay.AddComponent<Image>().color=new Color(0,0,0,.92f);
         card=Box("StudyCard",overlay.transform,0,0,1460,950);card.AddComponent<Image>().color=new Color(.10f,.08f,.045f,1);
         overlay.SetActive(false);
-        if (scene == "HomeMapScene" && openPanelOnMap) { openPanelOnMap=false; ShowSession(); }
+        if (openPendingTestOnMap && Data.Store.PendingTest != null) { openPendingTestOnMap = false; openPanelOnMap = false; ShowQuestion(); }
+        else if (scene == "HomeMapScene" && openPanelOnMap) { openPanelOnMap=false; ShowSession(); }
         if (Data.DemoMode) MakeText(ResearchStore.DemoLabel,transform,0,490,1300,45,24);
     }
-    void Update(){if(answering&&focused&&Data.Store.PendingTest!=null)questionSeconds+=Time.unscaledDeltaTime;}
+    public static void ReturnToPanel()
+    {
+        Debug.Log("[ResearchNavigation] Returning to researcher panel.");
+        openPanelOnMap=true;
+        SceneManager.LoadScene("HomeMapScene");
+    }
+    void Update(){
+        if(answering&&focused&&Data.Store.PendingTest!=null)questionSeconds+=Time.unscaledDeltaTime;
+        bool back=false;
+#if ENABLE_INPUT_SYSTEM
+        back=UnityEngine.InputSystem.Keyboard.current?.escapeKey.wasPressedThisFrame==true;
+#endif
+#if ENABLE_LEGACY_INPUT_MANAGER
+        back=back || Input.GetKeyDown(KeyCode.Escape);
+#endif
+        if(back){
+            if(overlay!=null&&overlay.activeSelf){answering=false;overlay.SetActive(false);}
+            else if(SceneManager.GetActiveScene().name=="MainARScene"){
+                if(SecretOfLostTemple.Story.StoryBookViewerController.StoryActivityActive && !Data.Store.IsStudy) SecretOfLostTemple.Story.StoryBookViewerController.ReturnToStory(false);
+                else ReturnToPanel();
+            }
+        }
+    }
     void OnApplicationFocus(bool value){focused=value;if(answering)Data.Record(value?"formal_focus_return":"formal_focus_lost");}
     void OnApplicationPause(bool value){focused=!value;}
     void Page(string title)
@@ -108,7 +146,15 @@ public class ResearchSetupUI : MonoBehaviour
         Label("Identical settings: adaptation OFF, quizzes OFF; synthetic baseline ready.",0,170,1300,40,21);
         Button("Demo 2: Abeywickrama (Adaptive + Quizzes)",0,100,1280,()=>LoadDemo("abeywickrama",true));
         Button("Demo 3: Pathirana (Assessment flow)",0,5,1280,()=>LoadDemo("pathirana",false));
-        Button("Load [SYNTHETIC DEMO DATA] - 7-day retention",0,-90,1280,()=>LoadDemo("retention_example",false));
+        Button("Load [SYNTHETIC DEMO DATA] - 7-day retention",-330,-90,620,()=>LoadDemo("retention_example",false));
+        Button("Export [SYNTHETIC DEMO DATA]",330,-90,620,()=>Run(()=>{
+            Data.UsePresentationData(true);
+            Data.Store.LoadPresentationPreset("retention_example");
+            string folder = Data.Store.Export();
+            lastExport = folder + ".zip";
+            ZipFile.CreateFromDirectory(folder, lastExport);
+            message.text = "Exported [SYNTHETIC DEMO DATA]: " + lastExport;
+        }));
         Button("Restart current demo",-330,-185,620,()=>Run(()=>{
             if(!Data.DemoMode || Data.Store.Current==null)throw new InvalidOperationException("Select a demo first.");
             string preset=Data.Store.Current.demoPreset;Data.Store.LoadPresentationPreset(preset,true);ResetServices();ShowSession();
@@ -177,15 +223,102 @@ public class ResearchSetupUI : MonoBehaviour
         }));
         Button("Export all saved data (ZIP + CSV + JSON)",0,25,1260,()=>Run(()=>{
             string folder=Data.Store.Export();lastExport=folder+".zip";ZipFile.CreateFromDirectory(folder,lastExport);
-            message.text="Saved: "+lastExport+"\nCopy the ZIP off the device after each collection day. Cloud sync is not used.";
+            ResearchCloudSync.Instance?.SyncAllLocalSessionsToCloud();
+            message.text="Saved: "+lastExport+"\nIncludes RQ1/RQ2/RQ3 CSV tables and synced to Live Web Dashboard.";
         }));
         Button("Copy export path",-325,-85,610,()=>{GUIUtility.systemCopyBuffer=lastExport??"";message.text="Path copied.";});
         Button("Open export folder (desktop)",325,-85,610,()=>Run(()=>{
-            if(Application.platform==RuntimePlatform.Android)throw new InvalidOperationException("Use USB file transfer or ADB. See the handover guide.");
+            if(Application.platform==RuntimePlatform.Android)throw new InvalidOperationException("Use USB file transfer or ADB, or view live on the Web Dashboard.");
             if(string.IsNullOrEmpty(lastExport))throw new InvalidOperationException("Export first.");
             Application.OpenURL(new Uri(Path.GetDirectoryName(lastExport)).AbsoluteUri);
         }));
-        Label("Exports include sessions, protocols, tests, answers, attempts, raw events and full JSON.\nIncomplete tests stay incomplete; corrections are never erased.",0,-185,1300,130,25);
+        Label("Exports include sessions, RQ1/RQ2/RQ3 component CSVs, tests, answers, attempts, raw events & JSON.\nConnected phones also stream live telemetry & accept remote control from WebDashboard/index.html.",0,-185,1300,130,25);
+    }
+
+    // Remote Control Hooks invoked by ResearchCloudSync (from WebDashboard/index.html)
+    public void ExecuteRemoteBeginStudy(string part, string prot, string cond, bool adapt, bool embed, bool autoStartPretest)
+    {
+        Data.UsePresentationData(false);
+        participant = part; protocolName = prot; condition = cond; adaptive = adapt; embedded = embed;
+        Data.Store.BeginStudy(part, prot, cond, adapt, embed);
+        ResetServices();
+        if (autoStartPretest)
+        {
+            ExecuteRemoteStartTest("pretest");
+        }
+        else if (overlay != null && overlay.activeSelf)
+        {
+            ShowSession();
+        }
+    }
+    public void ExecuteRemoteResume(string part)
+    {
+        Data.UsePresentationData(false);
+        participant = part;
+        Data.Store.Begin(part, true);
+        ResetServices();
+        if (Data.Store.PendingTest != null) ShowQuestion();
+        else if (overlay != null && overlay.activeSelf) ShowSession();
+    }
+    public void ExecuteRemoteFollowUp(string part)
+    {
+        Data.UsePresentationData(false);
+        participant = part;
+        Data.Store.OpenFollowUp(part);
+        ResetServices();
+        if (overlay != null && overlay.activeSelf) ShowSession();
+    }
+    public void ExecuteRemoteStartTest(string stage)
+    {
+        Data.Store.StartTest(stage);
+        if (SceneManager.GetActiveScene().name == "MainARScene")
+        {
+            openPendingTestOnMap = true;
+            SceneManager.LoadScene("HomeMapScene");
+        }
+        else
+        {
+            ShowQuestion();
+        }
+    }
+    public void ExecuteRemoteStartLearning()
+    {
+        Data.Store.StartLearning();
+        OpenLever(false);
+    }
+    public void ExecuteRemoteCompleteLearning(bool autoStartPosttest)
+    {
+        Data.Store.CompleteLearning();
+        if (autoStartPosttest)
+        {
+            ExecuteRemoteStartTest("posttest");
+        }
+        else if (SceneManager.GetActiveScene().name == "MainARScene")
+        {
+            ReturnToPanel();
+        }
+        else if (overlay != null && overlay.activeSelf)
+        {
+            ShowAssessments();
+        }
+    }
+    public void ExecuteRemoteOpenReview()
+    {
+        if (Data.Store.Current == null || ResearchStore.LatestTest(Data.Store.Current, "posttest") == null || Data.Store.PendingTest != null)
+            throw new InvalidOperationException("Complete the post-test before review.");
+        OpenLever(true);
+    }
+    public void ExecuteRemoteLoadDemo(string preset, bool jump)
+    {
+        LoadDemo(preset, jump);
+    }
+    public void ExecuteRemoteCloseOverlay()
+    {
+        if (overlay != null) { answering = false; overlay.SetActive(false); }
+    }
+    public void RefreshOverlayIfOpen()
+    {
+        if (overlay != null && overlay.activeSelf && !answering) ShowSession();
     }
     GameObject Box(string name,Transform parent,float x,float y,float w,float h)
     {

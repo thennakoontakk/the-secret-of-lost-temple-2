@@ -24,7 +24,7 @@ namespace SecretOfLostTemple.AR
 
         [Header("Physics Constants")]
         [SerializeField] private float beamLength = 2.4f; // Total beam length in meters
-        [SerializeField] private float boulderMassKg = 100f; // 100kg boulder = ~1000N
+        [SerializeField] private float boulderMassKg = 100f / 9.81f; // 100 N teaching load
         [SerializeField] private float gravity = 9.81f;
 
         [Header("Interactive State")]
@@ -71,6 +71,7 @@ namespace SecretOfLostTemple.AR
         {
             if (loadForceLine != null)
             {
+                loadForceLine.useWorldSpace = true;
                 loadForceLine.positionCount = 2;
                 loadForceLine.startWidth = 0.035f;
                 loadForceLine.endWidth = 0.035f;
@@ -81,6 +82,7 @@ namespace SecretOfLostTemple.AR
 
             if (effortForceLine != null)
             {
+                effortForceLine.useWorldSpace = true;
                 effortForceLine.positionCount = 2;
                 effortForceLine.startWidth = 0.035f;
                 effortForceLine.endWidth = 0.035f;
@@ -121,7 +123,7 @@ namespace SecretOfLostTemple.AR
         public void UpdatePhysicsLayout()
         {
             float halfBeam = beamLength * 0.5f;
-            float fulcrumOffsetFromCenter = halfBeam - LoadArmLength;
+            float fulcrumOffsetFromCenter = LoadArmLength - halfBeam;
 
             // Move Fulcrum to the pivot position
             if (fulcrumRoot != null)
@@ -132,19 +134,19 @@ namespace SecretOfLostTemple.AR
             // Beam is mounted on top of fulcrum
             if (beamRoot != null)
             {
-                beamRoot.localPosition = new Vector3(0f, 0.35f, 0f);
+                beamRoot.localPosition = new Vector3(fulcrumOffsetFromCenter, 0.35f, 0f) - beamRoot.localRotation * new Vector3(fulcrumOffsetFromCenter, 0f, 0f);
             }
 
             // Boulder is on the left end (Load side)
             if (boulderRoot != null)
             {
-                boulderRoot.localPosition = new Vector3(-halfBeam + 0.15f, 0.25f, 0f);
+                boulderRoot.localPosition = new Vector3(-halfBeam, 0.25f, 0f);
             }
 
             // Effort handle is on the right end (Effort side)
             if (effortHandle != null)
             {
-                effortHandle.localPosition = new Vector3(halfBeam - 0.15f, 0.1f, 0f);
+                effortHandle.localPosition = new Vector3(halfBeam, 0.1f, 0f);
             }
         }
 
@@ -157,13 +159,13 @@ namespace SecretOfLostTemple.AR
             if (appliedEffortForce < 1f)
             {
                 // No effort applied: boulder pulls its side down to ground
-                targetAngle = -maxTiltAngle;
+                targetAngle = maxTiltAngle;
             }
             else if (IsBoulderLifted)
             {
                 // Enough effort applied: effort side goes down, boulder lifts UP!
                 float excessRatio = Mathf.Clamp01((appliedEffortForce - RequiredEffortForce) / (RequiredEffortForce * 0.5f + 1f));
-                targetAngle = Mathf.Lerp(0f, maxTiltAngle, excessRatio);
+                targetAngle = Mathf.Lerp(0f, -maxTiltAngle, excessRatio);
 
                 if (!hasTriggeredSuccess && excessRatio > 0.4f)
                 {
@@ -180,12 +182,13 @@ namespace SecretOfLostTemple.AR
             {
                 // Inadequate effort: beam tilts towards boulder
                 float effortRatio = appliedEffortForce / (RequiredEffortForce + 0.001f);
-                targetAngle = Mathf.Lerp(-maxTiltAngle, 0f, effortRatio);
+                targetAngle = Mathf.Lerp(maxTiltAngle, 0f, effortRatio);
                 hasTriggeredSuccess = false;
             }
 
             currentBeamAngle = Mathf.Lerp(currentBeamAngle, targetAngle, Time.deltaTime * tiltSmoothSpeed);
             beamRoot.localRotation = Quaternion.Euler(0f, 0f, currentBeamAngle);
+            UpdatePhysicsLayout();
         }
 
         private void UpdateForceVectors()

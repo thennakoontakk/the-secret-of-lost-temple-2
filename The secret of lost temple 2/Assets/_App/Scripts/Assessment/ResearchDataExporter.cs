@@ -22,8 +22,8 @@ namespace SecretOfLostTemple.Assessment
         public void ExportToCSV(List<UnifiedResearchRecord> records, string fileName) { ResearchData.Store.Export(); }
         public void ExportToFirestore(UnifiedResearchRecord record) { Debug.Log("Research records are local. Cloud sync pending backend implementation."); }
         public string GenerateSessionSummary(string userId) => ResearchData.Summary();
-        public string GetResearchMetricsForRQ1() => "Attention and reasoning: not measured";
-        public string GetResearchMetricsForRQ2() => "Engagement and motivation: not measured";
-        public string GetResearchMetricsForRQ3() => ResearchData.FormalStatus;
+        public string GetResearchMetricsForRQ1() => ResearchData.RQ1Status;
+        public string GetResearchMetricsForRQ2() => ResearchData.RQ2Status;
+        public string GetResearchMetricsForRQ3() => ResearchData.RQ3Status;
     }
 }

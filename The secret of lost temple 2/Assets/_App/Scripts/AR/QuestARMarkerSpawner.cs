@@ -41,6 +41,9 @@ namespace SecretOfLostTemple.AR
         private GameObject spawnedLeverInstance;
         private Transform leverAnchor;
         private bool wasTracking;
+        private bool simulated;
+        private bool physicalMarkerSeen;
+        private Coroutine scanTimeout;
         private ARTrackedImage activeTrackedImage;
         private bool isQuestMode = false;
         private bool isMarkerDetected = false;
@@ -64,6 +67,13 @@ namespace SecretOfLostTemple.AR
 
             FindSceneReferences();
             PrepareQuestModeScene();
+            if (trackedImageManager != null)
+            {
+                if (trackedImageManager.referenceLibrary == null && referenceLibrary != null)
+                    trackedImageManager.referenceLibrary = referenceLibrary;
+                trackedImageManager.enabled = true;
+                Debug.Log("[QuestARMarkerSpawner] Image tracking enabled for printed lever target.");
+            }
         }
 
         private void FindSceneReferences()
@@ -111,7 +121,7 @@ namespace SecretOfLostTemple.AR
 
             if (scanStatusText != null)
             {
-                scanStatusText.text = "<b>🔍 POINT CAMERA AT STORY BOOK MARKER</b>\n<size=18>Scan Page 9 from 20cm - 30cm to awaken the Ancient Lever!</size>";
+                scanStatusText.text = "<b>POINT CAMERA AT THE PRINTED LEVER PAGE</b>\n<size=18>Keep the whole SCAN ME illustration visible. Move slowly sideways to start tracking.</size>";
             }
 
             // Top-down desk lighting for AR
@@ -129,6 +139,7 @@ namespace SecretOfLostTemple.AR
 
         private void OnEnable()
         {
+            if (isQuestMode) scanTimeout = StartCoroutine(AutoSimulate());
             if (trackedImageManager != null)
             {
                 trackedImageManager.trackablesChanged.AddListener(OnTrackablesChanged);
@@ -137,10 +148,53 @@ namespace SecretOfLostTemple.AR
 
         private void OnDisable()
         {
+            if (scanTimeout != null) StopCoroutine(scanTimeout);
+            StudyPolicy.Tracking = false;
+            StudyPolicy.SimulatedTracking = false;
             if (trackedImageManager != null)
             {
                 trackedImageManager.trackablesChanged.RemoveListener(OnTrackablesChanged);
             }
+        }
+
+        private IEnumerator AutoSimulate()
+        {
+            yield return new WaitForSecondsRealtime(4f);
+            if (!isMarkerDetected) SimulateMarkerScan();
+        }
+
+        private void OnGUI()
+        {
+            if (isQuestMode && !isMarkerDetected && GUI.Button(new Rect(Screen.width - 170, 8, 160, 44), "Simulate Marker"))
+                SimulateMarkerScan();
+        }
+
+        public void SimulateMarkerScan()
+        {
+            if (!isQuestMode || isMarkerDetected || questLeverPrefab == null || Camera.main == null) return;
+            var camera = Camera.main.transform;
+            leverAnchor = new GameObject("SimulatedLeverAnchor").transform;
+            leverAnchor.position = camera.position + camera.forward * .85f - Vector3.up * .12f;
+            leverAnchor.rotation = Quaternion.Euler(0, camera.eulerAngles.y, 0);
+            leverAnchor.localScale = Vector3.one * .20f;
+            spawnedLeverInstance = Instantiate(questLeverPrefab, leverAnchor, false);
+            spawnedLeverInstance.transform.localPosition = Vector3.zero;
+            spawnedLeverInstance.transform.localRotation = Quaternion.identity;
+            spawnedLeverInstance.transform.localScale = Vector3.one;
+            var viewer = spawnedLeverInstance.GetComponent<ARMechanismViewer>() ?? spawnedLeverInstance.AddComponent<ARMechanismViewer>();
+            viewer.Rebase();
+            viewer.SetInteractionMode(StudyPolicy.Resolve(InteractionMode.ViewOnly));
+            ConnectToScreenController(spawnedLeverInstance);
+            simulated = true;
+            Debug.Log("[QuestARMarkerSpawner] SIMULATED marker: developer bypass, no physical scan.");
+            SecretOfLostTemple.Research.Research.Record("marker_simulated", "lever;developer_bypass");
+            OnMarkerRecognized("Lever");
+            SetTracking(true);
+        }
+
+        private void OnDestroy()
+        {
+            if (leverAnchor != null) Destroy(leverAnchor.gameObject);
         }
 
         private void OnTrackablesChanged(ARTrackablesChangedEventArgs<ARTrackedImage> eventArgs)
@@ -166,11 +220,18 @@ namespace SecretOfLostTemple.AR
         private void HandleTrackedImage(ARTrackedImage trackedImage)
         {
 
-            if (trackedImage == null || trackedImage.referenceImage.name != "lever_target") return;
+            if (trackedImage == null || !trackedImage.referenceImage.name.StartsWith("lever_target", StringComparison.OrdinalIgnoreCase)) return;
             if (activeTrackedImage != null && activeTrackedImage != trackedImage && activeTrackedImage.trackingState == TrackingState.Tracking) return;
             activeTrackedImage = trackedImage;
             bool tracking = trackedImage.trackingState == TrackingState.Tracking;
-            if (tracking) { SpawnAndAnchorLever(trackedImage, true); OnMarkerRecognized("Lever"); }
+            if (tracking) {
+                if (!physicalMarkerSeen || simulated)
+                    SecretOfLostTemple.Research.Research.Record("marker_physical_acquired", trackedImage.referenceImage.name);
+                physicalMarkerSeen = true;
+                simulated = false;
+                SpawnAndAnchorLever(trackedImage, true);
+                OnMarkerRecognized("Lever");
+            }
             SetTracking(tracking);
         }
 
@@ -196,7 +257,12 @@ namespace SecretOfLostTemple.AR
                 viewer.Rebase();
                 viewer.SetInteractionMode(StudyPolicy.Resolve(InteractionMode.ViewOnly));
                 ConnectToScreenController(spawnedLeverInstance);
-            } else if (leverAnchor.parent != trackedImage.transform) leverAnchor.SetParent(trackedImage.transform, false);
+            } else if (leverAnchor.parent != trackedImage.transform) {
+                leverAnchor.SetParent(trackedImage.transform, false);
+                leverAnchor.localPosition = new Vector3(0, surfaceElevationOffset, 0);
+                leverAnchor.localRotation = Quaternion.identity;
+                leverAnchor.localScale = Vector3.one * physicalScale;
+            }
             spawnedLeverInstance.SetActive(shouldBeActive);
         }
 
@@ -204,17 +270,18 @@ namespace SecretOfLostTemple.AR
         {
 
             if (!isQuestMode) return;
-            SetTracking(activeTrackedImage != null && activeTrackedImage.trackingState == TrackingState.Tracking);
+            SetTracking(simulated || (activeTrackedImage != null && activeTrackedImage.trackingState == TrackingState.Tracking));
         }
 
 
         private void SetTracking(bool tracking)
         {
+            StudyPolicy.SimulatedTracking = simulated && tracking;
             StudyPolicy.Tracking = tracking && spawnedLeverInstance != null;
             if (spawnedLeverInstance != null) spawnedLeverInstance.SetActive(tracking);
             if (scanningMarkerOverlay != null) scanningMarkerOverlay.SetActive(!tracking);
             if (leverARUIRoot != null) leverARUIRoot.SetActive(tracking);
-            if (wasTracking != tracking) SecretOfLostTemple.Research.Research.Record(tracking ? "tracking_acquired" : "tracking_lost", "lever_target");
+            if (wasTracking != tracking) SecretOfLostTemple.Research.Research.Record(tracking ? "tracking_acquired" : "tracking_lost", simulated ? "simulated_lever" : "lever_target");
             wasTracking = tracking;
         }
 

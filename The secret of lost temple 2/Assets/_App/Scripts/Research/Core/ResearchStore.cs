@@ -166,6 +166,7 @@ namespace SecretOfLostTemple.Research
             File.WriteAllText(Path.Combine(folder, "events.csv"), events.ToString(), Encoding.UTF8);
             File.WriteAllText(Path.Combine(folder, "records.json"), JsonUtility.ToJson(data, true), Encoding.UTF8);
             ExportStudyTables(folder);
+            ExportResearcherComponentTables(folder);
             File.WriteAllText(Path.Combine(folder, "DATASET_LABEL.txt"), IsPresentationStore
                 ? "[SYNTHETIC DEMO DATA] Presentation examples only. Exclude all records in this export from participant research."
                 : "Participant research dataset. Presentation presets are stored and exported separately.");
@@ -192,15 +193,18 @@ namespace SecretOfLostTemple.Research
         {
             try {
                 var s = Store.Current ?? Store.Latest;
-                if (s == null) return "Practice mode — no research session selected.\nOpen Research setup on the map to start or resume.";
+                if (s == null) return "Practice mode — no research session selected.\nOpen Researcher Panel on the map to start or resume.";
                 var answers = s.events.Where(e => e.hasAnswer && e.kind != "formal_answer").ToList();
                 return "Participant: " + s.participant + "\nSession: " + s.id + "\n" + (Store.Current == null ? "Ended" : "Recording locally") +
-                    " | Local storage\nCondition: " + s.condition + " | Stage: " + Store.Stage + "\nSaved events: " + s.events.Count + "\nFormative attempts: " + answers.Count +
+                    " | Local + Cloud Sync\nCondition: " + s.condition + " | Stage: " + Store.Stage + "\nSaved events: " + s.events.Count + "\nFormative attempts: " + answers.Count +
                     (answers.Count == 0 ? "\nAccuracy: not collected" : "\nFormative accuracy: " + (100f * answers.Count(e => e.correct) / answers.Count).ToString("F1") + "%") +
                     "\n" + (Error ?? Store.RecoveryNotice ?? "");
             } catch (Exception e) { return "Recording unavailable: " + e.Message; }
         }
         public static string FormalStatus => Store.FormalSummary();
+        public static string RQ1Status => Store.FormatRQ1Summary();
+        public static string RQ2Status => Store.FormatRQ2Summary();
+        public static string RQ3Status => Store.FormatRQ3Summary();
     }
     // Existing unscoped PlayerPrefs remain untouched. Practice uses a separate namespace.
     public static class ResearchProgress

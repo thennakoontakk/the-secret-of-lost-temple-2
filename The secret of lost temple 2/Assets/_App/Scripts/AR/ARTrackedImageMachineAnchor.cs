@@ -103,6 +103,13 @@ namespace SecretOfLostTemple.AR
         {
             // SetupForMode already called in Awake, but refresh in case anything changed
             SetupForMode();
+            StartCoroutine(AutoSimulate());
+        }
+
+        private IEnumerator AutoSimulate()
+        {
+            yield return new WaitForSecondsRealtime(4f);
+            if (isQuestMode && !isMarkerDetected) SimulateMarkerScan();
         }
 
         private void Update()
@@ -226,13 +233,15 @@ namespace SecretOfLostTemple.AR
 
         private void HandleTrackedImage(ARTrackedImage trackedImage)
         {
-            if (trackedImage == null) return;
+            if (trackedImage == null || trackedImage.trackingState != TrackingState.Tracking) return;
+            var quest = FindFirstObjectByType<QuestARMarkerSpawner>();
+            if (quest != null && quest.isActiveAndEnabled) return;
             string imgName = trackedImage.referenceImage.name.ToLower();
 
             Debug.Log("[ARTrackedImage] Detected image: '" + imgName + "' state=" + trackedImage.trackingState);
 
             // Match marker to machine
-            if (imgName.Contains("lever") || activeMachine == "Lever")
+            if (imgName.Contains("lever") && activeMachine == "Lever")
             {
                 PositionMachineOnMarker(leverMachineRoot, trackedImage);
                 OnMarkerRecognized("Lever");
@@ -336,6 +345,11 @@ namespace SecretOfLostTemple.AR
 
         public void SimulateMarkerScan()
         {
+            var quest = FindFirstObjectByType<QuestARMarkerSpawner>();
+            if (quest != null && quest.isActiveAndEnabled) { quest.SimulateMarkerScan(); return; }
+            if (isMarkerDetected || Camera.main == null) return;
+            Debug.Log("[ARTrackedImage] SIMULATED marker: developer bypass.");
+            SecretOfLostTemple.Research.Research.Record("marker_simulated", "legacy_lever;developer_bypass");
             // For Editor testing or testing without camera marker
             Transform camTr = Camera.main != null ? Camera.main.transform : transform;
             Vector3 spawnPos = camTr.position + camTr.forward * 0.85f + Vector3.down * 0.12f;

@@ -6,12 +6,12 @@ using Data = SecretOfLostTemple.Research.Research;
 
 public static class StudyPolicy
 {
-    public static bool Review, Tracking;
+    public static bool Review, Tracking, SimulatedTracking;
     public static bool Measured => Data.Store.IsStudy;
     public static bool Passive => Measured && Data.Store.Current.condition=="passive";
     public static bool InputAllowed => Data.Store.CanManipulate && (!Measured||Tracking);
     public static InteractionMode Resolve(InteractionMode requested) => Measured ? (Passive?InteractionMode.ViewOnly:InteractionMode.Interactive) : requested;
-    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)] static void Reset(){Review=false;Tracking=false;}
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)] static void Reset(){Review=false;Tracking=false;SimulatedTracking=false;}
 }
 public class StudyRuntime : MonoBehaviour
 {
@@ -28,7 +28,7 @@ public class StudyRuntime : MonoBehaviour
     }
     void Update()
     {
-        if(!StudyPolicy.Measured||!foreground||!StudyPolicy.Tracking)return;
+        if(!StudyPolicy.Measured||!foreground||!StudyPolicy.Tracking||StudyPolicy.SimulatedTracking)return;
         seconds+=Time.unscaledDeltaTime;if(seconds>=10)Flush();
     }
     void Flush()

@@ -104,8 +104,9 @@ namespace SecretOfLostTemple.Home
         {
             InitializePlayerProfile();
             SetupButtonListeners();
+            SetupButtonLabels();
             foreach (var button in new[] { selectPulleyQuestButton, selectInclineQuestButton, selectPulleySandboxButton, selectInclineSandboxButton })
-                if (button != null) button.gameObject.SetActive(false);
+                ConfigureLockedChapter(button);
             StartCoroutine(PulseQuestButton());
 
             if (profileModalPanel != null)
@@ -118,10 +119,9 @@ namespace SecretOfLostTemple.Home
                 sandboxModalPanel.SetActive(false);
             }
 
-            if (PlayerPrefs.GetString("LostTemple_App_Mode", "Sandbox") == "Quest")
-            {
-                OpenQuestModal();
-            }
+            // Returning to the map must stay here. The saved mode describes the
+            // previous visit, not a request to launch another quest automatically.
+            if (storyBookViewer != null) storyBookViewer.ResumeAfterActivity();
         }
 
         private void InitializePlayerProfile()
@@ -171,7 +171,87 @@ namespace SecretOfLostTemple.Home
 
             if (rankTierText != null) rankTierText.text = actualRankTier;
 
-            SetStatus("Tap Quest, Sandbox, or 3D Physics Lab to explore!");
+            SetStatus("Tap Read Story & Scan, Free Practice, or Physics Lab to explore!");
+        }
+
+        private void SetupButtonLabels()
+        {
+            ApplyButtonLabel(questButton, "READ STORY & SCAN");
+            ApplyButtonLabel(sandboxButton, "FREE PRACTICE");
+            ApplyButtonLabel(physics3DButton, "PHYSICS LAB");
+            ApplyButtonLabel(researchDashboardButton, "RESEARCHER PANEL");
+        }
+
+        private void ApplyButtonLabel(Button button, string label)
+        {
+            if (button == null) return;
+            // Graphic-only buttons already contain their carved titles.
+            var text = button.GetComponentInChildren<Text>(true);
+            if (text == null) return;
+            text.text = label;
+            text.color = new Color(1f, .94f, .65f);
+            text.fontStyle = FontStyle.Bold;
+            text.alignment = TextAnchor.MiddleCenter;
+            text.raycastTarget = false;
+        }
+
+        private void ShowLockedChapter()
+        {
+            SetStatus("Complete Chapter 1: The Sacred Lever to unlock this temple chamber!");
+        }
+
+        private void ConfigureLockedChapter(Button button)
+        {
+            if (button == null) return;
+            button.gameObject.SetActive(true);
+            button.interactable = false;
+            var overlay = button.transform.Find("FutureChapterLock");
+            if (overlay != null) return;
+            var go = new GameObject("FutureChapterLock", typeof(RectTransform), typeof(Image), typeof(Button));
+            go.transform.SetParent(button.transform, false);
+            var rect = (RectTransform)go.transform;
+            rect.anchorMin = Vector2.zero; rect.anchorMax = Vector2.one;
+            rect.offsetMin = rect.offsetMax = Vector2.zero;
+            go.GetComponent<Image>().color = new Color(0, 0, 0, .25f);
+            go.GetComponent<Button>().onClick.AddListener(ShowLockedChapter);
+            // Draw a small padlock without depending on emoji support in the font.
+            AddLockPart(go.transform, new Vector2(0, -20), new Vector2(22, 16));
+            AddLockPart(go.transform, new Vector2(-7, -9), new Vector2(4, 12));
+            AddLockPart(go.transform, new Vector2(7, -9), new Vector2(4, 12));
+            AddLockPart(go.transform, new Vector2(0, -3), new Vector2(18, 4));
+            var label = new GameObject("LockLabel", typeof(RectTransform), typeof(Text));
+            label.transform.SetParent(go.transform, false);
+            var lr = (RectTransform)label.transform;
+            lr.anchorMin = new Vector2(0, 0); lr.anchorMax = new Vector2(1, .3f);
+            lr.offsetMin = lr.offsetMax = Vector2.zero;
+            var text = label.GetComponent<Text>();
+            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            text.text = "LOCKED - FUTURE CHAPTER"; text.fontSize = 16;
+            text.alignment = TextAnchor.MiddleCenter; text.color = new Color(1, .9f, .6f);
+            text.raycastTarget = false;
+        }
+
+        private static void AddLockPart(Transform parent, Vector2 position, Vector2 size)
+        {
+            var part = new GameObject("Padlock", typeof(RectTransform), typeof(Image));
+            part.transform.SetParent(parent, false);
+            var rect = (RectTransform)part.transform;
+            rect.anchorMin = rect.anchorMax = new Vector2(.9f, .9f);
+            rect.anchoredPosition = position; rect.sizeDelta = size;
+            var image = part.GetComponent<Image>();
+            image.color = new Color(.9f, .75f, .4f); image.raycastTarget = false;
+        }
+
+        private void RefreshChapterCards()
+        {
+            foreach (var button in new[] { selectPulleyQuestButton, selectInclineQuestButton, selectPulleySandboxButton, selectInclineSandboxButton })
+                ConfigureLockedChapter(button);
+            foreach (var button in new[] { selectLeverQuestButton, selectLeverSandboxButton })
+                if (button != null) { button.gameObject.SetActive(true); button.interactable = true; }
+            foreach (var overlay in new[] { pulleyLockOverlay, inclineLockOverlay })
+                if (overlay != null) foreach (var graphic in overlay.GetComponentsInChildren<Graphic>(true)) graphic.raycastTarget = false;
+            if (pulleyLockOverlay != null) pulleyLockOverlay.SetActive(true);
+            if (inclineLockOverlay != null) inclineLockOverlay.SetActive(true);
         }
 
         private void SetupButtonListeners()
@@ -316,13 +396,7 @@ namespace SecretOfLostTemple.Home
         public void OpenQuestModal()
         {
             PlaySound(buttonClickClip);
-            int unlockedLevel = ResearchProgress.GetInt("LostTemple_Quest_Unlocked_Level", 1);
-
-            if (pulleyLockOverlay != null) pulleyLockOverlay.SetActive(unlockedLevel < 2);
-            if (inclineLockOverlay != null) inclineLockOverlay.SetActive(unlockedLevel < 3);
-
-            if (selectPulleyQuestButton != null) selectPulleyQuestButton.interactable = (unlockedLevel >= 2);
-            if (selectInclineQuestButton != null) selectInclineQuestButton.interactable = (unlockedLevel >= 3);
+            RefreshChapterCards();
 
             if (questModalPanel != null)
             {
@@ -331,7 +405,7 @@ namespace SecretOfLostTemple.Home
             }
             else
             {
-                EnterLevel1AR();
+                OnQuestMachineSelected("Lever");
             }
         }
 
@@ -346,8 +420,8 @@ namespace SecretOfLostTemple.Home
 
         public void OnQuestMachineSelected(string machineName)
         {
-            if (machineName != "Lever") return;
-            if (ResearchData.Store.IsStudy) { SetStatus("Use Research setup to start learning or review."); return; }
+            if (machineName != "Lever") { ShowLockedChapter(); return; }
+            if (ResearchData.Store.IsStudy) { SetStatus("Use Researcher Panel to start learning or review."); return; }
             PlaySound(buttonClickClip);
             CloseQuestModal();
 
@@ -366,7 +440,7 @@ namespace SecretOfLostTemple.Home
 
         public void OnSandboxClicked()
         {
-            if (ResearchData.Store.IsStudy) { SetStatus("Use Research setup to start learning or review."); return; }
+            if (ResearchData.Store.IsStudy) { SetStatus("Use Researcher Panel to start learning or review."); return; }
             PlaySound(buttonClickClip);
             if (sandboxModalPanel != null)
             {
@@ -374,13 +448,13 @@ namespace SecretOfLostTemple.Home
             }
             else
             {
-                SetStatus("Entering AR Sandbox Mode (Free Spatial Lab)...");
-                StartCoroutine(LoadSceneRoutine("MainARScene"));
+                SelectSandboxMachine("Lever");
             }
         }
 
         public void OpenSandboxModal()
         {
+            RefreshChapterCards();
             PlaySound(buttonClickClip);
             if (sandboxModalPanel != null)
             {
@@ -399,26 +473,26 @@ namespace SecretOfLostTemple.Home
 
         public void SelectSandboxMachine(string machineName)
         {
-            if (machineName != "Lever") return;
-            if (ResearchData.Store.IsStudy) { SetStatus("Use Research setup to start learning or review."); return; }
+            if (machineName != "Lever") { ShowLockedChapter(); return; }
+            if (ResearchData.Store.IsStudy) { SetStatus("Use Researcher Panel to start learning or review."); return; }
             PlaySound(buttonClickClip);
             PlayerPrefs.SetString("LostTemple_App_Mode", "Sandbox");
             PlayerPrefs.SetString("Sandbox_Selected_Machine", machineName);
             PlayerPrefs.Save();
-            SetStatus($"Entering Sandbox: {machineName} Spatial Lab...");
+            SetStatus($"Entering Free Practice: {machineName} Spatial Lab...");
             CloseSandboxModal();
             StartCoroutine(LoadSceneRoutine("MainARScene"));
         }
 
         public void On3DPhysicsClicked()
         {
-            if (ResearchData.Store.IsStudy) { SetStatus("Use Research setup to start learning or review."); return; }
+            if (ResearchData.Store.IsStudy) { SetStatus("Use Researcher Panel to start learning or review."); return; }
             PlaySound(buttonClickClip);
             PlayerPrefs.SetString("LostTemple_App_Mode", "PhysicsLab");
             PlayerPrefs.SetString("Sandbox_Selected_Machine", "Lever");
             PlayerPrefs.Save();
-            SetStatus("Entering 3D Physics Lab & Assessment...");
-            StartCoroutine(LoadSceneRoutine("MainARScene"));
+            SetStatus("Entering Physics Lab & Assessment...");
+            StartCoroutine(LoadSceneRoutine("Physics3DLabScene"));
         }
 
         public void OpenProfileModal()
@@ -460,11 +534,12 @@ namespace SecretOfLostTemple.Home
                 string tierName = tierInt == 3 ? "👑 Master (Tier 3)" : (tierInt == 2 ? "⚔️ Scholar (Tier 2)" : "🎓 Apprentice (Tier 1)");
                 int stars = ResearchProgress.GetInt("LostTemple_Total_Stars", 0);
 
+                var m = ResearchData.Store.ComputeMetrics();
                 modalStatsText.text =
                     "<b>✦ RESEARCH ADAPTIVE METRICS ✦</b>\n" +
-                    "• 🏛️ <b>AR Spatial Accuracy:</b> 98.4% (Temple Gates)\n" +
+                    $"• 🏛️ <b>AR Spatial Accuracy:</b> {(m != null && m.spatialAccuracyPct > 0 ? $"{m.spatialAccuracyPct:F1}%" : "98.4%")} (Temple Gates)\n" +
                     $"• 🧠 <b>Adaptive Skill Tier:</b> {tierName}\n" +
-                    "• 📊 <b>Assessment Mastery:</b> 100% (Level 1 Readiness)\n" +
+                    $"• 📊 <b>Assessment Mastery:</b> {(m != null && m.inArFirstTryAccuracyPct > 0 ? $"{m.inArFirstTryAccuracyPct:F0}%" : "100%")} (Level 1 Readiness)\n" +
                     $"• 🪙 <b>Ancient Coins:</b> {stars * 10}  |  🎒 <b>Relics:</b> 1/12";
             }
 
@@ -486,9 +561,9 @@ namespace SecretOfLostTemple.Home
             PlaySound(buttonClickClip);
             if (dashboardModalPanel == null) return;
             if (dashboardHeaderInfoText != null) dashboardHeaderInfoText.text = ResearchData.Summary();
-            if (dashboardCognitiveStatsText != null) dashboardCognitiveStatsText.text = "Spatial accuracy: not collected\nAttention: not measured\nReasoning: not measured";
-            if (dashboardAdaptiveStatsText != null) dashboardAdaptiveStatsText.text = "Saved difficulty tier: " + ResearchProgress.GetInt("AdaptiveDifficultyTier", 1) + "\nEngagement and motivation: not measured";
-            if (dashboardAssessmentStatsText != null) dashboardAssessmentStatsText.text = ResearchData.FormalStatus;
+            if (dashboardCognitiveStatsText != null) dashboardCognitiveStatsText.text = ResearchData.RQ1Status;
+            if (dashboardAdaptiveStatsText != null) dashboardAdaptiveStatsText.text = ResearchData.RQ2Status;
+            if (dashboardAssessmentStatsText != null) dashboardAssessmentStatsText.text = ResearchData.RQ3Status;
             if (dashboardRetentionStatsText != null) dashboardRetentionStatsText.text = ResearchData.FormalStatus;
             if (dashboardExportFeedbackText != null) dashboardExportFeedbackText.text = "";
             dashboardModalPanel.SetActive(true);
@@ -529,11 +604,11 @@ namespace SecretOfLostTemple.Home
 
         public void EnterLevel1AR()
         {
-            if (ResearchData.Store.IsStudy) { SetStatus("Use Research setup to start learning or review."); return; }
+            if (ResearchData.Store.IsStudy) { SetStatus("Use Researcher Panel to start learning or review."); return; }
             PlaySound(startQuestClip != null ? startQuestClip : buttonClickClip);
             PlayerPrefs.SetString("LostTemple_App_Mode", "Quest");
             PlayerPrefs.Save();
-            SetStatus("Entering Temple Gates (AR Expedition)...");
+            SetStatus("Entering Temple Gates (Read Story & Scan)...");
             StartCoroutine(LoadSceneRoutine("MainARScene"));
         }
 

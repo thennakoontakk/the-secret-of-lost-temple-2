@@ -24,9 +24,36 @@ namespace SecretOfLostTemple.AR
             arCameraBackground = GetComponent<ARCameraBackground>();
             arCameraManager = GetComponent<ARCameraManager>();
             arCamera = GetComponent<Camera>();
-            // A RawImage without a texture renders opaque white over ARCameraBackground.
-            // This project uses AR Foundation on device, not a second WebCamTexture feed.
-            if (webCamDisplayImage != null) webCamDisplayImage.gameObject.SetActive(false);
+
+            // An enabled RawImage without a texture renders opaque white over ARCameraBackground.
+            // Ensure the unused WebCamRawImage overlay is disabled/hidden when no texture is present so the live AR camera feed is visible.
+            if (webCamDisplayImage != null)
+            {
+                if (webCamDisplayImage.texture == null)
+                {
+                    webCamDisplayImage.color = Color.clear;
+                    webCamDisplayImage.enabled = false;
+                    webCamDisplayImage.gameObject.SetActive(false);
+                }
+            }
+        }
+
+        private void Update()
+        {
+            if (webCamDisplayImage != null)
+            {
+                if (webCamDisplayImage.texture == null || (webCamTexture != null && !webCamTexture.isPlaying))
+                {
+                    if (webCamDisplayImage.enabled) webCamDisplayImage.enabled = false;
+                    if (webCamDisplayImage.gameObject.activeSelf) webCamDisplayImage.gameObject.SetActive(false);
+                }
+                else if (webCamTexture != null && webCamTexture.isPlaying)
+                {
+                    if (!webCamDisplayImage.gameObject.activeSelf) webCamDisplayImage.gameObject.SetActive(true);
+                    if (!webCamDisplayImage.enabled) webCamDisplayImage.enabled = true;
+                    webCamDisplayImage.color = Color.white;
+                }
+            }
         }
 
         private IEnumerator Start()

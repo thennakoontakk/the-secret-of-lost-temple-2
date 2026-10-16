@@ -32,7 +32,24 @@ namespace SecretOfLostTemple.Adaptive
     /// </summary>
     public class StoryBranchManager : MonoBehaviour
     {
-        public static StoryBranchManager Instance { get; private set; }
+        private static StoryBranchManager instance;
+        public static StoryBranchManager Instance
+        {
+            get
+            {
+                if (instance == null)
+                {
+                    instance = FindFirstObjectByType<StoryBranchManager>();
+                    if (instance == null && Application.isPlaying)
+                    {
+                        var go = new GameObject("StoryBranchManager");
+                        instance = go.AddComponent<StoryBranchManager>();
+                    }
+                }
+                return instance;
+            }
+            private set { instance = value; }
+        }
 
         [Header("UI References")]
         [SerializeField] private Text narrativeText;
@@ -52,10 +69,10 @@ namespace SecretOfLostTemple.Adaptive
 
         private void Awake()
         {
-            if (Instance == null)
+            if (instance == null || instance == this)
             {
-                Instance = this;
-                DontDestroyOnLoad(gameObject);
+                instance = this;
+                if (Application.isPlaying) DontDestroyOnLoad(gameObject);
                 InitializeStory();
             }
             else

@@ -56,4 +56,23 @@ public class ResearchStoreTests
         s.Begin("P001", false); Assert.Throws<InvalidOperationException>(() => s.Begin("P002", false));
         Assert.AreEqual("P001", s.ParticipantCode);
     }
+    [Test] public void ComputeMetricsAndThreeComponentCsvsAreExported()
+    {
+        var s = new ResearchStore(path, true);
+        s.LoadPresentationPreset("retention_example");
+        var m = s.ComputeMetrics();
+        Assert.IsNotNull(m);
+        Assert.AreEqual("P990005", m.participant);
+        Assert.Greater(m.posttestScorePct, m.pretestScorePct);
+        Assert.Greater(m.normalizedGainPct, 0f);
+        Assert.Greater(m.retentionScorePct, 0f);
+
+        string exportDir = s.Export();
+        Assert.IsTrue(File.Exists(Path.Combine(exportDir, "kalish_rq1_interaction.csv")));
+        Assert.IsTrue(File.Exists(Path.Combine(exportDir, "abeywickrama_rq2_adaptive_engagement.csv")));
+        Assert.IsTrue(File.Exists(Path.Combine(exportDir, "pathirana_rq3_assessment_retention.csv")));
+        Assert.That(s.FormatRQ1Summary(), Does.Contain("Spatial accuracy"));
+        Assert.That(s.FormatRQ2Summary(), Does.Contain("Adaptive enabled"));
+        Assert.That(s.FormatRQ3Summary(), Does.Contain("Embedded assessment"));
+    }
 }

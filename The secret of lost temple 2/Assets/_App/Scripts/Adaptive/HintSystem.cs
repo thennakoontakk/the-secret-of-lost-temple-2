@@ -34,7 +34,24 @@ namespace SecretOfLostTemple.Adaptive
     /// </summary>
     public class HintSystem : MonoBehaviour
     {
-        public static HintSystem Instance { get; private set; }
+        private static HintSystem instance;
+        public static HintSystem Instance
+        {
+            get
+            {
+                if (instance == null)
+                {
+                    instance = FindFirstObjectByType<HintSystem>();
+                    if (instance == null && Application.isPlaying)
+                    {
+                        var go = new GameObject("HintSystem");
+                        instance = go.AddComponent<HintSystem>();
+                    }
+                }
+                return instance;
+            }
+            private set { instance = value; }
+        }
 
         [SerializeField] private float idleTimeBeforeHint = 15f;
         [SerializeField] private int errorsBeforeHint = 3;
@@ -64,10 +81,10 @@ namespace SecretOfLostTemple.Adaptive
 
         private void Awake()
         {
-            if (Instance == null)
+            if (instance == null || instance == this)
             {
-                Instance = this;
-                DontDestroyOnLoad(gameObject);
+                instance = this;
+                if (Application.isPlaying) DontDestroyOnLoad(gameObject);
             }
             else
             {

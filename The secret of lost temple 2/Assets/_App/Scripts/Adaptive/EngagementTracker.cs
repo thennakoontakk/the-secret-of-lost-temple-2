@@ -28,7 +28,24 @@ namespace SecretOfLostTemple.Adaptive
     /// </summary>
     public class EngagementTracker : MonoBehaviour
     {
-        public static EngagementTracker Instance { get; private set; }
+        private static EngagementTracker instance;
+        public static EngagementTracker Instance
+        {
+            get
+            {
+                if (instance == null)
+                {
+                    instance = FindFirstObjectByType<EngagementTracker>();
+                    if (instance == null && Application.isPlaying)
+                    {
+                        var go = new GameObject("EngagementTracker");
+                        instance = go.AddComponent<EngagementTracker>();
+                    }
+                }
+                return instance;
+            }
+            private set { instance = value; }
+        }
 
         [SerializeField] private float idleThresholdSeconds = 10f;
         
@@ -42,10 +59,10 @@ namespace SecretOfLostTemple.Adaptive
 
         private void Awake()
         {
-            if (Instance == null)
+            if (instance == null || instance == this)
             {
-                Instance = this;
-                DontDestroyOnLoad(gameObject);
+                instance = this;
+                if (Application.isPlaying) DontDestroyOnLoad(gameObject);
             }
             else
             {

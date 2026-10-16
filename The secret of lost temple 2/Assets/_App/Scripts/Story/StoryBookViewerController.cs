@@ -8,6 +8,27 @@ namespace SecretOfLostTemple.Story
 {
     public class StoryBookViewerController : MonoBehaviour
     {
+        public static bool StoryActivityActive { get; private set; }
+        static bool resumeRequested;
+        static int resumePage;
+        static string resumeMachine = "Lever";
+
+        public static void ReturnToStory(bool continueAfterActivity)
+        {
+            if (continueAfterActivity) resumePage++;
+            resumeRequested = true;
+            StoryActivityActive = false;
+            SceneManager.LoadScene("HomeMapScene");
+        }
+
+        public void ResumeAfterActivity()
+        {
+            if (!resumeRequested) return;
+            resumeRequested = false;
+            OpenStoryBook(resumeMachine);
+            currentPageIndex = Mathf.Clamp(resumePage, startPageIndex, endPageIndex);
+            DisplayCurrentPage(false);
+        }
         [Header("UIDisplayComponents")]
         [SerializeField] private GameObject storyBookRootPanel;
         [SerializeField] private Image pageDisplayImage;
@@ -77,23 +98,23 @@ namespace SecretOfLostTemple.Story
             if (machineName == "Lever")
             {
                 startPageIndex = 0;
-                endPageIndex = 8;
-                if (chapterTitleText != null) chapterTitleText.text = "<b>CHAPTER 1: THE ANCIENT LEVERA</b>";
-                if (startARActivityButtonText != null) startARActivityButtonText.text = "🚀 <b>START LEVER AR EXPEDITION</b>";
+                endPageIndex = Mathf.Max(8, allStoryPages.Count - 1);
+                if (chapterTitleText != null) chapterTitleText.text = "<b>CHAPTER 1: THE ANCIENT LEVER</b>";
+                if (startARActivityButtonText != null) startARActivityButtonText.text = "🚀 <b>READ STORY & SCAN</b>";
             }
             else if (machineName == "Pulley")
             {
                 startPageIndex = 9;
                 endPageIndex = 12;
                 if (chapterTitleText != null) chapterTitleText.text = "<b>CHAPTER 2: THE SACRED PULLEY</b>";
-                if (startARActivityButtonText != null) startARActivityButtonText.text = "🚺 <b>START PULLEY AR EXPEDITION</b>";
+                if (startARActivityButtonText != null) startARActivityButtonText.text = "🚀 <b>READ STORY & SCAN</b>";
             }
             else if (machineName == "InclinedPlane")
             {
                 startPageIndex = 13;
                 endPageIndex = 17;
                 if (chapterTitleText != null) chapterTitleText.text = "<b>CHAPTER 3: THE TEMPLE RAMP</b>";
-                if (startARActivityButtonText != null) startARActivityButtonText.text = "🚺 <b>START INCLINED PLANE AR EXPEDITION</b>";
+                if (startARActivityButtonText != null) startARActivityButtonText.text = "🚀 <b>READ STORY & SCAN</b>";
             }
 
             currentPageIndex = startPageIndex;
@@ -171,7 +192,8 @@ namespace SecretOfLostTemple.Story
                 nextPageButton.interactable = (currentPageIndex < endPageIndex);
             }
 
-            bool isScanMarkerPage = (currentPageIndex == endPageIndex);
+            bool isScanMarkerPage = activeMachine == "Lever" ? currentPageIndex == 8 : currentPageIndex == endPageIndex;
+            if (startARActivityButtonText != null) startARActivityButtonText.text = "SCAN PRINTED MARKER";
             if (startARActivityButton != null)
             {
                 startARActivityButton.gameObject.SetActive(isScanMarkerPage);
@@ -198,6 +220,9 @@ namespace SecretOfLostTemple.Story
 
         public void OnStartARActivityClicked()
         {
+            StoryActivityActive = true;
+            resumePage = currentPageIndex;
+            resumeMachine = activeMachine;
             PlaySound(activityStartClip != null ? activityStartClip : pageTurnClip);
 
             PlayerPrefs.SetString("LostTemple_App_Mode", "Quest");

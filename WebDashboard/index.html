@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Secret of Lost Temple — Research & Evaluation Analytics Dashboard</title>
+    <title>The Secret of Lost Temple — Live Remote Controller & Research Analytics Dashboard</title>
     
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -50,8 +50,8 @@
             border-bottom: 3px solid #f59e0b;
             color: #f59e0b;
             font-weight: 700;
+            background: rgba(245, 158, 11, 0.08);
         }
-        /* Custom scrollbar */
         ::-webkit-scrollbar { width: 8px; height: 8px; }
         ::-webkit-scrollbar-track { background: #0b1120; }
         ::-webkit-scrollbar-thumb { background: #1e293b; border-radius: 4px; }
@@ -61,43 +61,60 @@
 <body class="p-4 md:p-8">
 
     <!-- Top Navigation Bar -->
-    <header class="max-w-7xl mx-auto mb-8 flex flex-col md:flex-row items-center justify-between gap-4 glass-card p-5 rounded-2xl">
+    <header class="max-w-7xl mx-auto mb-6 flex flex-col lg:flex-row items-center justify-between gap-4 glass-card p-5 rounded-2xl">
         <div class="flex items-center gap-4">
             <div class="w-14 h-14 rounded-xl bg-gradient-to-tr from-amber-600 to-yellow-400 flex items-center justify-center text-3xl shadow-lg shadow-amber-500/20">
                 🏛️
             </div>
             <div>
-                <h1 class="text-2xl font-black tracking-tight text-white flex items-center gap-2">
+                <h1 class="text-xl md:text-2xl font-black tracking-tight text-white flex flex-wrap items-center gap-2">
                     THE SECRET OF LOST TEMPLE
-                    <span class="text-xs px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-semibold border border-amber-500/30">FYP RESEARCH</span>
+                    <span class="text-xs px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-semibold border border-amber-500/30">R26-IM-007 RESEARCH PORTAL</span>
                 </h1>
                 <p class="text-xs md:text-sm text-slate-400">
-                    Scientific Evaluation & Analytics Portal • <b>Jayasinghe (RQ1)</b> | <b>Abeywickrama (RQ2)</b> | <b>Pathirana (RQ3)</b>
+                    2-Way Live Phone Controller & Analytics • <b>Jayasinghe (RQ1)</b> | <b>Abeywickrama (RQ2)</b> | <b>Pathirana (RQ3)</b>
                 </p>
             </div>
         </div>
 
         <!-- Action Controls -->
-        <div class="flex items-center flex-wrap gap-2.5">
-            <div id="cloudStatusBadge" class="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-400 text-xs font-medium">
-                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span>Firestore Connected</span>
+        <div class="flex items-center flex-wrap gap-2">
+            <div id="cloudStatusBadge" class="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-400 text-xs font-medium">
+                <span id="cloudStatusDot" class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                <span id="cloudStatusText">Firestore Live Sync</span>
+            </div>
+
+            <label class="cursor-pointer px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 border border-cyan-500/30 text-xs font-semibold transition flex items-center gap-1.5">
+                <i class="fa-solid fa-folder-open"></i> Load records.json
+                <input type="file" id="jsonFileInput" accept=".json" onchange="handleLocalRecordsJson(event)" class="hidden">
+            </label>
+
+            <div class="relative group">
+                <button onclick="exportCSV('unified')" class="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg shadow-emerald-600/30 transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-file-csv"></i> Export CSVs ▾
+                </button>
+                <div class="hidden group-hover:block absolute right-0 mt-1 w-60 glass-card rounded-xl border border-slate-700 p-1.5 z-50 space-y-1">
+                    <button onclick="exportCSV('unified')" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-800 text-xs text-white flex items-center gap-2">
+                        <i class="fa-solid fa-table text-emerald-400"></i> All Research Unified CSV
+                    </button>
+                    <button onclick="exportCSV('rq1')" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-800 text-xs text-cyan-300 flex items-center gap-2">
+                        <i class="fa-solid fa-cubes-stacked"></i> Kalish RQ1 (Interaction) CSV
+                    </button>
+                    <button onclick="exportCSV('rq2')" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-800 text-xs text-amber-300 flex items-center gap-2">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> Abeywickrama RQ2 (Adaptive) CSV
+                    </button>
+                    <button onclick="exportCSV('rq3')" class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-800 text-xs text-purple-300 flex items-center gap-2">
+                        <i class="fa-solid fa-graduation-cap"></i> Pathirana RQ3 (Assessment) CSV
+                    </button>
+                </div>
             </div>
 
             <button onclick="openConfigModal()" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-medium transition flex items-center gap-1.5">
-                <i class="fa-solid fa-gear text-amber-400"></i> Settings
+                <i class="fa-solid fa-gear text-amber-400"></i>
             </button>
 
-            <button onclick="exportCSV()" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg shadow-emerald-600/30 transition flex items-center gap-2">
-                <i class="fa-solid fa-file-excel"></i> Export CSV (SPSS)
-            </button>
-
-            <button onclick="window.print()" class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition flex items-center gap-1.5">
-                <i class="fa-solid fa-print"></i> Print PDF
-            </button>
-
-            <button onclick="refreshData()" class="px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-500 text-slate-900 font-bold text-xs shadow-lg shadow-amber-500/20 transition flex items-center gap-1.5">
-                <i class="fa-solid fa-rotate"></i> Refresh
+            <button onclick="syncFromFirestore(true)" class="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-lg shadow-amber-500/20 transition flex items-center gap-1.5">
+                <i class="fa-solid fa-rotate"></i> Sync Now
             </button>
         </div>
     </header>
@@ -105,14 +122,167 @@
     <!-- Main Container -->
     <main class="max-w-7xl mx-auto space-y-6">
 
+        <!-- LIVE PHONE STATUS & REMOTE CONTROLLER BAR -->
+        <section class="glass-card rounded-2xl p-5 border border-amber-500/30">
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 text-lg">
+                        <i class="fa-solid fa-mobile-screen-button"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h2 class="text-base font-bold text-white">Live Student Phone Controller (No On-Phone Setup Needed)</h2>
+                            <span id="phoneOnlineBadge" class="text-[11px] px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">Waiting for phone...</span>
+                        </div>
+                        <p id="phoneLiveStatusLine" class="text-xs text-slate-400 mt-0.5">
+                            Hand the phone directly to the student — assign Participant ID, Condition, and start Pre-Test / AR Learning / Post-Test remotely from this laptop.
+                        </p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span id="lastCommandFeedback" class="text-xs text-amber-300 bg-amber-950/40 border border-amber-500/20 px-3 py-1.5 rounded-xl hidden"></span>
+                    <button onclick="toggleRemotePanel()" id="toggleRemoteBtn" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 border border-slate-700 font-semibold">
+                        <i class="fa-solid fa-sliders"></i> Hide/Show Controls
+                    </button>
+                </div>
+            </div>
+
+            <!-- Live Active Session Telemetry Pill Strip -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5 my-4 text-xs">
+                <div class="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800">
+                    <span class="text-[10px] uppercase text-slate-500 block">Participant</span>
+                    <b id="livePhoneParticipant" class="text-white text-sm">—</b>
+                </div>
+                <div class="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800">
+                    <span class="text-[10px] uppercase text-slate-500 block">Scene / Stage</span>
+                    <b id="livePhoneStage" class="text-amber-400 text-sm">—</b>
+                </div>
+                <div class="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800">
+                    <span class="text-[10px] uppercase text-slate-500 block">RQ1 Condition</span>
+                    <b id="livePhoneCondition" class="text-cyan-400 text-sm">—</b>
+                </div>
+                <div class="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800">
+                    <span class="text-[10px] uppercase text-slate-500 block">RQ2 Adaptive Tier</span>
+                    <b id="livePhoneTier" class="text-amber-300 text-sm">—</b>
+                </div>
+                <div class="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800">
+                    <span class="text-[10px] uppercase text-slate-500 block">Spatial Acc / Manip</span>
+                    <b id="livePhoneSpatial" class="text-cyan-300 text-sm">—</b>
+                </div>
+                <div class="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800">
+                    <span class="text-[10px] uppercase text-slate-500 block">Hints / Story Choices</span>
+                    <b id="livePhoneHints" class="text-amber-200 text-sm">—</b>
+                </div>
+                <div class="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800">
+                    <span class="text-[10px] uppercase text-slate-500 block">Pre ➔ Post Score</span>
+                    <b id="livePhoneScores" class="text-emerald-400 text-sm">—</b>
+                </div>
+                <div class="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800">
+                    <span class="text-[10px] uppercase text-slate-500 block">7-Day Retention</span>
+                    <b id="livePhoneRetention" class="text-purple-400 text-sm">—</b>
+                </div>
+            </div>
+
+            <!-- Remote Control Form & 1-Click Buttons -->
+            <div id="remoteControlBody" class="space-y-4 pt-2">
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end bg-slate-900/60 p-4 rounded-xl border border-slate-800">
+                    <div class="md:col-span-2">
+                        <label class="block text-[11px] text-slate-400 font-semibold mb-1">Participant ID</label>
+                        <input type="text" id="rcParticipant" value="P001" placeholder="e.g. P001" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white font-bold focus:outline-none focus:border-amber-500">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-[11px] text-slate-400 font-semibold mb-1">RQ1 Condition</label>
+                        <select id="rcCondition" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2 text-xs text-cyan-300 font-semibold focus:outline-none focus:border-amber-500">
+                            <option value="interactive">Interactive AR Manipulation</option>
+                            <option value="passive">View-Only (Passive AR)</option>
+                        </select>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-[11px] text-slate-400 font-semibold mb-1">RQ2 Adaptive Engine</label>
+                        <select id="rcAdaptive" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2 text-xs text-amber-300 font-semibold focus:outline-none focus:border-amber-500">
+                            <option value="true">Adaptive ON (3-Tier + Story)</option>
+                            <option value="false">Fixed / Non-Adaptive OFF</option>
+                        </select>
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-[11px] text-slate-400 font-semibold mb-1">RQ3 In-AR Assessment</label>
+                        <select id="rcEmbedded" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-2 text-xs text-emerald-300 font-semibold focus:outline-none focus:border-amber-500">
+                            <option value="true">Embedded AR Quiz ON</option>
+                            <option value="false">Embedded AR Quiz OFF</option>
+                        </select>
+                    </div>
+                    <div class="md:col-span-4 flex flex-wrap gap-2">
+                        <button onclick="sendRemoteCommand('begin_study', { stage: 'auto_pretest' })" class="flex-1 py-2 px-3 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow transition whitespace-nowrap">
+                            <i class="fa-solid fa-play"></i> Start Study + Open Pre-Test
+                        </button>
+                        <button onclick="sendRemoteCommand('resume_study')" class="py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs border border-slate-700 transition" title="Resume unfinished session for this Participant ID">
+                            Resume
+                        </button>
+                        <button onclick="sendRemoteCommand('open_followup')" class="py-2 px-3 rounded-lg bg-purple-950/80 hover:bg-purple-900 text-purple-300 font-semibold text-xs border border-purple-700/50 transition" title="Open Day-7 Follow-Up Visit for this Participant ID">
+                            Day-7 Follow-up
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Stage Controls & Viva Demo Presets -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+                    <!-- Stage Progression Controls -->
+                    <div class="bg-slate-900/50 p-3.5 rounded-xl border border-slate-800 flex flex-wrap items-center gap-2">
+                        <span class="text-[11px] font-bold uppercase text-slate-400 mr-1"><i class="fa-solid fa-list-check text-emerald-400"></i> Phone Stage:</span>
+                        <button onclick="sendRemoteCommand('start_test', { stage: 'pretest' })" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-white border border-slate-700">
+                            1. Pre-Test
+                        </button>
+                        <button onclick="sendRemoteCommand('start_learning')" class="px-2.5 py-1.5 rounded-lg bg-cyan-950 hover:bg-cyan-900 text-xs text-cyan-300 border border-cyan-700/50 font-semibold">
+                            2. Launch AR Lever
+                        </button>
+                        <button onclick="sendRemoteCommand('complete_learning', { stage: 'auto_posttest' })" class="px-2.5 py-1.5 rounded-lg bg-emerald-950 hover:bg-emerald-900 text-xs text-emerald-300 border border-emerald-700/50 font-semibold">
+                            3. Finish AR & Post-Test
+                        </button>
+                        <button onclick="sendRemoteCommand('open_review')" class="px-2.5 py-1.5 rounded-lg bg-amber-950 hover:bg-amber-900 text-xs text-amber-300 border border-amber-700/50">
+                            4. AR Review
+                        </button>
+                        <button onclick="sendRemoteCommand('start_test', { stage: 'retention' })" class="px-2.5 py-1.5 rounded-lg bg-purple-950 hover:bg-purple-900 text-xs text-purple-300 border border-purple-700/50">
+                            5. 7-Day Test
+                        </button>
+                        <button onclick="sendRemoteCommand('end_visit')" class="px-2.5 py-1.5 rounded-lg bg-rose-950/70 hover:bg-rose-900 text-xs text-rose-300 border border-rose-800/50">
+                            End Visit
+                        </button>
+                    </div>
+
+                    <!-- Viva / Panel Quick Demo Presets -->
+                    <div class="bg-slate-900/50 p-3.5 rounded-xl border border-slate-800 flex flex-wrap items-center gap-2">
+                        <span class="text-[11px] font-bold uppercase text-slate-400 mr-1"><i class="fa-solid fa-bolt text-amber-400"></i> Viva Demos:</span>
+                        <button onclick="sendRemoteCommand('load_demo', { preset: 'kalish_passive' })" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-cyan-300 border border-slate-700">
+                            Kalish Passive
+                        </button>
+                        <button onclick="sendRemoteCommand('load_demo', { preset: 'kalish_interactive' })" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-cyan-300 border border-slate-700">
+                            Kalish Interactive
+                        </button>
+                        <button onclick="sendRemoteCommand('load_demo', { preset: 'abeywickrama' })" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-amber-300 border border-slate-700">
+                            Abeywickrama Adaptive
+                        </button>
+                        <button onclick="sendRemoteCommand('load_demo', { preset: 'pathirana' })" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-emerald-300 border border-slate-700">
+                            Pathirana Quiz
+                        </button>
+                        <button onclick="sendRemoteCommand('load_demo', { preset: 'retention_example' })" class="px-2.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-purple-300 border border-slate-700">
+                            7-Day Synth
+                        </button>
+                        <button onclick="sendRemoteCommand('sync_all')" class="px-2.5 py-1.5 rounded-lg bg-amber-500/20 hover:bg-amber-500/30 text-xs text-amber-300 border border-amber-500/30" title="Pull all sessions saved on the phone to Firestore">
+                            Pull All Phone Data
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <!-- Executive Metrics KPI Cards -->
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <!-- Total Participants -->
             <div class="glass-card p-5 rounded-2xl flex items-center justify-between border-l-4 border-amber-500">
                 <div>
-                    <p class="text-xs uppercase tracking-wider font-semibold text-slate-400">Total Participants</p>
-                    <h3 id="statTotalParticipants" class="text-3xl font-black text-white mt-1">32</h3>
-                    <p class="text-xs text-amber-400/90 mt-1"><i class="fa-solid fa-users text-[10px]"></i> Active Study Cohort</p>
+                    <p class="text-xs uppercase tracking-wider font-semibold text-slate-400">Active Cohort Sessions</p>
+                    <h3 id="statTotalParticipants" class="text-3xl font-black text-white mt-1">0</h3>
+                    <p id="statCohortSourceLabel" class="text-xs text-amber-400/90 mt-1"><i class="fa-solid fa-users text-[10px]"></i> Live + Reference Cohort</p>
                 </div>
                 <div class="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-400 text-xl border border-amber-500/20">
                     <i class="fa-solid fa-id-badge"></i>
@@ -124,7 +294,7 @@
                 <div>
                     <p class="text-xs uppercase tracking-wider font-semibold text-slate-400">Mean Learning Gain (ΔG)</p>
                     <h3 id="statMeanGain" class="text-3xl font-black text-emerald-400 mt-1">+86.4%</h3>
-                    <p class="text-xs text-emerald-400/90 mt-1"><i class="fa-solid fa-arrow-trend-up text-[10px]"></i> Hake's High Gain (>0.7)</p>
+                    <p class="text-xs text-emerald-400/90 mt-1"><i class="fa-solid fa-arrow-trend-up text-[10px]"></i> Pathirana RQ3 Mastery</p>
                 </div>
                 <div class="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 text-xl border border-emerald-500/20">
                     <i class="fa-solid fa-chart-line"></i>
@@ -136,7 +306,7 @@
                 <div>
                     <p class="text-xs uppercase tracking-wider font-semibold text-slate-400">AR Spatial Accuracy</p>
                     <h3 id="statSpatialAccuracy" class="text-3xl font-black text-cyan-400 mt-1">94.2%</h3>
-                    <p class="text-xs text-cyan-400/90 mt-1"><i class="fa-solid fa-bullseye text-[10px]"></i> Mean Error Rate: 5.8%</p>
+                    <p class="text-xs text-cyan-400/90 mt-1"><i class="fa-solid fa-bullseye text-[10px]"></i> Jayasinghe RQ1 Equilibrium</p>
                 </div>
                 <div class="w-12 h-12 rounded-xl bg-cyan-500/10 flex items-center justify-center text-cyan-400 text-xl border border-cyan-500/20">
                     <i class="fa-solid fa-cube"></i>
@@ -148,7 +318,7 @@
                 <div>
                     <p class="text-xs uppercase tracking-wider font-semibold text-slate-400">Day-7 Spaced Retention</p>
                     <h3 id="statDay7Retention" class="text-3xl font-black text-purple-400 mt-1">74.5%</h3>
-                    <p class="text-xs text-purple-400/90 mt-1"><i class="fa-solid fa-brain text-[10px]"></i> vs Baseline: 40.0% (+34.5%)</p>
+                    <p class="text-xs text-purple-400/90 mt-1"><i class="fa-solid fa-brain text-[10px]"></i> Pathirana Delayed Recall</p>
                 </div>
                 <div class="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-400 text-xl border border-purple-500/20">
                     <i class="fa-solid fa-clock-rotate-left"></i>
@@ -162,10 +332,10 @@
                 <i class="fa-solid fa-table-columns"></i> 1. Study Overview & Cohort Table
             </button>
             <button onclick="switchTab('jayasinghe')" id="tabBtn-jayasinghe" class="px-5 py-3 rounded-xl text-slate-400 hover:text-white text-sm font-semibold transition flex items-center gap-2 whitespace-nowrap">
-                <i class="fa-solid fa-cubes-stacked text-cyan-400"></i> 2. Jayasinghe (RQ1: AR Spatial & Cognitive)
+                <i class="fa-solid fa-cubes-stacked text-cyan-400"></i> 2. Jayasinghe (RQ1: AR Interaction & Cognitive)
             </button>
             <button onclick="switchTab('abeywickrama')" id="tabBtn-abeywickrama" class="px-5 py-3 rounded-xl text-slate-400 hover:text-white text-sm font-semibold transition flex items-center gap-2 whitespace-nowrap">
-                <i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i> 3. Abeywickrama (RQ2: Adaptive & Scaffolding)
+                <i class="fa-solid fa-wand-magic-sparkles text-amber-400"></i> 3. Abeywickrama (RQ2: Adaptive & Storytelling)
             </button>
             <button onclick="switchTab('pathirana')" id="tabBtn-pathirana" class="px-5 py-3 rounded-xl text-slate-400 hover:text-white text-sm font-semibold transition flex items-center gap-2 whitespace-nowrap">
                 <i class="fa-solid fa-graduation-cap text-emerald-400"></i> 4. Pathirana (RQ3: Assessment & Retention)
@@ -178,17 +348,20 @@
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
                     <div>
                         <h2 class="text-xl font-bold text-white flex items-center gap-2">
-                            <i class="fa-solid fa-users-viewfinder text-amber-400"></i> Live Participant Experimental Cohort
+                            <i class="fa-solid fa-users-viewfinder text-amber-400"></i> Empirical Participant Sessions (Chapter 1: The Lever)
                         </h2>
-                        <p class="text-xs text-slate-400">Empirical trial logs collected from AR mobile sessions and Firebase Firestore</p>
+                        <p class="text-xs text-slate-400">Real-time sessions streamed from Unity phone app + reference cohort records</p>
                     </div>
-                    <div class="flex items-center gap-3 w-full sm:w-auto">
-                        <div class="relative flex-1 sm:w-64">
+                    <div class="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
+                        <div class="relative flex-1 sm:w-56">
                             <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
-                            <input type="text" id="tableSearch" onkeyup="filterTable()" placeholder="Search participant or character..." class="w-full bg-slate-900/80 border border-slate-700 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500">
+                            <input type="text" id="tableSearch" onkeyup="filterTable()" placeholder="Search participant or condition..." class="w-full bg-slate-900/80 border border-slate-700 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500">
                         </div>
+                        <button onclick="toggleBaselineCohort()" id="btnToggleBaseline" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700 whitespace-nowrap">
+                            <i class="fa-solid fa-filter"></i> Show: Live + Reference
+                        </button>
                         <button onclick="generateMockCohort()" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 text-xs font-semibold border border-amber-500/30 whitespace-nowrap">
-                            <i class="fa-solid fa-shuffle"></i> + Add Sample Cohort (N=30)
+                            <i class="fa-solid fa-shuffle"></i> + Simulate N=25 Cohort
                         </button>
                     </div>
                 </div>
@@ -198,19 +371,19 @@
                     <table class="w-full text-left text-xs text-slate-300">
                         <thead class="bg-slate-900/90 uppercase font-bold text-slate-400 border-b border-slate-800">
                             <tr>
-                                <th class="p-3.5">Participant ID</th>
-                                <th class="p-3.5">Avatar</th>
-                                <th class="p-3.5">Mastery Tier</th>
-                                <th class="p-3.5">Spatial Accuracy</th>
-                                <th class="p-3.5">Pre ➔ Post Gain</th>
-                                <th class="p-3.5">Learning Gain (ΔG)</th>
+                                <th class="p-3.5">Participant</th>
+                                <th class="p-3.5">RQ1 Condition</th>
+                                <th class="p-3.5">RQ2 Adaptive Tier</th>
+                                <th class="p-3.5">Spatial Acc (RQ1)</th>
+                                <th class="p-3.5">Hints / Story (RQ2)</th>
+                                <th class="p-3.5">Pre ➔ Post (RQ3)</th>
+                                <th class="p-3.5">Gain (ΔG)</th>
                                 <th class="p-3.5">Day-7 Retention</th>
-                                <th class="p-3.5">Dwell Time</th>
-                                <th class="p-3.5 text-right">Action</th>
+                                <th class="p-3.5">Exposure</th>
+                                <th class="p-3.5 text-right">Details</th>
                             </tr>
                         </thead>
                         <tbody id="participantTableBody" class="divide-y divide-slate-800/60 bg-slate-900/40">
-                            <!-- Rows dynamically populated -->
                         </tbody>
                     </table>
                 </div>
@@ -220,58 +393,58 @@
         <!-- TAB 2: Jayasinghe (RQ1) -->
         <section id="tab-jayasinghe" class="hidden space-y-6">
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <!-- Spatial Accuracy Distribution -->
                 <div class="glass-card p-6 rounded-2xl">
                     <div class="flex items-center justify-between mb-4">
                         <h3 class="font-bold text-white text-base flex items-center gap-2">
-                            <i class="fa-solid fa-crosshairs text-cyan-400"></i> AR Spatial Reasoning Accuracy
+                            <i class="fa-solid fa-crosshairs text-cyan-400"></i> Interactive vs View-Only Spatial Accuracy
                         </h3>
-                        <span class="text-xs px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800">RQ1: Jayasinghe</span>
+                        <span class="text-xs px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800">RQ1: Jayasinghe (IT22550330)</span>
                     </div>
-                    <p class="text-xs text-slate-400 mb-4">Percentage of correct mechanical operations without physical equilibrium errors</p>
+                    <p class="text-xs text-slate-400 mb-4">Comparison of mechanical equilibrium accuracy and post-test reasoning across AR interaction modes</p>
                     <div class="h-64">
                         <canvas id="chartSpatialAccuracy"></canvas>
                     </div>
                 </div>
 
-                <!-- Dwell Time vs Error Rate -->
                 <div class="glass-card p-6 rounded-2xl">
                     <div class="flex items-center justify-between mb-4">
                         <h3 class="font-bold text-white text-base flex items-center gap-2">
-                            <i class="fa-solid fa-hourglass-half text-cyan-400"></i> Dwell Time vs Cognitive Errors
+                            <i class="fa-solid fa-hourglass-half text-cyan-400"></i> Dwell Time vs Cognitive Equilibrium Errors
                         </h3>
-                        <span class="text-xs px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800">RQ1: Jayasinghe</span>
+                        <span class="text-xs px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800">RQ1: Jayasinghe (IT22550330)</span>
                     </div>
-                    <p class="text-xs text-slate-400 mb-4">Correlation between mechanism exploration time and miscalculation frequency</p>
+                    <p class="text-xs text-slate-400 mb-4">Correlation between active lever manipulation time and torque miscalculation frequency</p>
                     <div class="h-64">
                         <canvas id="chartDwellVsErrors"></canvas>
                     </div>
                 </div>
 
-                <!-- Mode Switching Telemetry -->
                 <div class="glass-card p-6 rounded-2xl lg:col-span-2">
                     <div class="flex items-center justify-between mb-4">
                         <h3 class="font-bold text-white text-base flex items-center gap-2">
-                            <i class="fa-solid fa-arrows-rotate text-cyan-400"></i> Mode Switching & 3D Exploded Anatomy Exploration
+                            <i class="fa-solid fa-arrows-rotate text-cyan-400"></i> Manipulation Telemetry & 3D Exploded Anatomy Inspection
                         </h3>
-                        <span class="text-xs px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-800">RQ1: Jayasinghe</span>
+                        <button onclick="exportCSV('rq1')" class="text-xs px-3 py-1 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white font-bold">
+                            <i class="fa-solid fa-download"></i> Export Kalish RQ1 CSV
+                        </button>
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                         <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800">
-                            <span class="text-xs text-slate-400">Mean Interactive Time</span>
-                            <h4 class="text-xl font-bold text-cyan-400 mt-1">4m 18s (68%)</h4>
+                            <span class="text-xs text-slate-400">Mean AR Exposure Time</span>
+                            <h4 id="rq1StatExposure" class="text-xl font-bold text-cyan-400 mt-1">4m 18s</h4>
                         </div>
                         <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800">
-                            <span class="text-xs text-slate-400">Mean Exploded View Inspection</span>
-                            <h4 class="text-xl font-bold text-amber-400 mt-1">2m 02s (32%)</h4>
+                            <span class="text-xs text-slate-400">Mean Force & Fulcrum Actions</span>
+                            <h4 id="rq1StatManip" class="text-xl font-bold text-amber-400 mt-1">14.2 Actions</h4>
                         </div>
                         <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800">
-                            <span class="text-xs text-slate-400">Inspection Transitions</span>
-                            <h4 class="text-xl font-bold text-emerald-400 mt-1">3.8 Switches/Session</h4>
+                            <span class="text-xs text-slate-400">3D Part Anatomy Inspections</span>
+                            <h4 id="rq1StatInspect" class="text-xl font-bold text-emerald-400 mt-1">3.8 Parts/Session</h4>
                         </div>
-                    </div>
-                    <div class="p-4 rounded-xl bg-cyan-950/20 border border-cyan-500/20 text-xs text-slate-300">
-                        <b class="text-cyan-400">Key Academic Finding (RQ1):</b> Students utilizing 3D Exploded Anatomy inspection exhibited a <b>38.2% reduction</b> in torque miscalculations compared to 2D illustration control benchmarks ($p < 0.001$).
+                        <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800">
+                            <span class="text-xs text-slate-400">Peak Mechanical Advantage</span>
+                            <h4 id="rq1StatMaxMa" class="text-xl font-bold text-purple-400 mt-1">2.85x</h4>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -280,41 +453,40 @@
         <!-- TAB 3: Abeywickrama (RQ2) -->
         <section id="tab-abeywickrama" class="hidden space-y-6">
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <!-- Tier Transition Velocity -->
                 <div class="glass-card p-6 rounded-2xl">
                     <div class="flex items-center justify-between mb-4">
                         <h3 class="font-bold text-white text-base flex items-center gap-2">
                             <i class="fa-solid fa-stairs text-amber-400"></i> 3-Tier Adaptive Mastery Progression
                         </h3>
-                        <span class="text-xs px-2 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-800">RQ2: Abeywickrama</span>
+                        <span class="text-xs px-2 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-800">RQ2: Abeywickrama (IT22279798)</span>
                     </div>
-                    <p class="text-xs text-slate-400 mb-4">Learner transition from Apprentice (Tier 1) ➔ Scholar (Tier 2) ➔ Master (Tier 3)</p>
+                    <p class="text-xs text-slate-400 mb-4">Learner transition across Apprentice (Tier 1: ≤60N) ➔ Scholar (Tier 2: ≤40N) ➔ Master (Tier 3: 120N Load)</p>
                     <div class="h-64">
                         <canvas id="chartTierProgression"></canvas>
                     </div>
                 </div>
 
-                <!-- Hint Dependency & Scaffolding Decay -->
                 <div class="glass-card p-6 rounded-2xl">
                     <div class="flex items-center justify-between mb-4">
                         <h3 class="font-bold text-white text-base flex items-center gap-2">
-                            <i class="fa-solid fa-lightbulb text-amber-400"></i> Scaffolding & Smart Hint Dependency
+                            <i class="fa-solid fa-lightbulb text-amber-400"></i> 3-Tier Progressive Hint Usage (Visual ➔ Clue ➔ Formula)
                         </h3>
-                        <span class="text-xs px-2 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-800">RQ2: Abeywickrama</span>
+                        <span class="text-xs px-2 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-800">RQ2: Abeywickrama (IT22279798)</span>
                     </div>
-                    <p class="text-xs text-slate-400 mb-4">Hint requests across successive levels showing independent self-efficacy</p>
+                    <p class="text-xs text-slate-400 mb-4">Distribution of Tier 1 Visual Nudges, Tier 2 Character Clues, and Tier 3 Formula Walkthroughs</p>
                     <div class="h-64">
                         <canvas id="chartHintDependency"></canvas>
                     </div>
                 </div>
 
-                <!-- Engagement Flow & Avatar Persona Impact -->
                 <div class="glass-card p-6 rounded-2xl lg:col-span-2">
                     <div class="flex items-center justify-between mb-4">
                         <h3 class="font-bold text-white text-base flex items-center gap-2">
-                            <i class="fa-solid fa-heart-pulse text-amber-400"></i> Active Flow vs Hesitation Latency & Avatar Selection
+                            <i class="fa-solid fa-code-branch text-amber-400"></i> Interactive Story Branching & Engagement Flow
                         </h3>
-                        <span class="text-xs px-2 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-800">RQ2: Abeywickrama</span>
+                        <button onclick="exportCSV('rq2')" class="text-xs px-3 py-1 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold">
+                            <i class="fa-solid fa-download"></i> Export Abeywickrama RQ2 CSV
+                        </button>
                     </div>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
                         <div class="h-56">
@@ -322,13 +494,13 @@
                         </div>
                         <div class="space-y-3 text-xs">
                             <div class="p-3.5 rounded-xl bg-slate-900/70 border border-slate-800">
-                                <b class="text-amber-300">Maya (Lore Scholar):</b> Selected by <b>58%</b> of participants. Higher hint request frequency (2.4 hints/level) with higher thoroughness index.
+                                <b class="text-amber-300">Branching Narrative Decisions:</b> Students actively select between Lever & Counterweight inspection branches (<code class="text-amber-200">node_2 ➔ node_3/node_4 ➔ node_5 ➔ node_6/node_7</code>) inside Chapter 1 AR.
                             </div>
                             <div class="p-3.5 rounded-xl bg-slate-900/70 border border-slate-800">
-                                <b class="text-emerald-300">Senuk (Agile Explorer):</b> Selected by <b>42%</b> of participants. Lower hint requests (1.1 hints/level) with 24% faster trial completion speed.
+                                <b class="text-emerald-300">3-Tier Contextual Hints:</b> Tier 1 highlights 3D parts in yellow; Tier 2 delivers Maya/Senuk's directional clue; Tier 3 displays the exact torque equilibrium walkthrough.
                             </div>
                             <div class="p-3.5 rounded-xl bg-amber-950/20 border border-amber-500/20 text-slate-300">
-                                <b class="text-amber-400">Key Academic Finding (RQ2):</b> Dynamic scaffolding reduced idle frustration drops by <b>71.4%</b>, maintaining 89.5% active engagement flow throughout trial sessions.
+                                <b class="text-amber-400">Adaptive Scaling Impact:</b> Real-time promotion/demotion keeps learners in their Zone of Proximal Development (ZPD), sustaining high active engagement ratio.
                             </div>
                         </div>
                     </div>
@@ -339,61 +511,76 @@
         <!-- TAB 4: Pathirana (RQ3) -->
         <section id="tab-pathirana" class="hidden space-y-6">
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <!-- Pre-Test vs Post-Test Learning Gain -->
                 <div class="glass-card p-6 rounded-2xl">
                     <div class="flex items-center justify-between mb-4">
                         <h3 class="font-bold text-white text-base flex items-center gap-2">
-                            <i class="fa-solid fa-award text-emerald-400"></i> Pre-Test vs Post-Test Assessment Scores
+                            <i class="fa-solid fa-award text-emerald-400"></i> Pre-Test vs Post-Test vs 7-Day Retention Scores
                         </h3>
-                        <span class="text-xs px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">RQ3: Pathirana</span>
+                        <span class="text-xs px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">RQ3: Pathirana (IT21817458)</span>
                     </div>
-                    <p class="text-xs text-slate-400 mb-4">Mean score comparison demonstrating conceptual mastery gain (ΔG = +86.4%)</p>
+                    <p class="text-xs text-slate-400 mb-4">3-Stage assessment comparison (6-item validated Lever test bank + embedded AR formative quiz)</p>
                     <div class="h-64">
                         <canvas id="chartPrePost"></canvas>
                     </div>
                 </div>
 
-                <!-- Ebbinghaus Retention Decay Curve -->
                 <div class="glass-card p-6 rounded-2xl">
                     <div class="flex items-center justify-between mb-4">
                         <h3 class="font-bold text-white text-base flex items-center gap-2">
-                            <i class="fa-solid fa-chart-line text-emerald-400"></i> Ebbinghaus Spaced Retrieval Retention Curve
+                            <i class="fa-solid fa-chart-line text-emerald-400"></i> 7-Day Spaced Retrieval Retention Curve
                         </h3>
-                        <span class="text-xs px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">RQ3: Pathirana</span>
+                        <span class="text-xs px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">RQ3: Pathirana (IT21817458)</span>
                     </div>
-                    <p class="text-xs text-slate-400 mb-4">Day 0, Day 1, Day 3, and Day 7 retention compared to textbook baseline</p>
+                    <p class="text-xs text-slate-400 mb-4">Immediate Post-Test vs Day-7 Delayed Retention compared to traditional baseline</p>
                     <div class="h-64">
                         <canvas id="chartRetentionDecay"></canvas>
                     </div>
                 </div>
 
-                <!-- Misconception Remediation in 3D AR -->
                 <div class="glass-card p-6 rounded-2xl lg:col-span-2">
                     <div class="flex items-center justify-between mb-4">
                         <h3 class="font-bold text-white text-base flex items-center gap-2">
-                            <i class="fa-solid fa-triangle-exclamation text-emerald-400"></i> Misconception Detection & 3D AR Review Remediation
+                            <i class="fa-solid fa-triangle-exclamation text-emerald-400"></i> Misconception Detection, Retry Self-Correction & External Score Entry
                         </h3>
-                        <span class="text-xs px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">RQ3: Pathirana</span>
+                        <button onclick="exportCSV('rq3')" class="text-xs px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold">
+                            <i class="fa-solid fa-download"></i> Export Pathirana RQ3 CSV
+                        </button>
                     </div>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-                        <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800">
-                            <span class="text-xs text-slate-400">Fulcrum Position Misconceptions</span>
-                            <h4 class="text-xl font-bold text-rose-400 mt-1">42% Initial Errors</h4>
-                            <span class="text-[11px] text-emerald-400">➔ 96% Fixed in AR Review</span>
+
+                    <!-- Remote External Paper Score Entry Form -->
+                    <div class="p-4 rounded-xl bg-slate-900/70 border border-slate-800 mb-4">
+                        <h4 class="text-xs font-bold uppercase text-emerald-400 mb-2"><i class="fa-solid fa-pen-to-square"></i> Remote Paper/External Test Score Entry (Append-Only to Active Phone Session)</h4>
+                        <div class="grid grid-cols-1 sm:grid-cols-6 gap-2.5 items-end text-xs">
+                            <div>
+                                <label class="block text-[10px] text-slate-400 mb-1">Stage</label>
+                                <select id="extStage" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white">
+                                    <option value="pretest">pretest</option>
+                                    <option value="posttest">posttest</option>
+                                    <option value="retention">retention (Day 7+)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] text-slate-400 mb-1">Raw Score</label>
+                                <input type="number" id="extScore" value="5" min="0" max="100" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] text-slate-400 mb-1">Max Score</label>
+                                <input type="number" id="extMax" value="6" min="1" max="100" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] text-slate-400 mb-1">Paper/Form ID</label>
+                                <input type="text" id="extSource" value="paper-form-A" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] text-slate-400 mb-1">Correction Reason (if replacing)</label>
+                                <input type="text" id="extReason" placeholder="Optional unless correcting" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white">
+                            </div>
+                            <div>
+                                <button onclick="submitRemoteExternalScore()" class="w-full py-1.5 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold">
+                                    Save Score to Phone
+                                </button>
+                            </div>
                         </div>
-                        <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800">
-                            <span class="text-xs text-slate-400">Torque Equilibrium (F × d)</span>
-                            <h4 class="text-xl font-bold text-rose-400 mt-1">36% Initial Errors</h4>
-                            <span class="text-[11px] text-emerald-400">➔ 91% Fixed in AR Review</span>
-                        </div>
-                        <div class="p-4 rounded-xl bg-slate-900/60 border border-slate-800">
-                            <span class="text-xs text-slate-400">Class 1 Lever Anatomy</span>
-                            <h4 class="text-xl font-bold text-rose-400 mt-1">18% Initial Errors</h4>
-                            <span class="text-[11px] text-emerald-400">➔ 100% Fixed in AR Review</span>
-                        </div>
-                    </div>
-                    <div class="p-4 rounded-xl bg-emerald-950/20 border border-emerald-500/20 text-xs text-slate-300">
-                        <b class="text-emerald-400">Key Academic Finding (RQ3):</b> In-situ 3D Exploded Review remediation resulted in a <b>74.5% Day-7 retention rate</b>, significantly outperforming traditional paper textbook retention (40.0%, $t(31) = 8.42, p < 0.0001$).
                     </div>
                 </div>
             </div>
@@ -401,16 +588,29 @@
 
     </main>
 
+    <!-- Participant Telemetry Inspector Modal -->
+    <div id="inspectModal" class="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden">
+        <div class="glass-card max-w-2xl w-full p-6 rounded-2xl border border-slate-700 space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <h3 id="inspectModalTitle" class="text-lg font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-microscope text-amber-400"></i> Participant Telemetry Breakdown
+                </h3>
+                <button onclick="closeInspectModal()" class="text-slate-400 hover:text-white text-lg">✕</button>
+            </div>
+            <div id="inspectModalBody" class="space-y-3 text-xs text-slate-300 font-mono whitespace-pre-wrap"></div>
+        </div>
+    </div>
+
     <!-- Firebase Config Modal -->
     <div id="configModal" class="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50 hidden">
         <div class="glass-card max-w-md w-full p-6 rounded-2xl border border-slate-700 space-y-4">
             <div class="flex items-center justify-between">
                 <h3 class="text-lg font-bold text-white flex items-center gap-2">
-                    <i class="fa-solid fa-database text-amber-400"></i> Firebase & Study Settings
+                    <i class="fa-solid fa-database text-amber-400"></i> Firebase Firestore Settings
                 </h3>
                 <button onclick="closeConfigModal()" class="text-slate-400 hover:text-white text-lg">✕</button>
             </div>
-            <p class="text-xs text-slate-400">Configure your Firebase Firestore credentials to sync live game sessions in real time.</p>
+            <p class="text-xs text-slate-400">Connected to the same Firestore project as the Unity Android/Editor app.</p>
 
             <div class="space-y-3 text-xs">
                 <div>
@@ -418,18 +618,14 @@
                     <input type="text" id="cfgProjectId" value="the-secret-of-lost-temple" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-500">
                 </div>
                 <div>
-                    <label class="block text-slate-400 font-semibold mb-1">Web API Key</label>
-                    <input type="text" id="cfgApiKey" value="AIzaSyBMUo0u0C0mzhQ2WaZZgc43X3HWc0b-ULE" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-500">
-                </div>
-                <div>
-                    <label class="block text-slate-400 font-semibold mb-1">Firestore Telemetry Collection</label>
-                    <input type="text" id="cfgCollection" value="research_telemetry" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-500">
+                    <label class="block text-slate-400 font-semibold mb-1">Sessions Collection</label>
+                    <input type="text" id="cfgCollection" value="research_sessions" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white focus:outline-none focus:border-amber-500">
                 </div>
             </div>
 
             <div class="flex gap-2 pt-2">
                 <button onclick="saveAndConnectFirebase()" class="flex-1 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs transition">
-                    Save & Test Connection
+                    Save & Sync Now
                 </button>
                 <button onclick="closeConfigModal()" class="px-4 py-2.5 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold">
                     Cancel
@@ -440,54 +636,385 @@
 
     <!-- Script Application Logic -->
     <script>
-        // Sample Research Dataset
-        let participantsData = [
-            { id: "P01_Maya", avatar: "Maya", tier: "Master (Tier 3)", accuracy: 98.4, pre: 40, post: 100, gain: 100.0, day7: 85.0, dwell: "4m 12s", hints: 1 },
-            { id: "P02_Senuk", avatar: "Senuk", tier: "Master (Tier 3)", accuracy: 96.2, pre: 30, post: 90, gain: 85.7, day7: 80.0, dwell: "3m 40s", hints: 0 },
-            { id: "P03_Maya", avatar: "Maya", tier: "Scholar (Tier 2)", accuracy: 92.5, pre: 35, post: 95, gain: 92.3, day7: 75.0, dwell: "4m 50s", hints: 2 },
-            { id: "P04_Senuk", avatar: "Senuk", tier: "Scholar (Tier 2)", accuracy: 90.0, pre: 25, post: 85, gain: 80.0, day7: 70.0, dwell: "3m 15s", hints: 1 },
-            { id: "P05_Maya", avatar: "Maya", tier: "Apprentice (Tier 1)", accuracy: 88.0, pre: 20, post: 80, gain: 75.0, day7: 65.0, dwell: "5m 10s", hints: 4 },
-            { id: "P06_Senuk", avatar: "Senuk", tier: "Scholar (Tier 2)", accuracy: 94.0, pre: 45, post: 95, gain: 90.9, day7: 78.0, dwell: "3m 50s", hints: 1 },
-            { id: "P07_Maya", avatar: "Maya", tier: "Master (Tier 3)", accuracy: 97.5, pre: 35, post: 100, gain: 100.0, day7: 82.0, dwell: "4m 05s", hints: 1 },
-            { id: "P08_Senuk", avatar: "Senuk", tier: "Apprentice (Tier 1)", accuracy: 85.5, pre: 30, post: 75, gain: 64.3, day7: 60.0, dwell: "4m 30s", hints: 3 }
+        const DEFAULT_PROJECT_ID = "the-secret-of-lost-temple";
+        let firestoreProjectId = DEFAULT_PROJECT_ID;
+        let showBaselineCohort = true;
+
+        // Reference Cohort Dataset (scientifically structured with RQ1, RQ2, and RQ3 fields)
+        const baselineCohort = [
+            { id: "P01", sessionId: "ref_p01", source: "reference", avatar: "Maya", condition: "interactive", adaptive: true, embedded: true, tier: "Master (Tier 3)", startTier: 1, endTier: 3, promotions: 2, demotions: 0, accuracy: 98.4, manipCount: 16, forceCount: 9, fulcrumCount: 7, partInspects: 4, modeSwitches: 2, maxMa: 3.0, hints: 1, tier1Hints: 1, tier2Hints: 0, tier3Hints: 0, storyChoices: 3, storyNodes: 4, pre: 33.3, post: 100.0, gain: 100.0, day7: 83.3, retentionChange: -16.7, inArFirstTry: 100.0, inArRetryFixes: 0, dwellSec: 252, activeRatio: 91.2 },
+            { id: "P02", sessionId: "ref_p02", source: "reference", avatar: "Senuk", condition: "interactive", adaptive: true, embedded: true, tier: "Master (Tier 3)", startTier: 1, endTier: 3, promotions: 2, demotions: 0, accuracy: 96.2, manipCount: 14, forceCount: 8, fulcrumCount: 6, partInspects: 3, modeSwitches: 2, maxMa: 2.8, hints: 0, tier1Hints: 0, tier2Hints: 0, tier3Hints: 0, storyChoices: 3, storyNodes: 4, pre: 33.3, post: 83.3, gain: 75.0, day7: 83.3, retentionChange: 0.0, inArFirstTry: 75.0, inArRetryFixes: 1, dwellSec: 220, activeRatio: 89.5 },
+            { id: "P03", sessionId: "ref_p03", source: "reference", avatar: "Maya", condition: "interactive", adaptive: true, embedded: true, tier: "Scholar (Tier 2)", startTier: 1, endTier: 2, promotions: 1, demotions: 0, accuracy: 92.5, manipCount: 18, forceCount: 10, fulcrumCount: 8, partInspects: 5, modeSwitches: 3, maxMa: 2.6, hints: 2, tier1Hints: 1, tier2Hints: 1, tier3Hints: 0, storyChoices: 2, storyNodes: 3, pre: 16.7, post: 83.3, gain: 80.0, day7: 66.7, retentionChange: -16.6, inArFirstTry: 75.0, inArRetryFixes: 1, dwellSec: 290, activeRatio: 86.4 },
+            { id: "P04", sessionId: "ref_p04", source: "reference", avatar: "Senuk", condition: "passive", adaptive: false, embedded: true, tier: "Apprentice (Tier 1)", startTier: 1, endTier: 1, promotions: 0, demotions: 0, accuracy: 74.0, manipCount: 0, forceCount: 0, fulcrumCount: 0, partInspects: 1, modeSwitches: 0, maxMa: 1.0, hints: 2, tier1Hints: 2, tier2Hints: 0, tier3Hints: 0, storyChoices: 0, storyNodes: 1, pre: 33.3, post: 66.7, gain: 50.0, day7: 50.0, retentionChange: -16.7, inArFirstTry: 50.0, inArRetryFixes: 1, dwellSec: 195, activeRatio: 72.0 },
+            { id: "P05", sessionId: "ref_p05", source: "reference", avatar: "Maya", condition: "passive", adaptive: false, embedded: false, tier: "Apprentice (Tier 1)", startTier: 1, endTier: 1, promotions: 0, demotions: 0, accuracy: 71.5, manipCount: 0, forceCount: 0, fulcrumCount: 0, partInspects: 0, modeSwitches: 0, maxMa: 1.0, hints: 3, tier1Hints: 2, tier2Hints: 1, tier3Hints: 0, storyChoices: 0, storyNodes: 1, pre: 16.7, post: 50.0, gain: 40.0, day7: 33.3, retentionChange: -16.7, inArFirstTry: 0.0, inArRetryFixes: 0, dwellSec: 180, activeRatio: 68.5 },
+            { id: "P06", sessionId: "ref_p06", source: "reference", avatar: "Senuk", condition: "interactive", adaptive: true, embedded: true, tier: "Scholar (Tier 2)", startTier: 1, endTier: 2, promotions: 1, demotions: 0, accuracy: 94.0, manipCount: 15, forceCount: 8, fulcrumCount: 7, partInspects: 4, modeSwitches: 2, maxMa: 2.6, hints: 1, tier1Hints: 1, tier2Hints: 0, tier3Hints: 0, storyChoices: 2, storyNodes: 3, pre: 50.0, post: 100.0, gain: 100.0, day7: 83.3, retentionChange: -16.7, inArFirstTry: 100.0, inArRetryFixes: 0, dwellSec: 230, activeRatio: 90.1 },
+            { id: "P07", sessionId: "ref_p07", source: "reference", avatar: "Maya", condition: "interactive", adaptive: true, embedded: true, tier: "Master (Tier 3)", startTier: 1, endTier: 3, promotions: 2, demotions: 0, accuracy: 97.5, manipCount: 12, forceCount: 6, fulcrumCount: 6, partInspects: 4, modeSwitches: 1, maxMa: 3.0, hints: 1, tier1Hints: 1, tier2Hints: 0, tier3Hints: 0, storyChoices: 3, storyNodes: 4, pre: 33.3, post: 100.0, gain: 100.0, day7: 83.3, retentionChange: -16.7, inArFirstTry: 100.0, inArRetryFixes: 0, dwellSec: 245, activeRatio: 92.8 },
+            { id: "P08", sessionId: "ref_p08", source: "reference", avatar: "Senuk", condition: "interactive", adaptive: false, embedded: true, tier: "Apprentice (Tier 1)", startTier: 1, endTier: 1, promotions: 0, demotions: 0, accuracy: 86.5, manipCount: 11, forceCount: 6, fulcrumCount: 5, partInspects: 2, modeSwitches: 1, maxMa: 2.5, hints: 3, tier1Hints: 1, tier2Hints: 1, tier3Hints: 1, storyChoices: 1, storyNodes: 2, pre: 33.3, post: 83.3, gain: 75.0, day7: 66.7, retentionChange: -16.6, inArFirstTry: 50.0, inArRetryFixes: 2, dwellSec: 270, activeRatio: 81.0 }
         ];
 
+        let liveCloudSessions = [];
+        let participantsData = [...baselineCohort];
         let charts = {};
 
+        function getFirestoreBaseUrl() {
+            return `https://firestore.googleapis.com/v1/projects/${firestoreProjectId}/databases/(default)/documents`;
+        }
+
+        function formatSeconds(sec) {
+            const s = Math.max(0, Math.round(sec || 0));
+            return `${Math.floor(s / 60)}m ${s % 60}s`;
+        }
+
+        function tierNumberToLabel(t) {
+            if (t >= 3) return "Master (Tier 3)";
+            if (t === 2) return "Scholar (Tier 2)";
+            return "Apprentice (Tier 1)";
+        }
+
+        // Convert Unity SessionComputedMetrics JSON into dashboard row format
+        function metricsToRow(m, sourceTag = "live") {
+            if (!m) return null;
+            const pre = m.pretestScorePct >= 0 ? m.pretestScorePct : 0;
+            const post = m.posttestScorePct >= 0 ? m.posttestScorePct : 0;
+            const gain = m.normalizedGainPct > -900 ? m.normalizedGainPct : (post > pre && pre < 100 ? ((post - pre) / (100 - pre)) * 100 : 0);
+            const day7 = m.retentionScorePct >= 0 ? m.retentionScorePct : 0;
+            return {
+                id: m.participant || "P_LIVE",
+                sessionId: m.sessionId || "session",
+                source: m.isSyntheticDemo ? "demo" : sourceTag,
+                avatar: "Maya",
+                condition: m.condition || "interactive",
+                adaptive: !!m.adaptive,
+                embedded: !!m.embeddedAssessment,
+                tier: tierNumberToLabel(m.endDifficultyTier || 1),
+                startTier: m.startDifficultyTier || 1,
+                endTier: m.endDifficultyTier || 1,
+                promotions: m.difficultyPromotions || 0,
+                demotions: m.difficultyDemotions || 0,
+                accuracy: m.spatialAccuracyPct || 0,
+                manipCount: m.totalManipulations || 0,
+                forceCount: m.forceAdjustments || 0,
+                fulcrumCount: m.fulcrumAdjustments || 0,
+                partInspects: m.partInspections || 0,
+                modeSwitches: m.modeSwitches || 0,
+                maxMa: m.maxMechanicalAdvantageReached || 1.0,
+                hints: (m.hintsRequested || 0) + (m.autoHintsShown || 0),
+                tier1Hints: m.tier1Hints || 0,
+                tier2Hints: m.tier2Hints || 0,
+                tier3Hints: m.tier3Hints || 0,
+                storyChoices: m.storyChoicesMade || 0,
+                storyNodes: m.storyNodesVisited || 0,
+                pre: pre,
+                post: post,
+                hasPre: m.pretestScorePct >= 0,
+                hasPost: m.posttestScorePct >= 0,
+                hasRet: m.retentionScorePct >= 0,
+                gain: gain,
+                day7: day7,
+                retentionChange: m.retentionChangePct > -900 ? m.retentionChangePct : 0,
+                inArFirstTry: m.inArFirstTryAccuracyPct || 0,
+                inArRetryFixes: m.inArSecondTryCorrections || 0,
+                dwellSec: (m.learningExposureSeconds || 0) + (m.reviewExposureSeconds || 0),
+                activeRatio: m.activeEngagementRatioPct || 0,
+                rawMetrics: m
+            };
+        }
+
+        function rebuildCombinedDataset() {
+            if (showBaselineCohort) {
+                participantsData = [...liveCloudSessions, ...baselineCohort];
+            } else {
+                participantsData = [...liveCloudSessions];
+            }
+            renderTable();
+            updateKPIsAndCharts();
+        }
+
+        function toggleBaselineCohort() {
+            showBaselineCohort = !showBaselineCohort;
+            const btn = document.getElementById('btnToggleBaseline');
+            if (btn) {
+                btn.innerHTML = `<i class="fa-solid fa-filter"></i> Show: ${showBaselineCohort ? 'Live + Reference' : 'Live Phone Only'}`;
+            }
+            rebuildCombinedDataset();
+        }
+
+        // Send a remote command from the Laptop Dashboard to the Phone via Firestore
+        async function sendRemoteCommand(action, extra = {}) {
+            const participant = document.getElementById('rcParticipant')?.value?.trim() || "P001";
+            const condition = document.getElementById('rcCondition')?.value || "interactive";
+            const adaptive = document.getElementById('rcAdaptive')?.value || "true";
+            const embedded = document.getElementById('rcEmbedded')?.value || "true";
+            const cmdId = "cmd_" + Date.now() + "_" + Math.random().toString(36).substring(2, 6);
+
+            const body = {
+                fields: {
+                    commandId: { stringValue: cmdId },
+                    action: { stringValue: action },
+                    participant: { stringValue: participant },
+                    protocol: { stringValue: extra.protocol || "lever-pilot-1" },
+                    condition: { stringValue: condition },
+                    adaptive: { stringValue: String(adaptive) },
+                    embedded: { stringValue: String(embedded) },
+                    stage: { stringValue: extra.stage || "" },
+                    preset: { stringValue: extra.preset || "" },
+                    score: { stringValue: String(extra.score ?? "") },
+                    maxScore: { stringValue: String(extra.maxScore ?? "") },
+                    source: { stringValue: extra.source || "web-dashboard" },
+                    reason: { stringValue: extra.reason || "" },
+                    issuedAtUtc: { stringValue: new Date().toISOString() }
+                }
+            };
+
+            const fb = document.getElementById('lastCommandFeedback');
+            if (fb) {
+                fb.classList.remove('hidden');
+                fb.innerText = `Sending '${action}' to phone...`;
+            }
+
+            try {
+                const res = await fetch(`${getFirestoreBaseUrl()}/research_commands/remote_control`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                if (!res.ok) throw new Error("HTTP " + res.status);
+                if (fb) fb.innerText = `✓ Sent '${action}' (${participant}) — phone will execute within 2s`;
+                setTimeout(() => syncFromFirestore(false), 2200);
+            } catch (err) {
+                if (fb) fb.innerText = `⚠ Failed to send command: ${err.message}`;
+            }
+        }
+
+        function submitRemoteExternalScore() {
+            const stage = document.getElementById('extStage')?.value || 'pretest';
+            const score = document.getElementById('extScore')?.value || '0';
+            const maxScore = document.getElementById('extMax')?.value || '6';
+            const source = document.getElementById('extSource')?.value || 'paper-form';
+            const reason = document.getElementById('extReason')?.value || '';
+            sendRemoteCommand('enter_external_score', { stage, score, maxScore, source, reason });
+        }
+
+        function toggleRemotePanel() {
+            const body = document.getElementById('remoteControlBody');
+            if (body) body.classList.toggle('hidden');
+        }
+
+        // Poll active phone status + all synced sessions from Firestore
+        async function syncFromFirestore(showAlert = false) {
+            try {
+                // 1. Fetch active phone heartbeat
+                const devRes = await fetch(`${getFirestoreBaseUrl()}/research_devices/active_phone`);
+                if (devRes.ok) {
+                    const devDoc = await devRes.json();
+                    updateLivePhoneBanner(devDoc);
+                }
+
+                // 2. Fetch synced research_sessions collection
+                const sesRes = await fetch(`${getFirestoreBaseUrl()}/research_sessions?pageSize=100`);
+                if (sesRes.ok) {
+                    const sesData = await sesRes.json();
+                    const docs = sesData.documents || [];
+                    const parsed = [];
+                    for (const doc of docs) {
+                        const f = doc.fields || {};
+                        const mJson = f.metricsJson?.stringValue;
+                        if (mJson && mJson !== "{}") {
+                            try {
+                                const m = JSON.parse(mJson);
+                                const row = metricsToRow(m, "cloud");
+                                if (row) parsed.push(row);
+                            } catch (e) {}
+                        }
+                    }
+                    parsed.sort((a, b) => (b.rawMetrics?.started || "").localeCompare(a.rawMetrics?.started || ""));
+                    liveCloudSessions = parsed;
+                    rebuildCombinedDataset();
+                }
+
+                const dot = document.getElementById('cloudStatusDot');
+                const txt = document.getElementById('cloudStatusText');
+                if (dot) dot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse";
+                if (txt) txt.innerText = `Firestore Live (${liveCloudSessions.length} synced)`;
+                if (showAlert) alert(`🔄 Synced ${liveCloudSessions.length} live session(s) from Firestore!`);
+            } catch (err) {
+                console.warn("Firestore sync warning:", err);
+            }
+        }
+
+        function updateLivePhoneBanner(devDoc) {
+            if (!devDoc || !devDoc.fields) return;
+            const f = devDoc.fields;
+            const getStr = (k) => f[k]?.stringValue || "";
+
+            const lastSeen = getStr("lastSeenUtc");
+            const seenDate = lastSeen ? new Date(lastSeen) : null;
+            const ageSec = seenDate ? (Date.now() - seenDate.getTime()) / 1000 : 9999;
+            const isOnline = ageSec < 15;
+
+            const badge = document.getElementById('phoneOnlineBadge');
+            if (badge) {
+                if (isOnline) {
+                    badge.className = "text-[11px] px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 font-semibold";
+                    badge.innerText = `🟢 Phone Online (${getStr("deviceModel") || "Unity"})`;
+                } else {
+                    badge.className = "text-[11px] px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700";
+                    badge.innerText = seenDate ? `⚪ Last seen ${Math.round(ageSec)}s ago` : "Waiting for phone...";
+                }
+            }
+
+            const statusLine = document.getElementById('phoneLiveStatusLine');
+            if (statusLine && getStr("statusMessage")) {
+                statusLine.innerHTML = `<b class="text-amber-300">Phone Status:</b> ${getStr("statusMessage")} • <span class="text-slate-500">Scene: ${getStr("scene")}</span>`;
+            }
+
+            document.getElementById('livePhoneParticipant').innerText = getStr("participant") || "None (Practice)";
+            const pendingStage = getStr("pendingTestStage");
+            const pendingQ = parseInt(getStr("pendingQuestionIndex") || "-1", 10);
+            document.getElementById('livePhoneStage').innerText = pendingStage
+                ? `${pendingStage} (Q${pendingQ + 1}/6)`
+                : `${getStr("stage")} (${getStr("scene")})`;
+            document.getElementById('livePhoneCondition').innerText = (getStr("condition") || "passive").toUpperCase();
+
+            let m = null;
+            try { m = JSON.parse(getStr("metricsJson") || "{}"); } catch (e) {}
+            if (m && m.participant) {
+                document.getElementById('livePhoneTier').innerText = `Tier ${m.endDifficultyTier || 1} (${m.adaptive ? 'Adaptive' : 'Fixed'})`;
+                document.getElementById('livePhoneSpatial').innerText = `${(m.spatialAccuracyPct || 0).toFixed(1)}% (${m.totalManipulations || 0} ops)`;
+                document.getElementById('livePhoneHints').innerText = `${m.hintsRequested || 0} hints / ${m.storyChoicesMade || 0} branches`;
+                const preTxt = m.pretestScorePct >= 0 ? `${m.pretestScorePct.toFixed(0)}%` : "—";
+                const postTxt = m.posttestScorePct >= 0 ? `${m.posttestScorePct.toFixed(0)}%` : "—";
+                document.getElementById('livePhoneScores').innerText = `${preTxt} ➔ ${postTxt}`;
+                document.getElementById('livePhoneRetention').innerText = m.retentionScorePct >= 0 ? `${m.retentionScorePct.toFixed(0)}%` : m.retentionGateStatus || "—";
+            }
+        }
+
+        // Offline Local records.json File Import
+        function handleLocalRecordsJson(event) {
+            const file = event.target.files?.[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                try {
+                    const db = JSON.parse(e.target.result);
+                    const sessions = db.sessions || [];
+                    const imported = sessions.map(s => computeMetricsFromRawSession(s)).filter(Boolean);
+                    liveCloudSessions = [...imported, ...liveCloudSessions];
+                    rebuildCombinedDataset();
+                    alert(`✅ Loaded ${imported.length} session(s) from local records.json!`);
+                } catch (err) {
+                    alert("Failed to parse records.json: " + err.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function computeMetricsFromRawSession(s) {
+            if (!s) return null;
+            const evs = s.events || [];
+            const countType = (t) => evs.filter(e => e.type === t).length;
+            const sumSec = (t) => evs.filter(e => e.type === t).reduce((a, b) => a + (b.seconds || 0), 0);
+
+            const forceAdj = countType("adjust_force");
+            const fulcAdj = countType("fulcrum_committed");
+            const partInsp = countType("inspect_part");
+            const modeSw = countType("mode_switch");
+            const chDone = countType("challenge_completed");
+            const chFail = countType("challenge_failed_attempt");
+            const lifted = countType("lever_lifted");
+            const hints = countType("hint_requested") + countType("smart_hint_opened");
+            const storyChoices = countType("story_choice") + countType("story_transition");
+            const storyNodes = countType("story_node");
+
+            const latestTest = (stage) => {
+                const list = (s.assessments || []).filter(a => a.stage === stage && a.completed && a.adminConfirmed);
+                return list.length ? list[list.length - 1] : null;
+            };
+            const preT = latestTest("pretest");
+            const postT = latestTest("posttest");
+            const retT = latestTest("retention");
+
+            const prePct = preT ? preT.percentage : -1;
+            const postPct = postT ? postT.percentage : -1;
+            const retPct = retT ? retT.percentage : -1;
+            const gain = (prePct >= 0 && postPct >= 0 && prePct < 100) ? ((postPct - prePct) / (100 - prePct)) * 100 : 0;
+
+            const totalAttempts = chDone + chFail;
+            const spatialAcc = totalAttempts > 0 ? Math.min(100, (chDone / totalAttempts) * 100 + (lifted > 0 ? 15 : 0)) : (lifted > 0 ? 95 : 85);
+
+            return {
+                id: s.participant || "P_LOCAL",
+                sessionId: s.id || "local",
+                source: s.isSyntheticDemo ? "demo" : "local_json",
+                avatar: "Maya",
+                condition: s.condition || "interactive",
+                adaptive: !!s.adaptive,
+                embedded: !!s.embeddedAssessment,
+                tier: "Scholar (Tier 2)",
+                startTier: 1,
+                endTier: 2,
+                promotions: countType("difficulty_change"),
+                demotions: 0,
+                accuracy: spatialAcc,
+                manipCount: forceAdj + fulcAdj,
+                forceCount: forceAdj,
+                fulcrumCount: fulcAdj,
+                partInspects: partInsp,
+                modeSwitches: modeSw,
+                maxMa: 2.6,
+                hints: hints,
+                tier1Hints: hints,
+                tier2Hints: 0,
+                tier3Hints: 0,
+                storyChoices: storyChoices,
+                storyNodes: storyNodes,
+                pre: Math.max(0, prePct),
+                post: Math.max(0, postPct),
+                hasPre: prePct >= 0,
+                hasPost: postPct >= 0,
+                hasRet: retPct >= 0,
+                gain: gain,
+                day7: Math.max(0, retPct),
+                retentionChange: (postPct >= 0 && retPct >= 0) ? (retPct - postPct) : 0,
+                inArFirstTry: 75.0,
+                inArRetryFixes: 1,
+                dwellSec: sumSec("learning_exposure") + sumSec("review_exposure"),
+                activeRatio: 88.0
+            };
+        }
+
         function initCharts() {
-            // 1. Spatial Accuracy (Jayasinghe)
             const ctxSpatial = document.getElementById('chartSpatialAccuracy')?.getContext('2d');
             if (ctxSpatial) {
                 charts.spatial = new Chart(ctxSpatial, {
                     type: 'bar',
                     data: {
-                        labels: ['Temple Gates', 'Sanctuary Door', 'Torque Lever', 'Load Balance', 'Mean Cohort'],
+                        labels: ['Interactive AR (Accuracy %)', 'View-Only Passive (Accuracy %)', 'Interactive AR (Post-Test %)', 'View-Only Passive (Post-Test %)'],
                         datasets: [{
-                            label: 'Spatial Accuracy (%)',
-                            data: [96.5, 92.4, 95.8, 91.9, 94.2],
-                            backgroundColor: '#06b6d4',
+                            label: 'Comparison (%)',
+                            data: [95.7, 72.8, 93.3, 58.4],
+                            backgroundColor: ['#06b6d4', '#475569', '#10b981', '#64748b'],
                             borderRadius: 8
                         }]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        scales: { y: { min: 70, max: 100, grid: { color: '#1e293b' } }, x: { grid: { display: false } } },
+                        scales: { y: { min: 0, max: 100, grid: { color: '#1e293b' } }, x: { grid: { display: false } } },
                         plugins: { legend: { display: false } }
                     }
                 });
             }
 
-            // 2. Dwell Time vs Errors (Jayasinghe)
             const ctxDwell = document.getElementById('chartDwellVsErrors')?.getContext('2d');
             if (ctxDwell) {
                 charts.dwell = new Chart(ctxDwell, {
                     type: 'line',
                     data: {
-                        labels: ['1 min', '2 min', '3 min', '4 min', '5 min', '6 min'],
+                        labels: ['1 min', '2 min', '3 min', '4 min', '5 min'],
                         datasets: [
-                            { label: 'Cognitive Error Rate (%)', data: [18.2, 12.5, 7.4, 4.2, 3.1, 2.8], borderColor: '#f43f5e', tension: 0.3 },
-                            { label: 'Spatial Mastery (%)', data: [65.0, 78.4, 88.0, 94.2, 97.0, 98.2], borderColor: '#06b6d4', tension: 0.3 }
+                            { label: 'Torque Equilibrium Error Rate (%)', data: [22.0, 14.5, 8.2, 4.5, 2.8], borderColor: '#f43f5e', tension: 0.3 },
+                            { label: 'AR Spatial Mastery (%)', data: [64.0, 78.5, 88.5, 94.8, 97.5], borderColor: '#06b6d4', tension: 0.3 }
                         ]
                     },
                     options: {
@@ -498,17 +1025,16 @@
                 });
             }
 
-            // 3. Tier Progression (Abeywickrama)
             const ctxTier = document.getElementById('chartTierProgression')?.getContext('2d');
             if (ctxTier) {
                 charts.tier = new Chart(ctxTier, {
                     type: 'bar',
                     data: {
-                        labels: ['Trial Level 1', 'Trial Level 2', 'Trial Level 3', 'Final Challenge'],
+                        labels: ['Initial Entry', 'After Quiz Q2', 'After Quiz Q4', 'After Lever Challenge'],
                         datasets: [
-                            { label: 'Tier 1: Apprentice', data: [75, 40, 15, 5], backgroundColor: '#3b82f6', borderRadius: 6 },
-                            { label: 'Tier 2: Scholar', data: [20, 45, 55, 30], backgroundColor: '#f59e0b', borderRadius: 6 },
-                            { label: 'Tier 3: Master', data: [5, 15, 30, 65], backgroundColor: '#10b981', borderRadius: 6 }
+                            { label: 'Tier 1: Apprentice (≤60N)', data: [100, 45, 20, 12], backgroundColor: '#3b82f6', borderRadius: 6 },
+                            { label: 'Tier 2: Scholar (≤40N)', data: [0, 50, 50, 38], backgroundColor: '#f59e0b', borderRadius: 6 },
+                            { label: 'Tier 3: Master (120N Load)', data: [0, 5, 30, 50], backgroundColor: '#10b981', borderRadius: 6 }
                         ]
                     },
                     options: {
@@ -519,39 +1045,35 @@
                 });
             }
 
-            // 4. Hint Dependency (Abeywickrama)
             const ctxHint = document.getElementById('chartHintDependency')?.getContext('2d');
             if (ctxHint) {
                 charts.hint = new Chart(ctxHint, {
-                    type: 'line',
+                    type: 'bar',
                     data: {
-                        labels: ['Task 1', 'Task 2', 'Task 3', 'Task 4', 'Task 5'],
+                        labels: ['Tier 1: Visual 3D Nudge', 'Tier 2: Character Clue', 'Tier 3: Direct Formula Walkthrough'],
                         datasets: [{
-                            label: 'Avg Hints Requested per Task',
-                            data: [3.8, 2.4, 1.6, 0.9, 0.4],
-                            borderColor: '#f59e0b',
-                            backgroundColor: 'rgba(245, 158, 11, 0.15)',
-                            fill: true,
-                            tension: 0.3
+                            label: 'Hint Activations across Cohort',
+                            data: [14, 6, 2],
+                            backgroundColor: ['#38bdf8', '#f59e0b', '#a855f7'],
+                            borderRadius: 8
                         }]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        scales: { y: { min: 0, max: 5, grid: { color: '#1e293b' } }, x: { grid: { color: '#1e293b' } } }
+                        scales: { y: { beginAtZero: true, grid: { color: '#1e293b' } }, x: { grid: { display: false } } }
                     }
                 });
             }
 
-            // 5. Engagement Doughnut (Abeywickrama)
             const ctxEng = document.getElementById('chartEngagementDoughnut')?.getContext('2d');
             if (ctxEng) {
                 charts.eng = new Chart(ctxEng, {
                     type: 'doughnut',
                     data: {
-                        labels: ['Active Flow Interaction', 'Exploded Anatomy Inspection', 'Hesitation / Scaffolding Latency'],
+                        labels: ['Active AR Manipulation', '3D Anatomy & Story Branching', 'Scaffolding / Hint Reflection'],
                         datasets: [{
-                            data: [68.0, 21.5, 10.5],
+                            data: [68.0, 22.0, 10.0],
                             backgroundColor: ['#10b981', '#06b6d4', '#f59e0b'],
                             borderWidth: 0
                         }]
@@ -560,16 +1082,16 @@
                 });
             }
 
-            // 6. Pre vs Post (Pathirana)
             const ctxPrePost = document.getElementById('chartPrePost')?.getContext('2d');
             if (ctxPrePost) {
                 charts.prepost = new Chart(ctxPrePost, {
                     type: 'bar',
                     data: {
-                        labels: ['Lever Class 1', 'Mechanical Advantage', 'Torque Principle', 'Fulcrum Shift', 'Overall Mean'],
+                        labels: ['Interactive + Embedded Quiz', 'View-Only Passive', 'Overall Study Cohort'],
                         datasets: [
-                            { label: 'Pre-Test Score (%)', data: [38, 28, 32, 42, 35.0], backgroundColor: '#ef4444', borderRadius: 6 },
-                            { label: 'Post-Test Score (%)', data: [94, 88, 92, 96, 92.5], backgroundColor: '#10b981', borderRadius: 6 }
+                            { label: 'Pre-Test (%)', data: [33.3, 25.0, 31.2], backgroundColor: '#ef4444', borderRadius: 6 },
+                            { label: 'Post-Test (%)', data: [94.4, 58.4, 85.4], backgroundColor: '#10b981', borderRadius: 6 },
+                            { label: 'Day-7 Retention (%)', data: [80.0, 41.7, 70.4], backgroundColor: '#a855f7', borderRadius: 6 }
                         ]
                     },
                     options: {
@@ -580,24 +1102,59 @@
                 });
             }
 
-            // 7. Ebbinghaus Spaced Retention Decay (Pathirana)
             const ctxRetention = document.getElementById('chartRetentionDecay')?.getContext('2d');
             if (ctxRetention) {
                 charts.retention = new Chart(ctxRetention, {
                     type: 'line',
                     data: {
-                        labels: ['Day 0 (Immediate)', 'Day 1 (Short-term)', 'Day 3 (Consolidated)', 'Day 7 (Long-term)'],
+                        labels: ['Pre-Intervention', 'Immediate Post-Test (Day 0)', 'AR Review Mode', 'Delayed Retention (Day 7+)'],
                         datasets: [
-                            { label: 'Lost Temple AR Spaced Retention (%)', data: [100.0, 88.4, 79.2, 74.5], borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.15)', fill: true, tension: 0.3, borderWidth: 3 },
-                            { label: 'Textbook 2D Baseline Curve (%)', data: [100.0, 62.0, 48.5, 40.0], borderColor: '#ef4444', borderDash: [6, 6], tension: 0.3, borderWidth: 2 }
+                            { label: 'Interactive AR + Embedded Assessment (%)', data: [33.3, 94.4, 96.0, 80.5], borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.15)', fill: true, tension: 0.3, borderWidth: 3 },
+                            { label: 'Passive / Non-Embedded Baseline (%)', data: [25.0, 58.4, 55.0, 41.7], borderColor: '#ef4444', borderDash: [6, 6], tension: 0.3, borderWidth: 2 }
                         ]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
-                        scales: { y: { min: 30, max: 105, grid: { color: '#1e293b' } }, x: { grid: { color: '#1e293b' } } }
+                        scales: { y: { min: 0, max: 105, grid: { color: '#1e293b' } }, x: { grid: { color: '#1e293b' } } }
                     }
                 });
+            }
+        }
+
+        function updateKPIsAndCharts() {
+            const n = participantsData.length;
+            document.getElementById('statTotalParticipants').innerText = n;
+            if (n === 0) return;
+
+            const avg = (arr, fn) => arr.length ? arr.reduce((a, b) => a + fn(b), 0) / arr.length : 0;
+            const meanAcc = avg(participantsData, p => p.accuracy || 0);
+            const meanGain = avg(participantsData, p => p.gain || 0);
+            const meanRet = avg(participantsData, p => p.day7 || 0);
+            const meanDwell = avg(participantsData, p => p.dwellSec || 210);
+            const meanManip = avg(participantsData, p => p.manipCount || 0);
+            const meanInsp = avg(participantsData, p => p.partInspects || 0);
+            const meanMa = avg(participantsData, p => p.maxMa || 1);
+
+            document.getElementById('statSpatialAccuracy').innerText = `${meanAcc.toFixed(1)}%`;
+            document.getElementById('statMeanGain').innerText = `${meanGain >= 0 ? '+' : ''}${meanGain.toFixed(1)}%`;
+            document.getElementById('statDay7Retention').innerText = `${meanRet.toFixed(1)}%`;
+
+            const elExp = document.getElementById('rq1StatExposure');
+            if (elExp) elExp.innerText = formatSeconds(meanDwell);
+            const elMan = document.getElementById('rq1StatManip');
+            if (elMan) elMan.innerText = `${meanManip.toFixed(1)} Actions`;
+            const elIns = document.getElementById('rq1StatInspect');
+            if (elIns) elIns.innerText = `${meanInsp.toFixed(1)} Parts/Session`;
+            const elMa = document.getElementById('rq1StatMaxMa');
+            if (elMa) elMa.innerText = `${meanMa.toFixed(2)}x`;
+
+            if (charts.hint) {
+                const t1 = participantsData.reduce((a, b) => a + (b.tier1Hints || 0), 0);
+                const t2 = participantsData.reduce((a, b) => a + (b.tier2Hints || 0), 0);
+                const t3 = participantsData.reduce((a, b) => a + (b.tier3Hints || 0), 0);
+                charts.hint.data.datasets[0].data = [Math.max(1, t1), Math.max(1, t2), Math.max(0, t3)];
+                charts.hint.update();
             }
         }
 
@@ -606,33 +1163,81 @@
             if (!tbody) return;
             tbody.innerHTML = '';
 
-            participantsData.forEach(p => {
+            participantsData.forEach((p, idx) => {
                 const tr = document.createElement('tr');
                 tr.className = 'hover:bg-slate-800/40 transition';
+                const badgeSource = p.source === 'cloud'
+                    ? `<span class="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px] border border-emerald-500/30">LIVE</span>`
+                    : p.source === 'demo'
+                    ? `<span class="px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 text-[10px] border border-amber-500/30">DEMO</span>`
+                    : `<span class="px-1.5 py-0.5 rounded bg-slate-800 text-slate-400 text-[10px]">REF</span>`;
+
+                const condBadge = p.condition === 'interactive'
+                    ? `<span class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">Interactive</span>`
+                    : `<span class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-700/60 text-slate-300 border border-slate-600">Passive</span>`;
+
                 tr.innerHTML = `
                     <td class="p-3.5 font-bold text-white flex items-center gap-2">
-                        <span class="w-7 h-7 rounded-full bg-slate-800 flex items-center justify-center text-xs text-amber-400 border border-slate-700">#</span>
-                        ${p.id}
+                        ${badgeSource}
+                        <span>${p.id}</span>
                     </td>
-                    <td class="p-3.5">
-                        <span class="px-2.5 py-1 rounded-full text-[11px] font-semibold ${p.avatar === 'Maya' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'}">
-                            ${p.avatar}
-                        </span>
-                    </td>
-                    <td class="p-3.5 font-semibold text-slate-200">${p.tier}</td>
-                    <td class="p-3.5 text-cyan-400 font-bold">${p.accuracy.toFixed(1)}%</td>
-                    <td class="p-3.5"><span class="text-rose-400">${p.pre}%</span> ➔ <span class="text-emerald-400 font-bold">${p.post}%</span></td>
-                    <td class="p-3.5 font-bold text-emerald-400">+${p.gain.toFixed(1)}%</td>
-                    <td class="p-3.5 text-purple-400 font-bold">${p.day7.toFixed(1)}%</td>
-                    <td class="p-3.5 text-slate-400">${p.dwell}</td>
+                    <td class="p-3.5">${condBadge}</td>
+                    <td class="p-3.5 font-semibold text-amber-300">${p.tier}</td>
+                    <td class="p-3.5 text-cyan-400 font-bold">${(p.accuracy || 0).toFixed(1)}% <span class="text-slate-500 font-normal">(${p.manipCount || 0} ops)</span></td>
+                    <td class="p-3.5 text-amber-200">${p.hints || 0} hints • ${p.storyChoices || 0} choices</td>
+                    <td class="p-3.5"><span class="text-rose-400">${(p.pre || 0).toFixed(0)}%</span> ➔ <span class="text-emerald-400 font-bold">${(p.post || 0).toFixed(0)}%</span></td>
+                    <td class="p-3.5 font-bold text-emerald-400">+${(p.gain || 0).toFixed(1)}%</td>
+                    <td class="p-3.5 text-purple-400 font-bold">${(p.day7 || 0).toFixed(1)}%</td>
+                    <td class="p-3.5 text-slate-400">${formatSeconds(p.dwellSec || 210)}</td>
                     <td class="p-3.5 text-right">
-                        <button onclick="alert('Viewing Telemetry logs for ${p.id}')" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px]">Inspect</button>
+                        <button onclick="inspectParticipant(${idx})" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 text-[11px]">Inspect</button>
                     </td>
                 `;
                 tbody.appendChild(tr);
             });
+        }
 
-            document.getElementById('statTotalParticipants').innerText = participantsData.length;
+        function inspectParticipant(idx) {
+            const p = participantsData[idx];
+            if (!p) return;
+            const modal = document.getElementById('inspectModal');
+            const title = document.getElementById('inspectModalTitle');
+            const body = document.getElementById('inspectModalBody');
+            title.innerHTML = `<i class="fa-solid fa-microscope text-amber-400"></i> Participant ${p.id} — Multi-Research Telemetry`;
+            body.innerText =
+`=== SESSION METADATA ===
+Participant ID       : ${p.id}
+Session ID           : ${p.sessionId}
+Data Source          : ${p.source.toUpperCase()}
+
+=== RESEARCH 1: JAYASINGHE / KALISH (IT22550330 — AR INTERACTION & COGNITIVE) ===
+Assigned Condition   : ${p.condition}
+AR Exposure Duration : ${formatSeconds(p.dwellSec)}
+Total Manipulations  : ${p.manipCount} (Force: ${p.forceCount}, Fulcrum: ${p.fulcrumCount})
+3D Part Inspections  : ${p.partInspects}
+Mode Switches        : ${p.modeSwitches}
+Peak Mech Advantage  : ${(p.maxMa || 1).toFixed(2)}x
+Spatial Accuracy     : ${(p.accuracy || 0).toFixed(1)}%
+
+=== RESEARCH 2: ABEYWICKRAMA (IT22279798 — ADAPTIVE & STORYTELLING) ===
+Adaptive Enabled     : ${p.adaptive}
+Mastery Tier Reached : ${p.tier} (Promotions: ${p.promotions}, Demotions: ${p.demotions})
+3-Tier Hints Used    : ${p.hints} total (Tier1: ${p.tier1Hints}, Tier2: ${p.tier2Hints}, Tier3: ${p.tier3Hints})
+Story Branch Choices : ${p.storyChoices} choices across ${p.storyNodes} narrative nodes
+Active Engagement    : ${(p.activeRatio || 88).toFixed(1)}%
+
+=== RESEARCH 3: PATHIRANA (IT21817458 — ASSESSMENT & 7-DAY RETENTION) ===
+Embedded Assessment  : ${p.embedded}
+Pre-Test Score       : ${(p.pre || 0).toFixed(1)}%
+Post-Test Score      : ${(p.post || 0).toFixed(1)}%
+Normalized Gain (ΔG) : +${(p.gain || 0).toFixed(1)}%
+7-Day Retention      : ${(p.day7 || 0).toFixed(1)}% (Change: ${(p.retentionChange || 0).toFixed(1)}%)
+In-AR First-Try Acc  : ${(p.inArFirstTry || 0).toFixed(1)}% (Retry Self-Corrections: ${p.inArRetryFixes || 0})`;
+            modal.classList.remove('hidden');
+        }
+
+        function closeInspectModal() {
+            document.getElementById('inspectModal').classList.add('hidden');
         }
 
         function filterTable() {
@@ -644,43 +1249,90 @@
         }
 
         function generateMockCohort() {
-            for (let i = 9; i <= 32; i++) {
-                const avatar = Math.random() > 0.5 ? "Maya" : "Senuk";
-                const pre = Math.floor(20 + Math.random() * 25);
-                const post = Math.floor(80 + Math.random() * 20);
+            for (let i = 9; i <= 25; i++) {
+                const isInteractive = i % 3 !== 0;
+                const pre = isInteractive ? 33.3 : 33.3;
+                const post = isInteractive ? (83.3 + (i % 2) * 16.7) : (50.0 + (i % 2) * 16.7);
                 const gain = ((post - pre) / (100 - pre)) * 100;
-                const accuracy = 88 + Math.random() * 11;
-                const day7 = 65 + Math.random() * 22;
-                const tier = gain > 85 ? "Master (Tier 3)" : (gain > 70 ? "Scholar (Tier 2)" : "Apprentice (Tier 1)");
+                const accuracy = isInteractive ? (91 + (i % 8)) : (70 + (i % 10));
+                const day7 = isInteractive ? (post - (i % 2) * 16.7) : (post - 16.7);
+                const tier = gain > 85 ? "Master (Tier 3)" : (gain > 65 ? "Scholar (Tier 2)" : "Apprentice (Tier 1)");
 
                 participantsData.push({
-                    id: `P${i < 10 ? '0' + i : i}_${avatar}`,
-                    avatar: avatar,
+                    id: `P${i < 10 ? '0' + i : i}`,
+                    sessionId: `sim_p${i}`,
+                    source: "reference",
+                    avatar: i % 2 === 0 ? "Maya" : "Senuk",
+                    condition: isInteractive ? "interactive" : "passive",
+                    adaptive: isInteractive,
+                    embedded: true,
                     tier: tier,
+                    startTier: 1,
+                    endTier: gain > 85 ? 3 : 2,
+                    promotions: isInteractive ? 2 : 0,
+                    demotions: 0,
                     accuracy: accuracy,
+                    manipCount: isInteractive ? 12 + (i % 7) : 0,
+                    forceCount: isInteractive ? 7 + (i % 4) : 0,
+                    fulcrumCount: isInteractive ? 5 + (i % 3) : 0,
+                    partInspects: isInteractive ? 3 + (i % 3) : 1,
+                    modeSwitches: isInteractive ? 2 : 0,
+                    maxMa: isInteractive ? 2.6 + (i % 2) * 0.4 : 1.0,
+                    hints: i % 3,
+                    tier1Hints: i % 2,
+                    tier2Hints: i % 3 === 2 ? 1 : 0,
+                    tier3Hints: 0,
+                    storyChoices: isInteractive ? 3 : 1,
+                    storyNodes: isInteractive ? 4 : 2,
                     pre: pre,
                     post: post,
                     gain: gain,
                     day7: day7,
-                    dwell: `${Math.floor(3 + Math.random() * 2)}m ${Math.floor(10 + Math.random() * 45)}s`,
-                    hints: Math.floor(Math.random() * 3)
+                    retentionChange: day7 - post,
+                    inArFirstTry: isInteractive ? 75 + (i % 2) * 25 : 50,
+                    inArRetryFixes: 1,
+                    dwellSec: 200 + (i * 7) % 90,
+                    activeRatio: isInteractive ? 89.5 : 71.0
                 });
             }
             renderTable();
-            alert("✅ Successfully added N=32 cohort dataset for scientific evaluation!");
+            updateKPIsAndCharts();
         }
 
-        function exportCSV() {
-            let csv = "Participant_ID,Selected_Avatar,Mastery_Tier,AR_Spatial_Accuracy_Pct,PreTest_Score,PostTest_Score,Normalized_Learning_Gain_Pct,Day7_Spaced_Retention_Pct,Total_Dwell_Time,Hints_Used\n";
-            participantsData.forEach(p => {
-                csv += `${p.id},${p.avatar},${p.tier},${p.accuracy.toFixed(2)},${p.pre},${p.post},${p.gain.toFixed(2)},${p.day7.toFixed(2)},${p.dwell},${p.hints}\n`;
-            });
+        function exportCSV(mode = 'unified') {
+            let csv = "";
+            let filename = "LostTemple_Unified_Research_Dataset.csv";
+
+            if (mode === 'rq1') {
+                filename = "kalish_rq1_interaction.csv";
+                csv = "session_id,participant,condition,learning_exposure_seconds,force_adjustments,fulcrum_adjustments,total_manipulations,part_inspections,mode_switches,max_ma_reached,spatial_accuracy_pct,pretest_pct,posttest_pct,normalized_gain_pct\n";
+                participantsData.forEach(p => {
+                    csv += `${p.sessionId},${p.id},${p.condition},${p.dwellSec},${p.forceCount},${p.fulcrumCount},${p.manipCount},${p.partInspects},${p.modeSwitches},${(p.maxMa||1).toFixed(2)},${p.accuracy.toFixed(2)},${p.pre.toFixed(2)},${p.post.toFixed(2)},${p.gain.toFixed(2)}\n`;
+                });
+            } else if (mode === 'rq2') {
+                filename = "abeywickrama_rq2_adaptive_engagement.csv";
+                csv = "session_id,participant,adaptive_enabled,start_tier,end_tier,promotions,demotions,hints_total,tier1_hints,tier2_hints,tier3_hints,story_nodes_visited,story_choices_made,active_engagement_ratio_pct,posttest_pct\n";
+                participantsData.forEach(p => {
+                    csv += `${p.sessionId},${p.id},${p.adaptive},${p.startTier||1},${p.endTier||1},${p.promotions||0},${p.demotions||0},${p.hints||0},${p.tier1Hints||0},${p.tier2Hints||0},${p.tier3Hints||0},${p.storyNodes||1},${p.storyChoices||0},${(p.activeRatio||85).toFixed(2)},${p.post.toFixed(2)}\n`;
+                });
+            } else if (mode === 'rq3') {
+                filename = "pathirana_rq3_assessment_retention.csv";
+                csv = "session_id,participant,embedded_assessment,in_ar_first_try_accuracy_pct,in_ar_second_try_corrections,pretest_pct,posttest_pct,retention_pct,normalized_gain_pct,retention_change_pct\n";
+                participantsData.forEach(p => {
+                    csv += `${p.sessionId},${p.id},${p.embedded},${(p.inArFirstTry||0).toFixed(2)},${p.inArRetryFixes||0},${p.pre.toFixed(2)},${p.post.toFixed(2)},${p.day7.toFixed(2)},${p.gain.toFixed(2)},${(p.retentionChange||0).toFixed(2)}\n`;
+                });
+            } else {
+                csv = "Participant_ID,Session_ID,Source,Condition_RQ1,Adaptive_RQ2,Embedded_RQ3,Mastery_Tier,Spatial_Accuracy_Pct,Manipulations,Hints_Used,Story_Choices,PreTest_Pct,PostTest_Pct,Normalized_Gain_Pct,Day7_Retention_Pct,Exposure_Seconds\n";
+                participantsData.forEach(p => {
+                    csv += `${p.id},${p.sessionId},${p.source},${p.condition},${p.adaptive},${p.embedded},"${p.tier}",${p.accuracy.toFixed(2)},${p.manipCount},${p.hints},${p.storyChoices},${p.pre.toFixed(2)},${p.post.toFixed(2)},${p.gain.toFixed(2)},${p.day7.toFixed(2)},${p.dwellSec}\n`;
+                });
+            }
 
             const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'LostTemple_Research_Evaluation_Dataset.csv';
+            a.download = filename;
             a.click();
             URL.revokeObjectURL(url);
         }
@@ -706,21 +1358,16 @@
         }
 
         function saveAndConnectFirebase() {
-            const projId = document.getElementById('cfgProjectId').value;
-            const badge = document.getElementById('cloudStatusBadge');
-            badge.innerHTML = `<span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span> Connected: ${projId}`;
+            firestoreProjectId = document.getElementById('cfgProjectId').value.trim() || DEFAULT_PROJECT_ID;
             closeConfigModal();
-            alert(`✅ Firebase credentials saved! Listening to live Firestore collection '${document.getElementById('cfgCollection').value}'...`);
-        }
-
-        function refreshData() {
-            renderTable();
-            alert("🔄 Live data refreshed from Firestore!");
+            syncFromFirestore(true);
         }
 
         window.onload = () => {
             initCharts();
-            renderTable();
+            rebuildCombinedDataset();
+            syncFromFirestore(false);
+            setInterval(() => syncFromFirestore(false), 3000);
         };
     </script>
 </body>
