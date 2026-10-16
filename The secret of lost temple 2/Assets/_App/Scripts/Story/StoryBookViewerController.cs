@@ -100,21 +100,21 @@ namespace SecretOfLostTemple.Story
                 startPageIndex = 0;
                 endPageIndex = Mathf.Max(8, allStoryPages.Count - 1);
                 if (chapterTitleText != null) chapterTitleText.text = "<b>CHAPTER 1: THE ANCIENT LEVER</b>";
-                if (startARActivityButtonText != null) startARActivityButtonText.text = "🚀 <b>READ STORY & SCAN</b>";
+                if (startARActivityButtonText != null) startARActivityButtonText.text = "📸 <b>SCAN PRINTED MARKER</b>";
             }
             else if (machineName == "Pulley")
             {
                 startPageIndex = 9;
                 endPageIndex = 12;
                 if (chapterTitleText != null) chapterTitleText.text = "<b>CHAPTER 2: THE SACRED PULLEY</b>";
-                if (startARActivityButtonText != null) startARActivityButtonText.text = "🚀 <b>READ STORY & SCAN</b>";
+                if (startARActivityButtonText != null) startARActivityButtonText.text = "📸 <b>SCAN PRINTED MARKER</b>";
             }
             else if (machineName == "InclinedPlane")
             {
                 startPageIndex = 13;
                 endPageIndex = 17;
                 if (chapterTitleText != null) chapterTitleText.text = "<b>CHAPTER 3: THE TEMPLE RAMP</b>";
-                if (startARActivityButtonText != null) startARActivityButtonText.text = "🚀 <b>READ STORY & SCAN</b>";
+                if (startARActivityButtonText != null) startARActivityButtonText.text = "📸 <b>SCAN PRINTED MARKER</b>";
             }
 
             currentPageIndex = startPageIndex;
@@ -193,7 +193,7 @@ namespace SecretOfLostTemple.Story
             }
 
             bool isScanMarkerPage = activeMachine == "Lever" ? currentPageIndex == 8 : currentPageIndex == endPageIndex;
-            if (startARActivityButtonText != null) startARActivityButtonText.text = "SCAN PRINTED MARKER";
+            if (startARActivityButtonText != null) startARActivityButtonText.text = "📸 <b>SCAN PRINTED MARKER</b>";
             if (startARActivityButton != null)
             {
                 startARActivityButton.gameObject.SetActive(isScanMarkerPage);

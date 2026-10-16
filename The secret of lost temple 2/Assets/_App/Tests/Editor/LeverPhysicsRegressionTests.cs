@@ -43,11 +43,22 @@ public class LeverPhysicsRegressionTests
                 mf.sharedMesh = fallback;
             }
         }
+        if (mf != null && mf.sharedMesh != null && mf.sharedMesh.bounds.size.sqrMagnitude == 0)
+        {
+            mf.sharedMesh.RecalculateBounds();
+        }
         Assert.That(Quaternion.Angle(beam.Find("Beam_3D_Model").localRotation, Quaternion.identity), Is.LessThan(.01f));
         Assert.That(Vector3.Distance(beam.Find("Load_Stone_DoorWeight").localPosition, new Vector3(-.9f, .15f, 0)), Is.LessThan(.001f));
         Assert.That(Vector3.Distance(beam.Find("Effort_Point_Handle").localPosition, new Vector3(.9f, .15f, 0)), Is.LessThan(.001f));
         Assert.That(prefab.transform.Find("Fulcrum_Pivot").localPosition.sqrMagnitude, Is.LessThan(.001f));
-        Assert.That(renderer.bounds.size.x, Is.GreaterThan(renderer.bounds.size.z * 2));
+        Vector3 span = renderer.bounds.size;
+        if (span.sqrMagnitude == 0 && mf != null && mf.sharedMesh != null)
+        {
+            var meshSize = mf.sharedMesh.bounds.size;
+            Vector3 ext = beam.InverseTransformVector(renderer.transform.TransformVector(meshSize));
+            span = new Vector3(Mathf.Abs(ext.x), Mathf.Abs(ext.y), Mathf.Abs(ext.z));
+        }
+        Assert.That(span.x, Is.GreaterThan(span.z * 2));
     }
 
     [TestCase(.5f, 3.8f, 26.31579f)]

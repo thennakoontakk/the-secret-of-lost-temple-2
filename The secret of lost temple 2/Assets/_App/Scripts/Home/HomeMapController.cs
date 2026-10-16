@@ -119,6 +119,11 @@ namespace SecretOfLostTemple.Home
                 sandboxModalPanel.SetActive(false);
             }
 
+            if (questModalPanel != null)
+            {
+                questModalPanel.SetActive(false);
+            }
+
             // Returning to the map must stay here. The saved mode describes the
             // previous visit, not a request to launch another quest automatically.
             if (storyBookViewer != null) storyBookViewer.ResumeAfterActivity();
@@ -171,12 +176,12 @@ namespace SecretOfLostTemple.Home
 
             if (rankTierText != null) rankTierText.text = actualRankTier;
 
-            SetStatus("Tap Read Story & Scan, Free Practice, or Physics Lab to explore!");
+            SetStatus("Tap Start Expedition, Free Practice, or Physics Lab to explore!");
         }
 
         private void SetupButtonLabels()
         {
-            ApplyButtonLabel(questButton, "READ STORY & SCAN");
+            ApplyButtonLabel(questButton, "START EXPEDITION");
             ApplyButtonLabel(sandboxButton, "FREE PRACTICE");
             ApplyButtonLabel(physics3DButton, "PHYSICS LAB");
             ApplyButtonLabel(researchDashboardButton, "RESEARCHER PANEL");
