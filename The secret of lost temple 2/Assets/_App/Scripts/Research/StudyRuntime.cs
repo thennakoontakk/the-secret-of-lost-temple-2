@@ -30,7 +30,7 @@ public class StudyRuntime : MonoBehaviour
         {SceneManager.LoadScene("HomeMapScene");return;}
         if(string.IsNullOrEmpty(s.learningStarted))
         {
-            s.learningStarted = System.DateTime.UtcNow.ToString("O");
+            Data.Store.StartLearning(true);
         }
         Data.Record(StudyPolicy.Review?"review_start":"learning_scene_start","lever");
     }
@@ -38,7 +38,7 @@ public class StudyRuntime : MonoBehaviour
     {
         if(!StudyPolicy.Measured||!foreground||!StudyPolicy.Tracking)return;
         if(!StudyPolicy.Review && Data.Store.Stage != "learning") return;
-        seconds+=Time.unscaledDeltaTime;if(seconds>=10)Flush();
+        seconds+=Time.unscaledDeltaTime;if(seconds>=5)Flush();
     }
     void Flush()
     {

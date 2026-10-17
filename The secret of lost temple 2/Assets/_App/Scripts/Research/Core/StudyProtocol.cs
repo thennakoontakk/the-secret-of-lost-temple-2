@@ -47,11 +47,27 @@ namespace SecretOfLostTemple.Research
             ParticipantCode = s.participant; ActiveId = s.id; Record("followup_open");
         }
         void RequireStudy() { if (!IsStudy) throw new InvalidOperationException("Start or resume a configured study session first."); }
-        public void StartLearning()
+        public void StartLearning(bool remoteForce = false)
         {
             RequireStudy();
-            if (PendingTest != null || LatestTest(Current, "pretest") == null) throw new InvalidOperationException("Complete the baseline test first.");
-            if (!string.IsNullOrEmpty(Current.learningCompleted)) throw new InvalidOperationException("Learning already completed. Use Review.");
+            if (!remoteForce)
+            {
+                if (PendingTest != null || LatestTest(Current, "pretest") == null) throw new InvalidOperationException("Complete the baseline test first.");
+                if (!string.IsNullOrEmpty(Current.learningCompleted)) throw new InvalidOperationException("Learning already completed. Use Review.");
+            }
+            else
+            {
+                // Close any half-finished pending test if researcher forces jump to AR Learning
+                if (PendingTest != null)
+                {
+                    var pt = PendingTest;
+                    Mutate(() => { pt.score = pt.answers.Count(x => x.selected == x.correctIndex); pt.completed = UtcNow().ToString("O"); pt.recordedAt = pt.completed; });
+                }
+                if (!string.IsNullOrEmpty(Current.learningCompleted))
+                {
+                    Mutate(() => Current.learningCompleted = "");
+                }
+            }
             if (string.IsNullOrEmpty(Current.learningStarted)) Mutate(() => Current.learningStarted = UtcNow().ToString("O"));
             Record("learning_open");
         }
@@ -86,11 +102,25 @@ namespace SecretOfLostTemple.Research
             if (stage == "retention" && (LatestTest(Current, "posttest") == null || DaysSinceLearning(Current) < 7))
                 throw new InvalidOperationException("Retention requires a post-test and at least seven days since learning completion.");
         }
-        public FormalAssessment StartTest(string stage)
+        public FormalAssessment StartTest(string stage, bool remoteForce = false)
         {
             RequireStudy();
-            if (PendingTest != null) { if (PendingTest.stage != stage) throw new InvalidOperationException("Finish the open test first."); return PendingTest; }
-            ValidateStage(stage, false);
+            if (PendingTest != null)
+            {
+                if (PendingTest.stage == stage) return PendingTest;
+                if (!remoteForce) throw new InvalidOperationException("Finish the open test first.");
+                var pt = PendingTest;
+                Mutate(() => { pt.score = pt.answers.Count(x => x.selected == x.correctIndex); pt.completed = UtcNow().ToString("O"); pt.recordedAt = pt.completed; });
+            }
+            if (!remoteForce)
+            {
+                ValidateStage(stage, false);
+            }
+            else if (stage == "posttest" && string.IsNullOrEmpty(Current.learningCompleted))
+            {
+                if (string.IsNullOrEmpty(Current.learningStarted)) Mutate(() => Current.learningStarted = UtcNow().ToString("O"));
+                CompleteLearning(true);
+            }
             var a = new FormalAssessment { id = Guid.NewGuid().ToString("N"), stage = stage, version = LeverTestBank.Version,
                 source = "in_app", started = UtcNow().ToString("O"), denominator = LeverTestBank.Questions.Length };
             Mutate(() => Current.assessments.Add(a)); Record("formal_start", a.id + ":" + stage); return a;

@@ -80,16 +80,31 @@ namespace SecretOfLostTemple.Research
             }
         }
 
+        private bool pendingForceSessionPush = false;
+
         public void TriggerImmediateSync(string statusMsg = null)
         {
             if (!string.IsNullOrEmpty(statusMsg))
             {
                 lastStatusMessage = statusMsg;
             }
+            pendingForceSessionPush = true;
             if (!isPushing && gameObject.activeInHierarchy)
             {
                 StartCoroutine(PushLiveTelemetryRoutine(true));
             }
+        }
+
+        private IEnumerator SyncThenQuitRoutine()
+        {
+            yield return PushAllSessionsRoutine();
+            yield return PushLiveTelemetryRoutine(true);
+            yield return new WaitForSecondsRealtime(0.4f);
+#if UNITY_EDITOR
+            UnityEditor.EditorApplication.isPlaying = false;
+#else
+            Application.Quit();
+#endif
         }
 
         public void SyncAllLocalSessionsToCloud()
@@ -216,9 +231,22 @@ namespace SecretOfLostTemple.Research
                         break;
 
                     case "end_visit":
+                        StudyRuntime.FlushActive();
                         Data.Store.End();
                         if (ui != null) ui.ExecuteRemoteCloseOverlay();
-                        lastStatusMessage = "Ended current visit";
+                        if (stage == "return_home" && SceneManager.GetActiveScene().name != "HomeMapScene")
+                        {
+                            SceneManager.LoadScene("HomeMapScene");
+                        }
+                        lastStatusMessage = "Saved & Ended current student visit";
+                        break;
+
+                    case "end_and_close_app":
+                        StudyRuntime.FlushActive();
+                        Data.Store.End();
+                        if (ui != null) ui.ExecuteRemoteCloseOverlay();
+                        lastStatusMessage = "Saved session & closing app for next student";
+                        StartCoroutine(SyncThenQuitRoutine());
                         break;
 
                     case "sync_all":
@@ -269,9 +297,16 @@ namespace SecretOfLostTemple.Research
             // 2. Push active session to research_sessions/{id} if modified or forced
             if (s != null && !string.IsNullOrEmpty(s.id))
             {
-                string sig = $"{s.id}:{s.events.Count}:{s.assessments.Count}:{s.learningStarted}:{s.learningCompleted}:{s.ended}:{Data.DemoMode}";
-                if (forceSessionPush || sig != lastSyncedSessionSignature)
+                int totalAnswers = 0;
+                if (s.assessments != null)
                 {
+                    for (int i = 0; i < s.assessments.Count; i++)
+                        if (s.assessments[i]?.answers != null) totalAnswers += s.assessments[i].answers.Count;
+                }
+                string sig = $"{s.id}:{s.events.Count}:{s.assessments.Count}:{totalAnswers}:{s.learningStarted}:{s.learningCompleted}:{s.ended}:{Data.DemoMode}";
+                if (forceSessionPush || pendingForceSessionPush || sig != lastSyncedSessionSignature)
+                {
+                    pendingForceSessionPush = false;
                     lastSyncedSessionSignature = sig;
                     string sessionDocJson = BuildSessionFirestoreJson(s, m, metricsJson);
                     string safeDocId = SanitizeDocId(s.id);
@@ -290,6 +325,10 @@ namespace SecretOfLostTemple.Research
             }
 
             isPushing = false;
+            if (pendingForceSessionPush && gameObject.activeInHierarchy)
+            {
+                StartCoroutine(PushLiveTelemetryRoutine(true));
+            }
         }
 
         private IEnumerator PushAllSessionsRoutine()

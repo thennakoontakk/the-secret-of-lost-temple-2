@@ -123,16 +123,16 @@ public class ResearchSetupUI : MonoBehaviour
         Button("Condition: "+condition,-430,185,400,()=>{Capture();condition=condition=="passive"?"interactive":"passive";ShowSession();});
         Button("Adaptation: "+(adaptive?"on":"off"),0,185,400,()=>{Capture();adaptive=!adaptive;ShowSession();});
         Button("Embedded quizzes: "+(embedded?"on":"off"),430,185,400,()=>{Capture();embedded=!embedded;ShowSession();});
-        Button("New study",-430,95,400,()=>Run(()=>{Capture();Data.Store.BeginStudy(participant,protocolName,condition,adaptive,embedded);ResetServices();ShowSession();}));
-        Button("Resume unfinished",0,95,400,()=>Run(()=>{Capture();Data.Store.Begin(participant,true);ResetServices();ShowSession();}));
-        Button("Open follow-up visit",430,95,400,()=>Run(()=>{Capture();Data.Store.OpenFollowUp(participant);ResetServices();ShowSession();}));
-        Button("Start / resume learning",-430,5,400,()=>Run(()=>{Data.Store.StartLearning();OpenLever(false);}));
-        Button("Finish learning",0,5,400,()=>Run(()=>{Data.Store.CompleteLearning();ShowAssessments();}));
+        Button("New study",-430,95,400,()=>Run(()=>{Capture();ExecuteRemoteBeginStudy(participant,protocolName,condition,adaptive,embedded,false);ShowSession();ResearchCloudSync.Instance?.TriggerImmediateSync($"Started study {participant}");}));
+        Button("Resume unfinished",0,95,400,()=>Run(()=>{Capture();ExecuteRemoteResume(participant);ShowSession();ResearchCloudSync.Instance?.TriggerImmediateSync($"Resumed study {participant}");}));
+        Button("Open follow-up visit",430,95,400,()=>Run(()=>{Capture();ExecuteRemoteFollowUp(participant);ShowSession();ResearchCloudSync.Instance?.TriggerImmediateSync($"Opened follow-up {participant}");}));
+        Button("Start / resume learning",-430,5,400,()=>Run(()=>{Data.Store.StartLearning(true);ResearchCloudSync.Instance?.TriggerImmediateSync("Started AR Learning");OpenLever(false);}));
+        Button("Finish learning",0,5,400,()=>Run(()=>{ExecuteRemoteCompleteLearning(false);ResearchCloudSync.Instance?.TriggerImmediateSync("Finished AR Learning");ShowAssessments();}));
         Button("Review lever",430,5,400,()=>Run(()=>{
             if(Data.Store.Current==null||ResearchStore.LatestTest(Data.Store.Current,"posttest")==null||Data.Store.PendingTest!=null)throw new InvalidOperationException("Complete the post-test before review.");
             OpenLever(true);
         }));
-        Button("End visit",-430,-85,400,()=>Run(()=>{Data.Store.End();ShowSession();}));
+        Button("End visit",-430,-85,400,()=>Run(()=>{StudyRuntime.FlushActive();Data.Store.End();ResearchCloudSync.Instance?.TriggerImmediateSync("Ended visit");ShowSession();}));
         Button("Practice (not recorded)",0,-85,400,()=>Run(()=>{Data.Store.Practice();ResetServices();ShowSession();}));
         Button("Refresh results",430,-85,400,ShowSession);
         var s = Data.Store.Current ?? Data.Store.Latest;
@@ -186,19 +186,19 @@ public class ResearchSetupUI : MonoBehaviour
         Page("Formal assessments - no teaching feedback during tests");Label(Data.FormalStatus,0,180,1350,315,26);
         string[] stages={"pretest","posttest","retention"};
         for(int i=0;i<stages.Length;i++){string stage=stages[i];float x=(i-1)*430;
-            Button("In-app "+stage,x,-45,400,()=>Run(()=>{Data.Store.StartTest(stage);ShowQuestion();}));
+            Button("In-app "+stage,x,-45,400,()=>Run(()=>{ExecuteRemoteStartTest(stage);ResearchCloudSync.Instance?.TriggerImmediateSync($"Opened {stage}");}));
             Button("Enter "+stage+" score",x,-140,400,()=>{selectedStage=stage;ShowExternal();});
         }
         message.text="In-app test: "+LeverTestBank.Version+". Same six items at each stage; teacher approval required.\nRetention opens after seven days. Partial tests resume at the next unanswered question.";
     }
     void ShowQuestion()
     {
-        var a=Data.Store.PendingTest;if(a==null){ShowAssessments();message.text="Test saved. Thank you.";return;}
+        var a=Data.Store.PendingTest;if(a==null){ShowAssessments();message.text="Test saved. Thank you.";ResearchCloudSync.Instance?.TriggerImmediateSync("Assessment completed and saved");return;}
         Page(a.stage+" - question "+(a.answers.Count+1)+" / "+a.denominator);
         Data.Store.Record("formal_question_presented",a.id+":"+a.answers.Count);
         var q=LeverTestBank.Questions[a.answers.Count];Label(q.text,0,225,1300,220,32);
         for(int i=0;i<q.options.Length;i++){int choice=i;
-            Button(q.options[i],0,75-i*95,1240,()=>Run(()=>{if(!answering)return;answering=false;Data.Store.AnswerFormal(choice,questionSeconds);ShowQuestion();}));
+            Button(q.options[i],0,75-i*95,1240,()=>Run(()=>{if(!answering)return;answering=false;Data.Store.AnswerFormal(choice,questionSeconds);ResearchCloudSync.Instance?.TriggerImmediateSync($"Answered {a.stage} Q{a.answers.Count}/{a.denominator}");ShowQuestion();}));
         }
         questionSeconds=0;answering=true;
         message.text="Choose one answer. Each answer is saved immediately; correctness is not shown.\nLeaving preserves answers. Time for the unanswered question restarts on return.";
@@ -242,6 +242,24 @@ public class ResearchSetupUI : MonoBehaviour
     public void ExecuteRemoteBeginStudy(string part, string prot, string cond, bool adapt, bool embed, bool autoStartPretest)
     {
         Data.UsePresentationData(false);
+        part = (part ?? "").Trim().ToUpperInvariant();
+        if (string.IsNullOrEmpty(part)) part = "P001";
+
+        // Automatically close any currently active session before starting the new student's session!
+        if (Data.Store.Current != null)
+        {
+            StudyRuntime.FlushActive();
+            Data.Store.End();
+        }
+
+        // Also close any previous unfinished session for this participant code so BeginStudy never throws
+        var unfinished = Data.Store.AllSessions?.LastOrDefault(s => s.participant == part && string.IsNullOrEmpty(s.ended));
+        if (unfinished != null)
+        {
+            Data.Store.Begin(part, true);
+            Data.Store.End();
+        }
+
         participant = part; protocolName = prot; condition = cond; adaptive = adapt; embedded = embed;
         Data.Store.BeginStudy(part, prot, cond, adapt, embed);
         ResetServices();
@@ -258,6 +276,11 @@ public class ResearchSetupUI : MonoBehaviour
     {
         Data.UsePresentationData(false);
         participant = part;
+        if (Data.Store.Current != null && Data.Store.ParticipantCode != (part ?? "").Trim().ToUpperInvariant())
+        {
+            StudyRuntime.FlushActive();
+            Data.Store.End();
+        }
         Data.Store.Begin(part, true);
         ResetServices();
         if (Data.Store.PendingTest != null) ShowQuestion();
@@ -267,13 +290,26 @@ public class ResearchSetupUI : MonoBehaviour
     {
         Data.UsePresentationData(false);
         participant = part;
+        if (Data.Store.Current != null)
+        {
+            StudyRuntime.FlushActive();
+            Data.Store.End();
+        }
         Data.Store.OpenFollowUp(part);
         ResetServices();
         if (overlay != null && overlay.activeSelf) ShowSession();
     }
     public void ExecuteRemoteStartTest(string stage)
     {
-        Data.Store.StartTest(stage);
+        if (Data.Store.Current == null)
+        {
+            Data.Store.EnsureAutoParticipantSession("interactive");
+        }
+        if (stage == "posttest" && Data.Store.Current != null && string.IsNullOrEmpty(Data.Store.Current.learningCompleted))
+        {
+            ExecuteRemoteCompleteLearning(false);
+        }
+        Data.Store.StartTest(stage, true);
         if (SceneManager.GetActiveScene().name == "MainARScene")
         {
             openPendingTestOnMap = true;
@@ -286,12 +322,25 @@ public class ResearchSetupUI : MonoBehaviour
     }
     public void ExecuteRemoteStartLearning()
     {
-        Data.Store.StartLearning();
+        if (Data.Store.Current == null)
+        {
+            Data.Store.EnsureAutoParticipantSession("interactive");
+        }
+        Data.Store.StartLearning(true);
+        if (overlay != null) { answering = false; overlay.SetActive(false); }
         OpenLever(false);
     }
     public void ExecuteRemoteCompleteLearning(bool autoStartPosttest)
     {
+        if (Data.Store.Current == null)
+        {
+            Data.Store.EnsureAutoParticipantSession("interactive");
+        }
         StudyRuntime.FlushActive();
+        if (Data.Store.Current != null && string.IsNullOrEmpty(Data.Store.Current.learningStarted))
+        {
+            Data.Store.StartLearning(true);
+        }
         if (Data.Store.Current != null && !Data.Store.Current.events.Any(e => e.kind == "learning_exposure" && e.seconds > 0))
         {
             float exposureSec = 5f;

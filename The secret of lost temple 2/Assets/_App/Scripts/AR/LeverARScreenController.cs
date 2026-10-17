@@ -2292,6 +2292,7 @@ namespace SecretOfLostTemple.AR
             if (!StudyPolicy.Measured || ResearchData.Store.Current.adaptive)
                 SecretOfLostTemple.Adaptive.AdaptiveDifficultyEngine.Instance?.RecordTaskResult(correct && researchAttempt == 1, elapsed);
             UpdateAdaptiveTierHUD();
+            ResearchCloudSync.Instance?.TriggerImmediateSync($"Quiz Q{currentQuizIndex + 1} answered ({(correct ? "Correct" : "Incorrect")})");
         }
 
 
@@ -2706,6 +2707,7 @@ namespace SecretOfLostTemple.AR
             }
 
             CognitiveTelemetryLogger.Instance?.LogInteraction("smart_hint_opened", null, $"{{\"character\":\"{activeCharacter}\",\"hintTier\":{currentHintTierStep}}}");
+            ResearchCloudSync.Instance?.TriggerImmediateSync($"Opened Smart Hint (Tier {currentHintTierStep})");
         }
 
         private IEnumerator AnimateSpeechBubble(Transform bubbleTr)
