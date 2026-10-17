@@ -271,27 +271,18 @@ namespace SecretOfLostTemple.AR
 
         private void ApplyAppModeVisibility()
         {
+            string activeScene = SceneManager.GetActiveScene().name;
             string appMode = PlayerPrefs.GetString("LostTemple_App_Mode", "Quest");
-            bool isSandbox = (appMode == "Sandbox");
+            bool isSandbox = (activeScene == "FreePracticeScene" || appMode == "Sandbox");
 
             if (isSandbox)
             {
-                // In Sandbox ("Free Practice") mode:
-                // No challenges, quizzes, hints, or rank badges — pure free camera-based 3D AR playground on the user's desk!
-                if (leverRoot != null)
-                {
-                    if (leverRoot.parent != null && leverRoot.parent.name == "TempleEnvironmentRoot")
-                    {
-                        leverRoot.SetParent(null, true);
-                    }
-                    leverRoot.gameObject.SetActive(true);
-                    leverRoot.position = new Vector3(0f, -0.05f, 0.35f);
-                    leverRoot.rotation = Quaternion.identity;
-                    leverRoot.localScale = Vector3.one * 1.15f;
-                }
-
+                // Dedicated Free Practice (FreePracticeScene):
+                // Keep TempleEnvironmentRoot & SimpleMachine_Lever framed on the virtual stone altar in front of the camera!
                 var templeEnv = GameObject.Find("TempleEnvironmentRoot");
-                if (templeEnv != null) templeEnv.SetActive(false);
+                if (templeEnv != null) templeEnv.SetActive(true);
+                if (leverRoot != null) leverRoot.gameObject.SetActive(true);
+
                 var scanOverlay = GameObject.Find("ScanningMarkerOverlay");
                 if (scanOverlay != null) scanOverlay.SetActive(false);
 
@@ -314,7 +305,7 @@ namespace SecretOfLostTemple.AR
             }
             else
             {
-                // In Quest / Expedition / Story mode:
+                // Dedicated Expedition / Story Quest Mode (MainARScene):
                 if (tryChallengeButton != null) tryChallengeButton.gameObject.SetActive(!challengeResolved);
                 if (continueStoryVictoryButton != null) continueStoryVictoryButton.gameObject.SetActive(challengeResolved);
                 if (modeToggleButton != null) modeToggleButton.interactable = !StudyPolicy.Measured;
@@ -2561,7 +2552,12 @@ namespace SecretOfLostTemple.AR
         public void OnBackClicked()
         {
             PlaySound(clickClip);
-            if (StudyPolicy.Measured) ResearchSetupUI.ReturnToPanel();
+            string activeScene = SceneManager.GetActiveScene().name;
+            if (activeScene == "FreePracticeScene")
+            {
+                SceneManager.LoadScene("HomeMapScene");
+            }
+            else if (StudyPolicy.Measured) ResearchSetupUI.ReturnToPanel();
             else if (SecretOfLostTemple.Story.StoryBookViewerController.StoryActivityActive)
             {
                 bool challengeDone = PlayerPrefs.GetInt("LostTemple_Lever_Challenge_Completed", 0) == 1;

@@ -486,7 +486,7 @@ namespace SecretOfLostTemple.Home
             PlayerPrefs.Save();
             SetStatus($"Entering Free Practice: {machineName} Spatial Lab...");
             CloseSandboxModal();
-            StartCoroutine(LoadSceneRoutine("MainARScene"));
+            StartCoroutine(LoadSceneRoutine("FreePracticeScene"));
         }
 
         public void On3DPhysicsClicked()

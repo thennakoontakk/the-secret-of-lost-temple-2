@@ -18,6 +18,9 @@ EditorBuildSettings:
     path: Assets/_App/Scenes/MainARScene.unity
     guid: b3c4824890d944e88db24f6153096003
   - enabled: 1
+    path: Assets/_App/Scenes/FreePracticeScene.unity
+    guid: b5c4824890d944e88db24f6153096005
+  - enabled: 1
     path: Assets/_App/Scenes/Physics3DLabScene.unity
     guid: f301042d298742741a2af6ce4d8f83a9
   m_configObjects:

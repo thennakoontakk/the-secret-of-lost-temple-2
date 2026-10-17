@@ -49,6 +49,7 @@ namespace SecretOfLostTemple.EditorScripts
             string authPath = $"{scenesDir}/AuthScene.unity";
             string homeMapPath = $"{scenesDir}/HomeMapScene.unity";
             string arPath = $"{scenesDir}/MainARScene.unity";
+            string freePracticePath = $"{scenesDir}/FreePracticeScene.unity";
             string physics3DPath = $"{scenesDir}/Physics3DLabScene.unity";
 
             bool needCreateSplash = force || !File.Exists(splashPath);
@@ -72,6 +73,7 @@ namespace SecretOfLostTemple.EditorScripts
                 new EditorBuildSettingsScene(authPath, true),
                 new EditorBuildSettingsScene(homeMapPath, true),
                 new EditorBuildSettingsScene(arPath, true),
+                new EditorBuildSettingsScene(freePracticePath, File.Exists(freePracticePath)),
                 new EditorBuildSettingsScene(physics3DPath, true)
             };
             EditorBuildSettings.scenes = buildScenes;

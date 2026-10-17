@@ -38,7 +38,7 @@ public class ResearchSetupUI : MonoBehaviour
         }
 #endif
         Data.Record("scene_enter",scene.name);
-        if((scene.name=="HomeMapScene" || scene.name=="AuthScene" || scene.name=="MainARScene") && FindFirstObjectByType<ResearchSetupUI>()==null)
+        if((scene.name=="HomeMapScene" || scene.name=="AuthScene" || scene.name=="MainARScene" || scene.name=="FreePracticeScene" || scene.name=="Physics3DLabScene") && FindFirstObjectByType<ResearchSetupUI>()==null)
             new GameObject("ResearchSetupUI").AddComponent<ResearchSetupUI>();
         if(scene.name=="MainARScene")new GameObject("StudyRuntime").AddComponent<StudyRuntime>();
     }
@@ -52,7 +52,7 @@ public class ResearchSetupUI : MonoBehaviour
         scale.referenceResolution=new Vector2(1920,1080);scale.matchWidthOrHeight=1;
         gameObject.AddComponent<GraphicRaycaster>();
         string scene=SceneManager.GetActiveScene().name;
-        if (scene != "MainARScene" && scene != "HomeMapScene")
+        if (scene != "MainARScene" && scene != "FreePracticeScene" && scene != "Physics3DLabScene" && scene != "HomeMapScene")
         {
             var launcher=MakeButton(scene=="AuthScene"?"Research (offline)":"Researcher Panel",transform,0,0,380,65,
                 ()=>{if(scene=="HomeMapScene")ShowSession();else ReturnToPanel();});
@@ -84,9 +84,9 @@ public class ResearchSetupUI : MonoBehaviour
 #endif
         if(back){
             if(overlay!=null&&overlay.activeSelf){answering=false;overlay.SetActive(false);}
-            else if(SceneManager.GetActiveScene().name=="MainARScene"){
-                if(SecretOfLostTemple.Story.StoryBookViewerController.StoryActivityActive && !Data.Store.IsStudy) SecretOfLostTemple.Story.StoryBookViewerController.ReturnToStory(false);
-                else ReturnToPanel();
+            else if(SceneManager.GetActiveScene().name=="MainARScene" || SceneManager.GetActiveScene().name=="FreePracticeScene"){
+                if(SecretOfLostTemple.Story.StoryBookViewerController.StoryActivityActive && !Data.Store.IsStudy && SceneManager.GetActiveScene().name=="MainARScene") SecretOfLostTemple.Story.StoryBookViewerController.ReturnToStory(false);
+                else SceneManager.LoadScene("HomeMapScene");
             }
         }
     }

@@ -4,6 +4,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
+using UnityEngine.EventSystems;
 using SecretOfLostTemple.Core;
 
 namespace SecretOfLostTemple.AR
@@ -73,6 +74,8 @@ namespace SecretOfLostTemple.AR
 
         private void Awake()
         {
+            EnsureEventSystemInput();
+
             if (scannerOverlayPanel == null)
             {
                 var sp = GameObject.Find("Physics Lab Canvas/ScannerOverlayPanel");
@@ -86,11 +89,61 @@ namespace SecretOfLostTemple.AR
             {
                 lever3DRoot.SetActive(true);
             }
+
+            // Ensure TopNavBar is on top of any background and receives all touches
+            var topNav = GameObject.Find("Physics Lab Canvas/TopNavBar");
+            if (topNav != null)
+            {
+                topNav.transform.SetAsLastSibling();
+                var topImg = topNav.GetComponent<Image>();
+                if (topImg != null) topImg.raycastTarget = false; // Don't block clicks to its child buttons
+            }
+
+            var titleTxt = GameObject.Find("Physics Lab Canvas/TopNavBar/TitleText")?.GetComponent<Text>();
+            if (titleTxt != null) titleTxt.raycastTarget = false;
+
             var subTxt = GameObject.Find("Physics Lab Canvas/TopNavBar/SubtitleText")?.GetComponent<Text>();
             if (subTxt != null)
             {
+                subTxt.raycastTarget = false;
                 subTxt.text = "Virtual Science Workbench: Real-Time Torque Equilibrium & Mechanical Advantage";
             }
+        }
+
+        private void EnsureEventSystemInput()
+        {
+            var es = EventSystem.current;
+            if (es == null)
+            {
+                es = FindFirstObjectByType<EventSystem>();
+            }
+            if (es == null)
+            {
+                var esObj = new GameObject("EventSystem", typeof(EventSystem));
+                es = esObj.GetComponent<EventSystem>();
+            }
+
+#if ENABLE_INPUT_SYSTEM
+            foreach (var legacy in es.GetComponents<StandaloneInputModule>())
+            {
+                legacy.enabled = false;
+            }
+            var inputModule = es.GetComponent<UnityEngine.InputSystem.UI.InputSystemUIInputModule>();
+            if (inputModule == null)
+            {
+                inputModule = es.gameObject.AddComponent<UnityEngine.InputSystem.UI.InputSystemUIInputModule>();
+            }
+            inputModule.enabled = true;
+#endif
+
+#if ENABLE_LEGACY_INPUT_MANAGER
+            var sim = es.GetComponent<StandaloneInputModule>();
+            if (sim == null)
+            {
+                sim = es.gameObject.AddComponent<StandaloneInputModule>();
+            }
+            sim.enabled = true;
+#endif
         }
 
         private void Start()
@@ -151,10 +204,36 @@ namespace SecretOfLostTemple.AR
 
         private void SetupButtonListeners()
         {
+            if (backToMapButton == null)
+            {
+                backToMapButton = GameObject.Find("Physics Lab Canvas/TopNavBar/Button_BackToMap")?.GetComponent<Button>() ??
+                                  GameObject.Find("Button_BackToMap")?.GetComponent<Button>();
+            }
+
             if (backToMapButton != null)
             {
+                backToMapButton.interactable = true;
                 backToMapButton.onClick.RemoveAllListeners();
                 backToMapButton.onClick.AddListener(OnBackToMapClicked);
+
+                var btnImg = backToMapButton.GetComponent<Image>();
+                if (btnImg != null)
+                {
+                    btnImg.raycastTarget = true;
+                }
+
+                // Add EventTrigger for direct PointerDown and PointerClick as guaranteed backup on touch devices
+                var trigger = backToMapButton.GetComponent<EventTrigger>();
+                if (trigger == null) trigger = backToMapButton.gameObject.AddComponent<EventTrigger>();
+                trigger.triggers.Clear();
+
+                var entryDown = new EventTrigger.Entry { eventID = EventTriggerType.PointerDown };
+                entryDown.callback.AddListener((data) => OnBackToMapClicked());
+                trigger.triggers.Add(entryDown);
+
+                var entryClick = new EventTrigger.Entry { eventID = EventTriggerType.PointerClick };
+                entryClick.callback.AddListener((data) => OnBackToMapClicked());
+                trigger.triggers.Add(entryClick);
             }
 
             if (simulateTargetFoundBtn != null)
@@ -419,10 +498,34 @@ namespace SecretOfLostTemple.AR
             }
         }
 
+        private void Update()
+        {
+            bool backPressed = false;
+#if ENABLE_INPUT_SYSTEM
+            backPressed = UnityEngine.InputSystem.Keyboard.current?.escapeKey.wasPressedThisFrame == true;
+#endif
+#if ENABLE_LEGACY_INPUT_MANAGER
+            backPressed = backPressed || Input.GetKeyDown(KeyCode.Escape);
+#endif
+            if (backPressed)
+            {
+                OnBackToMapClicked();
+            }
+        }
+
         public void OnBackToMapClicked()
         {
+            Debug.Log("[Physics3DLabController] Back requested! Returning to HomeMapScene...");
             PlaySound(buttonClickClip);
-            SceneManager.LoadScene("HomeMapScene");
+
+            if (Application.CanStreamedLevelBeLoaded("HomeMapScene"))
+            {
+                SceneManager.LoadScene("HomeMapScene");
+            }
+            else
+            {
+                SceneManager.LoadScene(2);
+            }
         }
 
         private void PlaySound(AudioClip clip)

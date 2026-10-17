@@ -77,8 +77,9 @@ namespace SecretOfLostTemple.AR
                 liveWebCam = FindFirstObjectByType<LiveWebCamBackground>();
             }
 
+            string activeScene = SceneManager.GetActiveScene().name;
             string appMode = PlayerPrefs.GetString("LostTemple_App_Mode", "Quest");
-            isQuestMode = (appMode != "Sandbox" && appMode != "PhysicsLab");
+            isQuestMode = (activeScene == "MainARScene" && appMode != "Sandbox" && appMode != "PhysicsLab");
 
             if (!isQuestMode)
             {
