@@ -15,7 +15,8 @@ namespace SecretOfLostTemple.Story
 
         public static void ReturnToStory(bool continueAfterActivity)
         {
-            if (continueAfterActivity) resumePage++;
+            if (continueAfterActivity) resumePage = 9;
+            else resumePage = 8;
             resumeRequested = true;
             StoryActivityActive = false;
             SceneManager.LoadScene("HomeMapScene");
@@ -59,6 +60,11 @@ namespace SecretOfLostTemple.Story
             SetupListeners();
         }
 
+        private void Start()
+        {
+            ResumeAfterActivity();
+        }
+
         private void OnEnable()
         {
             SetupListeners();
@@ -91,14 +97,20 @@ namespace SecretOfLostTemple.Story
             }
         }
 
-        public void OpenStoryBook(string machineName)
+        public void OpenStoryBook(string machineName, bool resetChallenge = false)
         {
             activeMachine = machineName;
+
+            if (resetChallenge)
+            {
+                PlayerPrefs.SetInt("LostTemple_Lever_Challenge_Completed", 0);
+                PlayerPrefs.Save();
+            }
 
             if (machineName == "Lever")
             {
                 startPageIndex = 0;
-                endPageIndex = Mathf.Max(8, allStoryPages.Count - 1);
+                endPageIndex = (allStoryPages != null && allStoryPages.Count > 0) ? (allStoryPages.Count - 1) : 17;
                 if (chapterTitleText != null) chapterTitleText.text = "<b>CHAPTER 1: THE ANCIENT LEVER</b>";
                 if (startARActivityButtonText != null) startARActivityButtonText.text = "📸 <b>SCAN PRINTED MARKER</b>";
             }
@@ -138,6 +150,13 @@ namespace SecretOfLostTemple.Story
 
         public void OnNextPageClicked()
         {
+            bool isLeverChallengeCompleted = PlayerPrefs.GetInt("LostTemple_Lever_Challenge_Completed", 0) == 1;
+            if (activeMachine == "Lever" && currentPageIndex >= 8 && !isLeverChallengeCompleted)
+            {
+                // Challenge gate: cannot advance past marker page until challenge is completed in AR
+                return;
+            }
+
             if (currentPageIndex < endPageIndex)
             {
                 currentPageIndex++;
@@ -187,12 +206,19 @@ namespace SecretOfLostTemple.Story
                 prevPageButton.interactable = (currentPageIndex > startPageIndex);
             }
 
-            if (nextPageButton != null)
+            bool isLeverChallengeCompleted = PlayerPrefs.GetInt("LostTemple_Lever_Challenge_Completed", 0) == 1;
+            bool canGoNext = currentPageIndex < endPageIndex;
+            if (activeMachine == "Lever" && currentPageIndex >= 8 && !isLeverChallengeCompleted)
             {
-                nextPageButton.interactable = (currentPageIndex < endPageIndex);
+                canGoNext = false;
             }
 
-            bool isScanMarkerPage = activeMachine == "Lever" ? currentPageIndex == 8 : currentPageIndex == endPageIndex;
+            if (nextPageButton != null)
+            {
+                nextPageButton.interactable = canGoNext;
+            }
+
+            bool isScanMarkerPage = activeMachine == "Lever" ? (currentPageIndex == 8) : currentPageIndex == endPageIndex;
             if (startARActivityButtonText != null) startARActivityButtonText.text = "📸 <b>SCAN PRINTED MARKER</b>";
             if (startARActivityButton != null)
             {

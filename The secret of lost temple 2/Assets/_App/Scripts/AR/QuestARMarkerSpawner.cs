@@ -139,7 +139,6 @@ namespace SecretOfLostTemple.AR
 
         private void OnEnable()
         {
-            if (isQuestMode) scanTimeout = StartCoroutine(AutoSimulate());
             if (trackedImageManager != null)
             {
                 trackedImageManager.trackablesChanged.AddListener(OnTrackablesChanged);
@@ -148,7 +147,7 @@ namespace SecretOfLostTemple.AR
 
         private void OnDisable()
         {
-            if (scanTimeout != null) StopCoroutine(scanTimeout);
+            if (scanTimeout != null) { StopCoroutine(scanTimeout); scanTimeout = null; }
             StudyPolicy.Tracking = false;
             StudyPolicy.SimulatedTracking = false;
             if (trackedImageManager != null)
@@ -157,17 +156,13 @@ namespace SecretOfLostTemple.AR
             }
         }
 
-        private IEnumerator AutoSimulate()
-        {
-            yield return new WaitForSecondsRealtime(4f);
-            if (!isMarkerDetected) SimulateMarkerScan();
-        }
-
+#if UNITY_EDITOR
         private void OnGUI()
         {
-            if (isQuestMode && !isMarkerDetected && GUI.Button(new Rect(Screen.width - 170, 8, 160, 44), "Simulate Marker"))
+            if (isQuestMode && !isMarkerDetected && GUI.Button(new Rect(Screen.width - 170, 8, 160, 44), "Simulate Marker (PC)"))
                 SimulateMarkerScan();
         }
+#endif
 
         public void SimulateMarkerScan()
         {

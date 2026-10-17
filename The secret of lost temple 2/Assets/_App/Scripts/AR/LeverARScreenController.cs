@@ -216,12 +216,42 @@ namespace SecretOfLostTemple.AR
 
         private void ApplyAppModeVisibility()
         {
-            // Visibility must never overwrite the assigned interaction condition.
-            if (modeToggleButton != null) modeToggleButton.interactable = !StudyPolicy.Measured;
-            if (btnExplodedParts != null) btnExplodedParts.interactable = !StudyPolicy.Passive;
-            if (btnARQuiz != null) btnARQuiz.gameObject.SetActive(!StudyPolicy.Measured || ResearchData.Store.Current.embeddedAssessment);
-            if (btnSmartHint != null) btnSmartHint.gameObject.SetActive(ResearchData.Store.PendingTest == null);
-            if (adaptiveTierBadgeText != null && adaptiveTierBadgeText.transform.parent != null) adaptiveTierBadgeText.transform.parent.gameObject.SetActive(true);
+            string appMode = PlayerPrefs.GetString("LostTemple_App_Mode", "Quest");
+            bool isSandbox = (appMode == "Sandbox");
+
+            if (isSandbox)
+            {
+                // In Sandbox ("Free Practice") mode:
+                // No challenges, quizzes, hints, or rank badges — pure free 3D spatial exploration!
+                if (tryChallengeButton != null) tryChallengeButton.gameObject.SetActive(false);
+                if (challengeModalPanel != null) challengeModalPanel.SetActive(false);
+                if (btnSmartHint != null) btnSmartHint.gameObject.SetActive(false);
+                if (smartHintModalPanel != null) smartHintModalPanel.SetActive(false);
+                if (btnARQuiz != null) btnARQuiz.gameObject.SetActive(false);
+                if (quizModalPanel != null) quizModalPanel.SetActive(false);
+                if (btnRetentionReport != null) btnRetentionReport.gameObject.SetActive(false);
+                if (retentionModalPanel != null) retentionModalPanel.SetActive(false);
+                if (adaptiveTierBadgeText != null && adaptiveTierBadgeText.transform.parent != null)
+                {
+                    adaptiveTierBadgeText.transform.parent.gameObject.SetActive(false);
+                }
+                if (storyChoiceWidget != null) storyChoiceWidget.SetActive(false);
+                if (modeToggleButton != null) modeToggleButton.interactable = true;
+                if (btnExplodedParts != null) btnExplodedParts.interactable = true;
+            }
+            else
+            {
+                // In Quest / Expedition / Story mode:
+                if (tryChallengeButton != null) tryChallengeButton.gameObject.SetActive(true);
+                if (modeToggleButton != null) modeToggleButton.interactable = !StudyPolicy.Measured;
+                if (btnExplodedParts != null) btnExplodedParts.interactable = !StudyPolicy.Passive;
+                if (btnARQuiz != null) btnARQuiz.gameObject.SetActive(!StudyPolicy.Measured || ResearchData.Store.Current.embeddedAssessment);
+                if (btnSmartHint != null) btnSmartHint.gameObject.SetActive(ResearchData.Store.PendingTest == null);
+                if (adaptiveTierBadgeText != null && adaptiveTierBadgeText.transform.parent != null)
+                {
+                    adaptiveTierBadgeText.transform.parent.gameObject.SetActive(true);
+                }
+            }
         }
 
         private void AutoBindAllReferences()
@@ -1140,6 +1170,14 @@ namespace SecretOfLostTemple.AR
 
             if (challengeFeedbackText != null)
                 challengeFeedbackText.text = "Set your configuration and tap <b>Check Solution</b>!";
+
+            if (challengeSubmitBtn != null)
+            {
+                var btnText = challengeSubmitBtn.GetComponentInChildren<Text>();
+                if (btnText != null) btnText.text = "Check Solution";
+                challengeSubmitBtn.onClick.RemoveAllListeners();
+                challengeSubmitBtn.onClick.AddListener(EvaluateChallenge);
+            }
         }
 
         public void CloseChallengeModal()
@@ -1186,13 +1224,42 @@ namespace SecretOfLostTemple.AR
                     PlayerPrefs.Save();
                 }
 
+                // Mark challenge complete to unlock StoryBook page progression past Page 9
+                PlayerPrefs.SetInt("LostTemple_Lever_Challenge_Completed", 1);
+                PlayerPrefs.Save();
+
+                // Stream completion data to research dashboard
+                ResearchData.Record("lever_challenge_solved", $"tier={tier};ma={ma:F2};load={targetLoadN:F0};effort={currentEffortForceN:F0}");
+                ResearchCloudSync.Instance?.TriggerImmediateSync("Lever Challenge Completed!");
+
                 if (challengeFeedbackText != null)
                 {
-                    challengeFeedbackText.text = $"<color=#00ff88><b>🎉 BRILLIANT DISCOVERY ({tierLabel})!</b>\nMechanical Advantage: <b>{ma:F1}x</b>!\nYou successfully hoisted the {targetLoadN:F0}N load with only {Mathf.RoundToInt(currentEffortForceN)}N effort!\n\n<b>LEVER TASK COMPLETE!</b></color>";
+                    challengeFeedbackText.text = $"<color=#00ff88><b>🎉 BRILLIANT DISCOVERY ({tierLabel})!</b>\nMechanical Advantage: <b>{ma:F1}x</b>!\nYou successfully hoisted the {targetLoadN:F0}N load with only {Mathf.RoundToInt(currentEffortForceN)}N effort!\n\n<b>LEVER TASK COMPLETE!</b>\n<i>Tap <b>CONTINUE STORY</b> below to return to your StoryBook (Page 10)!</i></color>";
                 }
                 if (celebrationParticles != null)
                 {
                     celebrationParticles.Play();
+                }
+
+                // Transform submit button into "CONTINUE STORY"
+                if (challengeSubmitBtn != null)
+                {
+                    var btnText = challengeSubmitBtn.GetComponentInChildren<Text>();
+                    if (btnText != null) btnText.text = "📖 <b>CONTINUE STORY</b>";
+                    challengeSubmitBtn.onClick.RemoveAllListeners();
+                    challengeSubmitBtn.onClick.AddListener(() =>
+                    {
+                        PlaySound(clickClip);
+                        CloseChallengeModal();
+                        if (SecretOfLostTemple.Story.StoryBookViewerController.StoryActivityActive)
+                        {
+                            SecretOfLostTemple.Story.StoryBookViewerController.ReturnToStory(true);
+                        }
+                        else
+                        {
+                            SceneManager.LoadScene("HomeMapScene");
+                        }
+                    });
                 }
 
                 // Boulder roll & lift animation
@@ -1205,7 +1272,7 @@ namespace SecretOfLostTemple.AR
                 {
                     if (liftStatusBannerText != null)
                     {
-                        liftStatusBannerText.text = $"<color=#00ff88><b>🎉 {targetLoadN:F0} N BOULDER LIFTED!</b></color>\n<size=18><b>LEVER TASK COMPLETE! Choose your next Story Path or take the AR Quiz!</b></size>";
+                        liftStatusBannerText.text = $"<color=#00ff88><b>🎉 {targetLoadN:F0} N BOULDER LIFTED!</b></color>\n<size=18><b>LEVER TASK COMPLETE! Tap 'Continue Story' or 'Back' to finish your StoryBook!</b></size>";
                     }
                     ResearchData.Record("lever_lifted", "lever");
                 }
@@ -1930,7 +1997,11 @@ namespace SecretOfLostTemple.AR
         {
             PlaySound(clickClip);
             if (StudyPolicy.Measured) ResearchSetupUI.ReturnToPanel();
-            else if (SecretOfLostTemple.Story.StoryBookViewerController.StoryActivityActive) SecretOfLostTemple.Story.StoryBookViewerController.ReturnToStory(false);
+            else if (SecretOfLostTemple.Story.StoryBookViewerController.StoryActivityActive)
+            {
+                bool challengeDone = PlayerPrefs.GetInt("LostTemple_Lever_Challenge_Completed", 0) == 1;
+                SecretOfLostTemple.Story.StoryBookViewerController.ReturnToStory(challengeDone);
+            }
             else SceneManager.LoadScene("HomeMapScene");
         }
 

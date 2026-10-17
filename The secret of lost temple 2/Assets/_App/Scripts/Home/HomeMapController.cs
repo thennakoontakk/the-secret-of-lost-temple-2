@@ -432,7 +432,7 @@ namespace SecretOfLostTemple.Home
 
             if (storyBookViewer != null)
             {
-                storyBookViewer.OpenStoryBook(machineName);
+                storyBookViewer.OpenStoryBook(machineName, true);
             }
             else
             {
@@ -609,12 +609,7 @@ namespace SecretOfLostTemple.Home
 
         public void EnterLevel1AR()
         {
-            if (ResearchData.Store.IsStudy) { SetStatus("Use Researcher Panel to start learning or review."); return; }
-            PlaySound(startQuestClip != null ? startQuestClip : buttonClickClip);
-            PlayerPrefs.SetString("LostTemple_App_Mode", "Quest");
-            PlayerPrefs.Save();
-            SetStatus("Entering Temple Gates (Read Story & Scan)...");
-            StartCoroutine(LoadSceneRoutine("MainARScene"));
+            OpenQuestModal();
         }
 
         public void OnLogoutClicked()
