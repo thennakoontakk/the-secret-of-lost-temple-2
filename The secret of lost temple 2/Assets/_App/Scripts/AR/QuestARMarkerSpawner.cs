@@ -407,7 +407,7 @@ namespace SecretOfLostTemple.AR
             if (!isQuestMode || isMarkerDetected || questLeverPrefab == null || Camera.main == null) return;
             var camera = Camera.main.transform;
             leverAnchor = new GameObject("SimulatedLeverAnchor").transform;
-            leverAnchor.position = camera.position + camera.forward * 0.60f - camera.up * 0.15f;
+            leverAnchor.position = camera.position + camera.forward * 0.60f - camera.up * 0.08f;
             leverAnchor.rotation = Quaternion.Euler(0f, camera.eulerAngles.y, 0f);
             leverAnchor.localScale = Vector3.one * 0.12f;
             spawnedLeverInstance = Instantiate(questLeverPrefab, leverAnchor, false);
@@ -490,13 +490,13 @@ namespace SecretOfLostTemple.AR
         {
             if (questLeverPrefab == null) return;
             float scaleToUse = 0.12f;
-            float elevation = 0.005f; // 5mm above marker base plane to prevent mesh z-fighting
+            float elevation = 0.025f; // Elevate slightly above the marker center so the 3D lever sits higher in the viewport
 
             if (leverAnchor == null)
             {
                 leverAnchor = new GameObject("LeverMarkerAnchor").transform;
                 leverAnchor.SetParent(trackedImage.transform, false);
-                leverAnchor.localPosition = new Vector3(0f, elevation, 0f);
+                leverAnchor.localPosition = new Vector3(0f, elevation, 0.03f);
                 leverAnchor.localRotation = Quaternion.identity;
                 leverAnchor.localScale = Vector3.one * scaleToUse;
                 spawnedLeverInstance = Instantiate(questLeverPrefab, leverAnchor, false);
@@ -513,13 +513,13 @@ namespace SecretOfLostTemple.AR
             else if (leverAnchor.parent != trackedImage.transform)
             {
                 leverAnchor.SetParent(trackedImage.transform, false);
-                leverAnchor.localPosition = new Vector3(0f, elevation, 0f);
+                leverAnchor.localPosition = new Vector3(0f, elevation, 0.03f);
                 leverAnchor.localRotation = Quaternion.identity;
                 leverAnchor.localScale = Vector3.one * scaleToUse;
             }
             else
             {
-                leverAnchor.localPosition = new Vector3(0f, elevation, 0f);
+                leverAnchor.localPosition = new Vector3(0f, elevation, 0.03f);
                 leverAnchor.localRotation = Quaternion.identity;
                 leverAnchor.localScale = Vector3.one * scaleToUse;
             }

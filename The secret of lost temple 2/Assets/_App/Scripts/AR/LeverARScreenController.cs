@@ -171,14 +171,14 @@ namespace SecretOfLostTemple.AR
         // Exploded View smooth transform targets
         private bool isExplodedView = false;
         private Vector3 fulcrumAssembledLocalPos = Vector3.zero;
-        private Vector3 beamAssembledLocalPos = new Vector3(0f, 0.38f, 0f);
+        private Vector3 beamAssembledLocalPos = new Vector3(0f, 0.58f, 0f);
         private Vector3 boulderAssembledLocalPos = new Vector3(-0.90f, 0.15f, 0f);
         private Vector3 effortAssembledLocalPos = new Vector3(0.90f, 0.15f, 0f);
 
         private Vector3 fulcrumExplodedLocalPos = new Vector3(0f, -0.05f, 0f);
-        private Vector3 beamExplodedLocalPos = new Vector3(0f, 0.44f, 0f);
-        private Vector3 boulderExplodedLocalPos = new Vector3(-0.95f, 0.56f, 0f);
-        private Vector3 effortExplodedLocalPos = new Vector3(0.95f, 0.56f, 0f);
+        private Vector3 beamExplodedLocalPos = new Vector3(0f, 0.68f, 0f);
+        private Vector3 boulderExplodedLocalPos = new Vector3(-0.95f, 0.60f, 0f);
+        private Vector3 effortExplodedLocalPos = new Vector3(0.95f, 0.60f, 0f);
 
         // Telemetry
         private int forceChangeCount = 0;
@@ -613,8 +613,8 @@ namespace SecretOfLostTemple.AR
             }
             if (beamPivot != null)
             {
-                // Ensure Lever_Beam rests cleanly on the apex of Fulcrum_Pivot (y = 0.38f) without piercing
-                beamPivot.localPosition = new Vector3(beamPivot.localPosition.x, 0.38f, beamPivot.localPosition.z);
+                // Ensure Lever_Beam rests cleanly on the apex of Fulcrum_Pivot (y = 0.58f, since Fulcrum apex is at y = 0.553f) without piercing!
+                beamPivot.localPosition = new Vector3(beamPivot.localPosition.x, 0.58f, beamPivot.localPosition.z);
                 beamAssembledLocalPos = beamPivot.localPosition;
             }
             if (boulderRoot != null)
@@ -1264,6 +1264,22 @@ namespace SecretOfLostTemple.AR
                     string msg = $"<color=#00ff88><b>🎉 {charName}: \"100 N BOULDER LIFTED!\"</b></color>\n<size=18>Required: {Mathf.CeilToInt(requiredForceN)} N | Applied: {Mathf.RoundToInt(currentEffortForceN)} N | MA: {mechanicalAdvantage:F1}x</size>";
                     if (liftStatusBannerText != null) liftStatusBannerText.text = msg;
 
+                    string activeScene = SceneManager.GetActiveScene().name;
+                    string appMode = PlayerPrefs.GetString("LostTemple_App_Mode", "Quest");
+                    bool isQuest = (activeScene == "MainARScene" && appMode != "Sandbox" && appMode != "PhysicsLab");
+
+                    // In Quest/Expedition mode, as soon as the student lifts the boulder (especially after adjusting Fulcrum/Force),
+                    // unlock Story progression and swap "TRY CHALLENGE" to "CONTINUE STORY ➡" on the bottom console!
+                    if (isQuest && hasUserInteractedWithPhysics && !challengeResolved)
+                    {
+                        GetChallengeParametersForTier(out int cTier, out float cLoadN, out float cMaxEffortN, out string cTierLabel);
+                        // Solve if within challenge effort limit OR if they haven't opened the modal and successfully lifted the boulder by moving fulcrum/force
+                        if (!isChallengeActive || currentEffortForceN <= cMaxEffortN)
+                        {
+                            UnlockQuestVictoryAndShowContinueStory(cTier, mechanicalAdvantage, cLoadN);
+                        }
+                    }
+
                     if (lastVoiceState != 0)
                     {
                         lastVoiceState = 0;
@@ -1272,7 +1288,7 @@ namespace SecretOfLostTemple.AR
                             PlayCompanionReaction(0, msg);
                         }
 
-                        if (PlayerPrefs.GetString("LostTemple_App_Mode", "Sandbox") == "Quest")
+                        if (isQuest)
                         {
                             int currentUnlocked = ResearchProgress.GetInt("LostTemple_Quest_Unlocked_Level", 1);
                             if (currentUnlocked < 2)
@@ -1653,6 +1669,77 @@ namespace SecretOfLostTemple.AR
             }
         }
 
+        private void UnlockQuestVictoryAndShowContinueStory(int tier, float ma, float targetLoadN, string tierLabel = "Tier 1 (Apprentice)")
+        {
+            challengeResolved = true;
+            PlaySound(successClip);
+            currentHintTierStep = 0;
+
+            int currentUnlocked = ResearchProgress.GetInt("LostTemple_Quest_Unlocked_Level", 1);
+            if (currentUnlocked < 2)
+            {
+                ResearchProgress.SetInt("LostTemple_Quest_Unlocked_Level", 2);
+                PlayerPrefs.Save();
+            }
+
+            // Mark challenge complete to unlock StoryBook page progression past Page 9
+            PlayerPrefs.SetInt("LostTemple_Lever_Challenge_Completed", 1);
+            PlayerPrefs.Save();
+
+            // Stream completion data to research dashboard
+            ResearchData.Record("lever_challenge_solved", $"tier={tier};ma={ma:F2};load={targetLoadN:F0};effort={currentEffortForceN:F0}");
+            ResearchCloudSync.Instance?.TriggerImmediateSync("Lever Challenge Completed!");
+
+            if (challengeFeedbackText != null)
+            {
+                challengeFeedbackText.text = $"<color=#00ff88><b>🎉 CHALLENGE COMPLETE ({tierLabel})!</b> MA: <b>{ma:F1}x</b> | Lifted {targetLoadN:F0}N with {Mathf.RoundToInt(currentEffortForceN)}N! Tap <b>CONTINUE STORY ➡</b> to advance!</color>";
+            }
+            if (celebrationParticles != null)
+            {
+                celebrationParticles.Play();
+            }
+
+            // Hide tryChallengeButton and activate golden Btn_ContinueStory in its exact position on the bottom console!
+            EnsureContinueStoryVictoryButtonBuilt();
+            if (tryChallengeButton != null)
+            {
+                tryChallengeButton.gameObject.SetActive(false);
+            }
+            if (continueStoryVictoryButton != null)
+            {
+                var txt = continueStoryVictoryButton.GetComponentInChildren<Text>();
+                if (txt != null)
+                {
+                    bool isStory = SecretOfLostTemple.Story.StoryBookViewerController.StoryActivityActive;
+                    txt.text = isStory ? "<b>CONTINUE STORY ➡</b>" : "<b>NEXT CHAPTER ➡</b>";
+                }
+                continueStoryVictoryButton.gameObject.SetActive(true);
+            }
+
+            // Transform submit button inside modal into "CONTINUE STORY ➡" as well
+            if (challengeSubmitBtn != null)
+            {
+                var btnImg = challengeSubmitBtn.GetComponent<Image>();
+                if (btnImg != null) btnImg.color = new Color(0.85f, 0.55f, 0.08f, 1f);
+                var btnText = challengeSubmitBtn.GetComponentInChildren<Text>();
+                if (btnText != null) btnText.text = "<b>CONTINUE STORY ➡</b>";
+                challengeSubmitBtn.onClick.RemoveAllListeners();
+                challengeSubmitBtn.onClick.AddListener(OnContinueStoryVictoryClicked);
+            }
+
+            // Boulder roll & lift animation
+            if (boulderRoot != null)
+            {
+                StartCoroutine(AnimateBoulderRoll());
+            }
+
+            string victoryMsg = $"<color=#00ff88><b>🎉 {targetLoadN:F0} N BOULDER LIFTED!</b></color>\n<size=18><b>LEVER TASK COMPLETE! Tap 'CONTINUE STORY ➡' to finish your StoryBook!</b></size>";
+            PlayCompanionReaction(0, victoryMsg);
+            ResearchData.Record("lever_lifted", "lever");
+
+            CognitiveTelemetryLogger.Instance?.LogInteraction("challenge_completed", null, $"{{\"attempts\":{Mathf.Max(1, challengeAttempts)},\"ma\":{ma:F2},\"tier\":{tier}}}");
+        }
+
         private void EnsureChallengeModalBuilt(Transform uiRoot)
         {
             if (uiRoot == null) return;
@@ -1917,75 +2004,7 @@ namespace SecretOfLostTemple.AR
 
             if (isSuccessful)
             {
-                PlaySound(successClip);
-                currentHintTierStep = 0;
-
-                int currentUnlocked = ResearchProgress.GetInt("LostTemple_Quest_Unlocked_Level", 1);
-                if (currentUnlocked < 2)
-                {
-                    ResearchProgress.SetInt("LostTemple_Quest_Unlocked_Level", 2);
-                    PlayerPrefs.Save();
-                }
-
-                // Mark challenge complete to unlock StoryBook page progression past Page 9
-                PlayerPrefs.SetInt("LostTemple_Lever_Challenge_Completed", 1);
-                PlayerPrefs.Save();
-
-                // Stream completion data to research dashboard
-                ResearchData.Record("lever_challenge_solved", $"tier={tier};ma={ma:F2};load={targetLoadN:F0};effort={currentEffortForceN:F0}");
-                ResearchCloudSync.Instance?.TriggerImmediateSync("Lever Challenge Completed!");
-
-                if (challengeFeedbackText != null)
-                {
-                    challengeFeedbackText.text = $"<color=#00ff88><b>🎉 CHALLENGE COMPLETE ({tierLabel})!</b> MA: <b>{ma:F1}x</b> | Lifted {targetLoadN:F0}N with {Mathf.RoundToInt(currentEffortForceN)}N! Tap <b>CONTINUE STORY ➡</b> to advance!</color>";
-                }
-                if (celebrationParticles != null)
-                {
-                    celebrationParticles.Play();
-                }
-
-                // Requirement 4: Hide tryChallengeButton and activate golden Btn_ContinueStory in its exact position on the bottom console!
-                EnsureContinueStoryVictoryButtonBuilt();
-                if (tryChallengeButton != null)
-                {
-                    tryChallengeButton.gameObject.SetActive(false);
-                }
-                if (continueStoryVictoryButton != null)
-                {
-                    var txt = continueStoryVictoryButton.GetComponentInChildren<Text>();
-                    if (txt != null)
-                    {
-                        bool isStory = SecretOfLostTemple.Story.StoryBookViewerController.StoryActivityActive;
-                        txt.text = isStory ? "<b>CONTINUE STORY ➡</b>" : "<b>NEXT CHAPTER ➡</b>";
-                    }
-                    continueStoryVictoryButton.gameObject.SetActive(true);
-                }
-
-                // Transform submit button inside modal into "CONTINUE STORY ➡" as well
-                if (challengeSubmitBtn != null)
-                {
-                    var btnImg = challengeSubmitBtn.GetComponent<Image>();
-                    if (btnImg != null) btnImg.color = new Color(0.85f, 0.55f, 0.08f, 1f);
-                    var btnText = challengeSubmitBtn.GetComponentInChildren<Text>();
-                    if (btnText != null) btnText.text = "<b>CONTINUE STORY ➡</b>";
-                    challengeSubmitBtn.onClick.RemoveAllListeners();
-                    challengeSubmitBtn.onClick.AddListener(OnContinueStoryVictoryClicked);
-                }
-
-                // Boulder roll & lift animation
-                if (boulderRoot != null)
-                {
-                    StartCoroutine(AnimateBoulderRoll());
-                }
-
-                if (PlayerPrefs.GetString("LostTemple_App_Mode", "Sandbox") == "Quest")
-                {
-                    string victoryMsg = $"<color=#00ff88><b>🎉 {targetLoadN:F0} N BOULDER LIFTED!</b></color>\n<size=18><b>LEVER TASK COMPLETE! Tap 'CONTINUE STORY ➡' to finish your StoryBook!</b></size>";
-                    PlayCompanionReaction(0, victoryMsg);
-                    ResearchData.Record("lever_lifted", "lever");
-                }
-
-                CognitiveTelemetryLogger.Instance?.LogInteraction("challenge_completed", null, $"{{\"attempts\":{challengeAttempts},\"ma\":{ma:F2},\"tier\":{tier}}}");
+                UnlockQuestVictoryAndShowContinueStory(tier, ma, targetLoadN, tierLabel);
             }
             else
             {
