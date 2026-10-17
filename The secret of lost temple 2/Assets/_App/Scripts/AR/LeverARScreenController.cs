@@ -228,9 +228,8 @@ namespace SecretOfLostTemple.AR
             }
             else
             {
-                // In Sandbox mode, start in View-Only Mode
-                SetInteractionMode(InteractionMode.ViewOnly);
-                SetViewOnlySubMode(ViewOnlySubMode.ForcesAndMotion);
+                // In Sandbox ("Free Practice") mode, start in Interactive Mode so students can freely move fulcrum & apply force
+                SetInteractionMode(InteractionMode.Interactive);
             }
 
             ApplyAppModeVisibility();
@@ -278,7 +277,13 @@ namespace SecretOfLostTemple.AR
             if (isSandbox)
             {
                 // In Sandbox ("Free Practice") mode:
-                // No challenges, quizzes, hints, or rank badges — pure free 3D spatial exploration!
+                // No challenges, quizzes, hints, or rank badges — pure free camera-based 3D AR playground on the user's desk!
+                var templeEnv = GameObject.Find("TempleEnvironmentRoot");
+                if (templeEnv != null) templeEnv.SetActive(false);
+                var scanOverlay = GameObject.Find("ScanningMarkerOverlay");
+                if (scanOverlay != null) scanOverlay.SetActive(false);
+                if (leverRoot != null) leverRoot.gameObject.SetActive(true);
+
                 if (tryChallengeButton != null) tryChallengeButton.gameObject.SetActive(false);
                 if (continueStoryVictoryButton != null) continueStoryVictoryButton.gameObject.SetActive(false);
                 if (challengeModalPanel != null) challengeModalPanel.SetActive(false);

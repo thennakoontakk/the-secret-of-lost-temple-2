@@ -83,9 +83,27 @@ namespace SecretOfLostTemple.AR
             }
 
             OnForceSliderChanged(appliedForceSlider != null ? appliedForceSlider.value : 0f);
-            OnFulcrumSliderChanged(fulcrumPositionSlider != null ? fulcrumPositionSlider.value : .8f);
-            // Initially show scanner prompt
-            ShowScannerPrompt("lever_target");
+            OnFulcrumSliderChanged(fulcrumPositionSlider != null ? fulcrumPositionSlider.value : 0.8f);
+
+            // Phase B: Pure Virtual Science Workbench — bypass scanner overlay and immediately materialize the 3D Lever
+            if (scannerOverlayPanel != null)
+            {
+                scannerOverlayPanel.SetActive(false);
+            }
+
+            isTargetTracked = true;
+            if (lever3DRoot != null)
+            {
+                lever3DRoot.SetActive(true);
+                StartCoroutine(AnimateMaterializeObject(lever3DRoot.transform));
+            }
+
+            if (leverPhysics != null)
+            {
+                leverPhysics.SetFulcrumPosition(0.8f);
+                leverPhysics.SetAppliedEffortForce(0f);
+                UpdateDashboard(leverPhysics);
+            }
         }
 
         private void OnDestroy()
@@ -181,7 +199,10 @@ namespace SecretOfLostTemple.AR
             if (targetName != "lever_target") return;
             currentActiveTarget = targetName;
             PlaySound(buttonClickClip);
-            ShowScannerPrompt(targetName);
+            if (!isTargetTracked)
+            {
+                OnTargetDetected();
+            }
         }
 
         private void ShowScannerPrompt(string targetName)
@@ -333,7 +354,7 @@ namespace SecretOfLostTemple.AR
 
             if (mechanicalAdvantageValueText != null)
             {
-                mechanicalAdvantageValueText.text = $"<b>MA = d_e / d_l = {ma:F2}x | Load {loadForce:F0} N</b>\n<size=15><color=#d5c59f>Effort Arm ({lp.EffortArmLength:F2}m) / Load Arm ({lp.LoadArmLength:F2}m)</color></size>";
+                mechanicalAdvantageValueText.text = $"<b>MA = d₁ / d₂ = {ma:F2}x | Load {loadForce:F0} N</b>\n<size=15><color=#d5c59f>Effort Arm d₁ ({lp.EffortArmLength:F2}m) / Load Arm d₂ ({lp.LoadArmLength:F2}m)</color></size>";
             }
 
             if (loadForceValueText != null)
@@ -349,9 +370,9 @@ namespace SecretOfLostTemple.AR
             if (torqueEquationText != null)
             {
                 torqueEquationText.text =
-                    $"<b>TORQUE BALANCE</b>\n" +
-                    $"• Load Torque (τ₁): {lp.LoadTorque:F0} N·m\n" +
-                    $"• Effort Torque (τ₂): {lp.EffortTorque:F0} N·m  (Net: {lp.NetTorque:+0;-0;0} N·m)";
+                    $"<b>TORQUE BALANCE (F₁ × d₁ = F₂ × d₂)</b>\n" +
+                    $"• Effort Torque (F₁ × d₁): {lp.EffortTorque:F0} N·m\n" +
+                    $"• Load Torque (F₂ × d₂): {lp.LoadTorque:F0} N·m  (Net: {lp.NetTorque:+0;-0;0} N·m)";
             }
 
             if (simulationStatusBadge != null)
