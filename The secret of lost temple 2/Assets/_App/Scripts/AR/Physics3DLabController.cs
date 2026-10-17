@@ -71,6 +71,28 @@ namespace SecretOfLostTemple.AR
         private string currentActiveTarget = "lever_target";
         public string CurrentActiveTarget => currentActiveTarget;
 
+        private void Awake()
+        {
+            if (scannerOverlayPanel == null)
+            {
+                var sp = GameObject.Find("Physics Lab Canvas/ScannerOverlayPanel");
+                if (sp != null) scannerOverlayPanel = sp;
+            }
+            if (scannerOverlayPanel != null)
+            {
+                scannerOverlayPanel.SetActive(false);
+            }
+            if (lever3DRoot != null)
+            {
+                lever3DRoot.SetActive(true);
+            }
+            var subTxt = GameObject.Find("Physics Lab Canvas/TopNavBar/SubtitleText")?.GetComponent<Text>();
+            if (subTxt != null)
+            {
+                subTxt.text = "Virtual Science Workbench: Real-Time Torque Equilibrium & Mechanical Advantage";
+            }
+        }
+
         private void Start()
         {
             InitializePlayerProfile();
@@ -178,7 +200,7 @@ namespace SecretOfLostTemple.AR
             if (appliedForceSlider != null)
             {
                 appliedForceSlider.minValue = 0f;
-                appliedForceSlider.maxValue = 1200f;
+                appliedForceSlider.maxValue = 300f;
                 appliedForceSlider.value = 0f;
                 appliedForceSlider.onValueChanged.RemoveAllListeners();
                 appliedForceSlider.onValueChanged.AddListener(OnForceSliderChanged);

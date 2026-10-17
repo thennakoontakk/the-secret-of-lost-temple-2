@@ -278,11 +278,22 @@ namespace SecretOfLostTemple.AR
             {
                 // In Sandbox ("Free Practice") mode:
                 // No challenges, quizzes, hints, or rank badges — pure free camera-based 3D AR playground on the user's desk!
+                if (leverRoot != null)
+                {
+                    if (leverRoot.parent != null && leverRoot.parent.name == "TempleEnvironmentRoot")
+                    {
+                        leverRoot.SetParent(null, true);
+                    }
+                    leverRoot.gameObject.SetActive(true);
+                    leverRoot.position = new Vector3(0f, -0.05f, 0.35f);
+                    leverRoot.rotation = Quaternion.identity;
+                    leverRoot.localScale = Vector3.one * 1.15f;
+                }
+
                 var templeEnv = GameObject.Find("TempleEnvironmentRoot");
                 if (templeEnv != null) templeEnv.SetActive(false);
                 var scanOverlay = GameObject.Find("ScanningMarkerOverlay");
                 if (scanOverlay != null) scanOverlay.SetActive(false);
-                if (leverRoot != null) leverRoot.gameObject.SetActive(true);
 
                 if (tryChallengeButton != null) tryChallengeButton.gameObject.SetActive(false);
                 if (continueStoryVictoryButton != null) continueStoryVictoryButton.gameObject.SetActive(false);
@@ -1333,8 +1344,13 @@ namespace SecretOfLostTemple.AR
                 string mode = PlayerPrefs.GetString("LostTemple_App_Mode", "Quest");
                 if (mode == "Sandbox")
                 {
+                    if (leverRoot.parent != null && leverRoot.parent.name == "TempleEnvironmentRoot")
+                    {
+                        leverRoot.SetParent(null, true);
+                    }
+                    leverRoot.position = new Vector3(0f, -0.05f, 0.35f);
                     leverRoot.localRotation = Quaternion.identity;
-                    leverRoot.localScale = Vector3.one * 2.0f;
+                    leverRoot.localScale = Vector3.one * 1.15f;
                 }
             }
 
@@ -1362,6 +1378,11 @@ namespace SecretOfLostTemple.AR
             if (existing != null)
             {
                 toggleHowItWorksBtn = existing.GetComponent<Button>();
+                var existingRt = existing.GetComponent<RectTransform>();
+                if (existingRt != null)
+                {
+                    existingRt.anchoredPosition = new Vector2(-390f, 0f);
+                }
                 return;
             }
 
@@ -1372,8 +1393,8 @@ namespace SecretOfLostTemple.AR
             rt.anchorMin = new Vector2(1f, 0.5f);
             rt.anchorMax = new Vector2(1f, 0.5f);
             rt.pivot = new Vector2(1f, 0.5f);
-            rt.anchoredPosition = new Vector2(-18f, 0f);
-            rt.sizeDelta = new Vector2(210f, 52f);
+            rt.anchoredPosition = new Vector2(-390f, 0f);
+            rt.sizeDelta = new Vector2(190f, 48f);
 
             var img = btnGo.GetComponent<Image>();
             img.color = new Color(0.24f, 0.17f, 0.08f, 0.94f);
@@ -1392,7 +1413,7 @@ namespace SecretOfLostTemple.AR
             txtRt.offsetMin = txtRt.offsetMax = Vector2.zero;
             var txt = txtGo.GetComponent<Text>();
             txt.font = font;
-            txt.fontSize = 16;
+            txt.fontSize = 15;
             txt.fontStyle = FontStyle.Bold;
             txt.alignment = TextAnchor.MiddleCenter;
             txt.color = new Color(1f, 0.92f, 0.65f);

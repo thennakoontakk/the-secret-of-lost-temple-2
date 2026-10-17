@@ -63,6 +63,16 @@ namespace SecretOfLostTemple.AR
                 initialBoulderLocalPos = boulderRoot.localPosition;
             }
 
+            // Ensure Beam_3D_Model (which is authored along Z in Beam.glb) is rotated 90 degrees around Y to span along X
+            if (beamRoot != null)
+            {
+                var beamModel = beamRoot.Find("Beam_3D_Model");
+                if (beamModel != null)
+                {
+                    beamModel.localRotation = Quaternion.Euler(0f, 90f, 0f);
+                }
+            }
+
             SetupForceLines();
             UpdatePhysicsLayout();
         }

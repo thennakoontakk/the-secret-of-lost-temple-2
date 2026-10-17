@@ -44,11 +44,11 @@ namespace SecretOfLostTemple.AR
         private IEnumerator Start()
         {
             string appMode = PlayerPrefs.GetString("LostTemple_App_Mode", "Quest");
-            isQuestMode = (appMode != "Sandbox" && appMode != "PhysicsLab");
+            isQuestMode = (appMode != "PhysicsLab");
 
             if (!isQuestMode)
             {
-                // SANDBOX MODE: Pure 3D virtual temple environment
+                // PHYSICS LAB MODE: Pure 3D virtual lab environment (no camera feed needed)
                 if (arCameraBackground != null) arCameraBackground.enabled = false;
                 if (arCameraManager != null) arCameraManager.enabled = false;
                 if (webCamDisplayImage != null) webCamDisplayImage.gameObject.SetActive(false);
