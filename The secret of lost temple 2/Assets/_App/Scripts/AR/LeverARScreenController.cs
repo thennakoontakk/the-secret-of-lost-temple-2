@@ -171,14 +171,14 @@ namespace SecretOfLostTemple.AR
         // Exploded View smooth transform targets
         private bool isExplodedView = false;
         private Vector3 fulcrumAssembledLocalPos = Vector3.zero;
-        private Vector3 beamAssembledLocalPos = Vector3.zero;
+        private Vector3 beamAssembledLocalPos = new Vector3(0f, 0.28f, 0f);
         private Vector3 boulderAssembledLocalPos = new Vector3(-0.90f, 0.15f, 0f);
         private Vector3 effortAssembledLocalPos = new Vector3(0.90f, 0.15f, 0f);
 
-        private Vector3 fulcrumExplodedLocalPos = new Vector3(0f, -0.45f, -0.25f);
-        private Vector3 beamExplodedLocalPos = new Vector3(0f, 0.25f, 0f);
-        private Vector3 boulderExplodedLocalPos = new Vector3(-1.45f, 0.65f, 0.25f);
-        private Vector3 effortExplodedLocalPos = new Vector3(1.45f, 0.65f, -0.25f);
+        private Vector3 fulcrumExplodedLocalPos = new Vector3(0f, -0.05f, 0f);
+        private Vector3 beamExplodedLocalPos = new Vector3(0f, 0.36f, 0f);
+        private Vector3 boulderExplodedLocalPos = new Vector3(-0.95f, 0.52f, 0f);
+        private Vector3 effortExplodedLocalPos = new Vector3(0.95f, 0.52f, 0f);
 
         // Telemetry
         private int forceChangeCount = 0;
@@ -193,6 +193,7 @@ namespace SecretOfLostTemple.AR
 
         private void Awake()
         {
+            Debug.developerConsoleVisible = false;
             sessionStartTime = Time.time;
             AutoBindAllReferences();
             if (btnSmartHint != null && btnSmartHint.transform.localScale.sqrMagnitude > 0.01f)
@@ -215,6 +216,7 @@ namespace SecretOfLostTemple.AR
 
         private void Start()
         {
+            Debug.developerConsoleVisible = false;
             AutoBindAllReferences();
             SetupButtonListeners();
             hasUserInteractedWithPhysics = false;
@@ -278,10 +280,33 @@ namespace SecretOfLostTemple.AR
             if (isSandbox)
             {
                 // Dedicated Free Practice (FreePracticeScene):
-                // Keep TempleEnvironmentRoot & SimpleMachine_Lever framed on the virtual stone altar in front of the camera!
+                // Elevate TempleEnvironmentRoot & frame camera so the 3D Lever & Altar sit in the upper-middle viewport, completely above bottom buttons!
                 var templeEnv = GameObject.Find("TempleEnvironmentRoot");
-                if (templeEnv != null) templeEnv.SetActive(true);
-                if (leverRoot != null) leverRoot.gameObject.SetActive(true);
+                if (templeEnv != null)
+                {
+                    templeEnv.SetActive(true);
+                    templeEnv.transform.position = new Vector3(0f, 0.28f, 0f);
+                    templeEnv.transform.rotation = Quaternion.identity;
+                    templeEnv.transform.localScale = Vector3.one;
+                }
+
+                if (leverRoot != null)
+                {
+                    if (templeEnv != null && leverRoot.parent != templeEnv.transform)
+                    {
+                        leverRoot.SetParent(templeEnv.transform, false);
+                    }
+                    leverRoot.gameObject.SetActive(true);
+                    leverRoot.localPosition = new Vector3(0f, -0.20f, 1.20f);
+                }
+
+                if (Camera.main != null && activeScene == "FreePracticeScene")
+                {
+                    Camera.main.transform.localPosition = new Vector3(0f, 0.55f, -2.25f);
+                    Camera.main.transform.localRotation = Quaternion.Euler(8f, 0f, 0f);
+                }
+
+                ApplyFreePracticeCompactUILayout();
 
                 var scanOverlay = GameObject.Find("ScanningMarkerOverlay");
                 if (scanOverlay != null) scanOverlay.SetActive(false);
@@ -315,6 +340,109 @@ namespace SecretOfLostTemple.AR
                 if (adaptiveTierBadgeText != null && adaptiveTierBadgeText.transform.parent != null)
                 {
                     adaptiveTierBadgeText.transform.parent.gameObject.SetActive(true);
+                }
+            }
+        }
+
+        private void ApplyFreePracticeCompactUILayout()
+        {
+            // 1. Center and compact the Interactive Bottom Console (since Try Challenge is hidden in Free Practice)
+            if (bottomConsole != null)
+            {
+                var bcRt = bottomConsole.GetComponent<RectTransform>();
+                if (bcRt != null)
+                {
+                    bcRt.anchorMin = new Vector2(0.5f, 0f);
+                    bcRt.anchorMax = new Vector2(0.5f, 0f);
+                    bcRt.pivot = new Vector2(0.5f, 0f);
+                    bcRt.anchoredPosition = new Vector2(0f, 14f);
+                    bcRt.sizeDelta = new Vector2(1180f, 145f);
+                }
+
+                var boxForce = bottomConsole.transform.Find("Box_Force")?.GetComponent<RectTransform>();
+                if (boxForce != null)
+                {
+                    boxForce.anchorMin = boxForce.anchorMax = boxForce.pivot = new Vector2(0.5f, 0.5f);
+                    boxForce.anchoredPosition = new Vector2(-360f, 0f);
+                    boxForce.sizeDelta = new Vector2(330f, 145f);
+                }
+
+                var boxFulcrum = bottomConsole.transform.Find("Box_Fulcrum")?.GetComponent<RectTransform>();
+                if (boxFulcrum != null)
+                {
+                    boxFulcrum.anchorMin = boxFulcrum.anchorMax = boxFulcrum.pivot = new Vector2(0.5f, 0.5f);
+                    boxFulcrum.anchoredPosition = new Vector2(10f, 0f);
+                    boxFulcrum.sizeDelta = new Vector2(310f, 145f);
+                }
+
+                if (resetButton != null)
+                {
+                    var resetRt = resetButton.GetComponent<RectTransform>();
+                    if (resetRt != null)
+                    {
+                        resetRt.anchorMin = resetRt.anchorMax = resetRt.pivot = new Vector2(0.5f, 0.5f);
+                        resetRt.anchoredPosition = new Vector2(320f, 0f);
+                        resetRt.sizeDelta = new Vector2(138f, 138f);
+                    }
+                }
+            }
+
+            // 2. Compact the View-Only Bottom Bar so 360° Forces & Exploded Parts buttons don't block the 3D model
+            if (viewOnlyBottomBar != null)
+            {
+                var voRt = viewOnlyBottomBar.GetComponent<RectTransform>();
+                if (voRt != null)
+                {
+                    voRt.anchorMin = new Vector2(0.5f, 0f);
+                    voRt.anchorMax = new Vector2(0.5f, 0f);
+                    voRt.pivot = new Vector2(0.5f, 0f);
+                    voRt.anchoredPosition = new Vector2(0f, 14f);
+                    voRt.sizeDelta = new Vector2(1080f, 110f);
+                }
+
+                if (btnForcesAndMotion != null)
+                {
+                    var fmRt = btnForcesAndMotion.GetComponent<RectTransform>();
+                    if (fmRt != null)
+                    {
+                        fmRt.anchoredPosition = new Vector2(-240f, 0f);
+                        fmRt.sizeDelta = new Vector2(440f, 104f);
+                    }
+                }
+
+                if (btnExplodedParts != null)
+                {
+                    var epRt = btnExplodedParts.GetComponent<RectTransform>();
+                    if (epRt != null)
+                    {
+                        epRt.anchoredPosition = new Vector2(240f, 0f);
+                        epRt.sizeDelta = new Vector2(440f, 104f);
+                    }
+                }
+            }
+
+            // 3. Position Exploded Parts Pills neatly right above the compact ViewOnlyBottomBar
+            if (explodedPartsPillsContainer != null)
+            {
+                var pillsRt = explodedPartsPillsContainer.GetComponent<RectTransform>();
+                if (pillsRt != null)
+                {
+                    pillsRt.anchorMin = new Vector2(0.5f, 0f);
+                    pillsRt.anchorMax = new Vector2(0.5f, 0f);
+                    pillsRt.pivot = new Vector2(0.5f, 0f);
+                    pillsRt.anchoredPosition = new Vector2(0f, 132f);
+                    pillsRt.sizeDelta = new Vector2(1180f, 48f);
+                }
+            }
+
+            // 4. Keep Lift Status Banner cleanly above the compact console without covering the 3D lever
+            if (liftStatusBannerText != null && liftStatusBannerText.transform.parent != null)
+            {
+                var bannerRt = liftStatusBannerText.transform.parent.GetComponent<RectTransform>();
+                if (bannerRt != null)
+                {
+                    bannerRt.anchoredPosition = new Vector2(0f, 172f);
+                    bannerRt.sizeDelta = new Vector2(780f, 68f);
                 }
             }
         }
@@ -811,11 +939,11 @@ namespace SecretOfLostTemple.AR
             }
             line.useWorldSpace = true; line.positionCount = 5;
             float unit = cam != null ? WorldUnitsPerPixel(cam, anchor.position) : .001f;
-            float length = Mathf.Max(.28f * scale, unit * 32f);
+            float length = Mathf.Max(.20f * scale, unit * 24f);
             Vector3 tip = anchor.position;
             Vector3 tail = tip - direction * length;
             Vector3 side = cam != null ? cam.transform.right : leverRoot.right;
-            line.startWidth = line.endWidth = Mathf.Max(.008f * scale, unit * 2f);
+            line.startWidth = line.endWidth = Mathf.Max(.006f * scale, unit * 1.6f);
             line.startColor = line.endColor = color;
             line.SetPosition(0, tail); line.SetPosition(1, tip);
             line.SetPosition(2, tip - direction * length * .22f + side * length * .13f);
@@ -823,13 +951,14 @@ namespace SecretOfLostTemple.AR
             if (label == null) {
                 label = new GameObject("ForceLabel").AddComponent<TextMesh>();
                 label.transform.SetParent(root, false);
-                label.fontSize = 64; label.characterSize = 1f;
+                label.fontSize = 48; label.characterSize = 1f;
+                label.fontStyle = FontStyle.Bold;
                 label.anchor = TextAnchor.MiddleCenter;
             }
             label.text = caption; label.color = color;
-            label.transform.position = tail - direction * unit * 14f;
+            label.transform.position = tail - direction * unit * 12f;
             if (cam != null) label.transform.rotation = cam.transform.rotation;
-            SetWorldScale(label.transform, Vector3.one * unit * 22f);
+            SetWorldScale(label.transform, Vector3.one * unit * 8.0f);
         }
 
         private void HandleDirect3DPartClicks()
@@ -1328,20 +1457,25 @@ namespace SecretOfLostTemple.AR
 
             if (fulcrumSlider != null) fulcrumSlider.value = 0f;
             if (fulcrumRoot != null) fulcrumRoot.localPosition = fulcrumAssembledLocalPos;
-            if (beamPivot != null) beamPivot.localRotation = Quaternion.identity;
+            if (beamPivot != null)
+            {
+                beamPivot.localRotation = Quaternion.identity;
+                beamPivot.localPosition = beamAssembledLocalPos;
+            }
 
             if (leverRoot != null)
             {
                 string mode = PlayerPrefs.GetString("LostTemple_App_Mode", "Quest");
                 if (mode == "Sandbox")
                 {
-                    if (leverRoot.parent != null && leverRoot.parent.name == "TempleEnvironmentRoot")
+                    GameObject envRoot = GameObject.Find("TempleEnvironmentRoot");
+                    if (envRoot != null && leverRoot.parent != envRoot.transform)
                     {
-                        leverRoot.SetParent(null, true);
+                        leverRoot.SetParent(envRoot.transform, false);
                     }
-                    leverRoot.position = new Vector3(0f, -0.05f, 0.35f);
+                    leverRoot.localPosition = new Vector3(0f, -0.20f, 1.20f);
                     leverRoot.localRotation = Quaternion.identity;
-                    leverRoot.localScale = Vector3.one * 1.15f;
+                    leverRoot.localScale = Vector3.one;
                 }
             }
 

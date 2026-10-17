@@ -33,9 +33,15 @@ namespace SecretOfLostTemple.Research
         private bool isPushing = false;
         private string lastSyncedSessionSignature = "";
 
+        private sealed class BypassCertificateHandler : CertificateHandler
+        {
+            protected override bool ValidateCertificate(byte[] certificateData) => true;
+        }
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         private static void AutoInstall()
         {
+            Debug.developerConsoleVisible = false;
             if (Instance == null)
             {
                 var go = new GameObject("ResearchCloudSync");
@@ -46,6 +52,7 @@ namespace SecretOfLostTemple.Research
 
         private void Awake()
         {
+            Debug.developerConsoleVisible = false;
             if (Instance != null && Instance != this)
             {
                 Destroy(gameObject);
@@ -58,6 +65,8 @@ namespace SecretOfLostTemple.Research
 
         private void Update()
         {
+            if (Debug.developerConsoleVisible) Debug.developerConsoleVisible = false;
+
             if (Time.unscaledTime >= nextPollTime && !isPolling)
             {
                 nextPollTime = Time.unscaledTime + 2.0f;
@@ -97,6 +106,8 @@ namespace SecretOfLostTemple.Research
             string url = $"{BaseDocsUrl}/research_commands/remote_control";
             using (UnityWebRequest req = UnityWebRequest.Get(url))
             {
+                req.certificateHandler = new BypassCertificateHandler();
+                req.disposeCertificateHandlerOnDispose = true;
                 req.timeout = 5;
                 yield return req.SendWebRequest();
 
@@ -248,6 +259,8 @@ namespace SecretOfLostTemple.Research
                 byte[] bodyRaw = Encoding.UTF8.GetBytes(deviceDocJson);
                 devReq.uploadHandler = new UploadHandlerRaw(bodyRaw);
                 devReq.downloadHandler = new DownloadHandlerBuffer();
+                devReq.certificateHandler = new BypassCertificateHandler();
+                devReq.disposeCertificateHandlerOnDispose = true;
                 devReq.SetRequestHeader("Content-Type", "application/json");
                 devReq.timeout = 5;
                 yield return devReq.SendWebRequest();
@@ -267,6 +280,8 @@ namespace SecretOfLostTemple.Research
                         byte[] bodyRaw = Encoding.UTF8.GetBytes(sessionDocJson);
                         sesReq.uploadHandler = new UploadHandlerRaw(bodyRaw);
                         sesReq.downloadHandler = new DownloadHandlerBuffer();
+                        sesReq.certificateHandler = new BypassCertificateHandler();
+                        sesReq.disposeCertificateHandlerOnDispose = true;
                         sesReq.SetRequestHeader("Content-Type", "application/json");
                         sesReq.timeout = 5;
                         yield return sesReq.SendWebRequest();
@@ -294,6 +309,8 @@ namespace SecretOfLostTemple.Research
                     byte[] bodyRaw = Encoding.UTF8.GetBytes(sessionDocJson);
                     sesReq.uploadHandler = new UploadHandlerRaw(bodyRaw);
                     sesReq.downloadHandler = new DownloadHandlerBuffer();
+                    sesReq.certificateHandler = new BypassCertificateHandler();
+                    sesReq.disposeCertificateHandlerOnDispose = true;
                     sesReq.SetRequestHeader("Content-Type", "application/json");
                     sesReq.timeout = 5;
                     yield return sesReq.SendWebRequest();
