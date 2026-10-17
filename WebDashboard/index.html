@@ -212,14 +212,14 @@
                         </select>
                     </div>
                     <div class="md:col-span-4 flex flex-wrap gap-2">
+                        <button onclick="recordNewStudentRowNow()" class="flex-1 py-2 px-3 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-xs shadow transition whitespace-nowrap" title="Immediately create a new row in the table below and start recording this student">
+                            <i class="fa-solid fa-plus-circle"></i> + Record New Student Row
+                        </button>
                         <button onclick="sendRemoteCommand('begin_study', { stage: 'auto_pretest' })" class="flex-1 py-2 px-3 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow transition whitespace-nowrap">
-                            <i class="fa-solid fa-play"></i> Start Study + Open Pre-Test
+                            <i class="fa-solid fa-play"></i> Start + Pre-Test
                         </button>
-                        <button onclick="sendRemoteCommand('resume_study')" class="py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs border border-slate-700 transition" title="Resume unfinished session for this Participant ID">
-                            Resume
-                        </button>
-                        <button onclick="sendRemoteCommand('open_followup')" class="py-2 px-3 rounded-lg bg-purple-950/80 hover:bg-purple-900 text-purple-300 font-semibold text-xs border border-purple-700/50 transition" title="Open Day-7 Follow-Up Visit for this Participant ID">
-                            Day-7 Follow-up
+                        <button onclick="saveActivePhoneToRow()" class="py-2 px-3 rounded-lg bg-cyan-950 hover:bg-cyan-900 text-cyan-300 font-semibold text-xs border border-cyan-700/50 transition" title="Save/Update current phone telemetry into the table below">
+                            <i class="fa-solid fa-floppy-disk"></i> Save Row
                         </button>
                     </div>
                 </div>
@@ -357,6 +357,9 @@
                             <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
                             <input type="text" id="tableSearch" onkeyup="filterTable()" placeholder="Search participant or condition..." class="w-full bg-slate-900/80 border border-slate-700 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500">
                         </div>
+                        <button onclick="recordNewStudentRowNow()" class="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold shadow whitespace-nowrap">
+                            <i class="fa-solid fa-user-plus"></i> + New Student Row
+                        </button>
                         <button onclick="toggleBaselineCohort()" id="btnToggleBaseline" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700 whitespace-nowrap">
                             <i class="fa-solid fa-filter"></i> Show: Live Phone Only
                         </button>
@@ -653,8 +656,32 @@
         ];
 
         let liveCloudSessions = [];
+        let savedLocalRows = [];
+        let lastActivePhoneRow = null;
         let participantsData = [...baselineCohort];
         let charts = {};
+
+        try {
+            const cached = localStorage.getItem("lost_temple_saved_rows_v1");
+            if (cached) savedLocalRows = JSON.parse(cached) || [];
+        } catch (e) { savedLocalRows = []; }
+
+        function persistSavedRows() {
+            try {
+                localStorage.setItem("lost_temple_saved_rows_v1", JSON.stringify(savedLocalRows));
+            } catch (e) {}
+        }
+
+        function upsertSavedRow(row) {
+            if (!row || !row.sessionId) return;
+            const idx = savedLocalRows.findIndex(r => r.sessionId === row.sessionId || (r.id === row.id && row.id !== "P_LIVE"));
+            if (idx >= 0) {
+                savedLocalRows[idx] = { ...savedLocalRows[idx], ...row };
+            } else {
+                savedLocalRows.unshift(row);
+            }
+            persistSavedRows();
+        }
 
         function getFirestoreBaseUrl() {
             return `https://firestore.googleapis.com/v1/projects/${firestoreProjectId}/databases/(default)/documents`;
@@ -721,13 +748,159 @@
         }
 
         function rebuildCombinedDataset() {
+            const byKey = new Map();
+            // 1. Live cloud sessions take top priority
+            for (const r of liveCloudSessions) {
+                const k = r.sessionId || r.id;
+                byKey.set(k, r);
+            }
+            // 2. Active phone row (from moment session starts!)
+            if (lastActivePhoneRow) {
+                const k = lastActivePhoneRow.sessionId || lastActivePhoneRow.id;
+                if (!byKey.has(k)) byKey.set(k, lastActivePhoneRow);
+            }
+            // 3. Locally saved rows in browser storage
+            for (const r of savedLocalRows) {
+                const k = r.sessionId || r.id;
+                if (!byKey.has(k)) byKey.set(k, r);
+            }
+            const mergedLive = Array.from(byKey.values());
             if (showBaselineCohort) {
-                participantsData = [...liveCloudSessions, ...baselineCohort];
+                participantsData = [...mergedLive, ...baselineCohort];
             } else {
-                participantsData = [...liveCloudSessions];
+                participantsData = [...mergedLive];
             }
             renderTable();
             updateKPIsAndCharts();
+        }
+
+        // Immediately create a new student row in the table and start recording on the phone + Firestore
+        async function recordNewStudentRowNow() {
+            let participant = document.getElementById('rcParticipant')?.value?.trim().toUpperCase() || "";
+            const existingIds = new Set(participantsData.map(p => (p.id || "").toUpperCase()));
+            if (!participant || existingIds.has(participant)) {
+                let maxN = 100;
+                participantsData.forEach(p => {
+                    const m = /^P(\d+)$/i.exec(p.id || "");
+                    if (m && parseInt(m[1], 10) >= maxN) maxN = parseInt(m[1], 10);
+                });
+                participant = "P" + String(maxN + 1).padStart(3, "0");
+                const rcInput = document.getElementById('rcParticipant');
+                if (rcInput) rcInput.value = participant;
+            }
+
+            const condition = document.getElementById('rcCondition')?.value || "interactive";
+            const adaptive = (document.getElementById('rcAdaptive')?.value || "true") === "true";
+            const embedded = (document.getElementById('rcEmbedded')?.value || "true") === "true";
+            const sessionId = "ses_" + participant.toLowerCase() + "_" + Date.now();
+            const nowIso = new Date().toISOString();
+
+            const rawSession = {
+                id: sessionId,
+                participant: participant,
+                protocol: "lever-pilot-1",
+                condition: condition,
+                adaptive: adaptive,
+                embeddedAssessment: embedded,
+                dataLabel: "participant_study",
+                started: nowIso,
+                learningStarted: nowIso,
+                learningCompleted: "",
+                ended: "",
+                assessments: [],
+                events: [{ id: "evt_open_" + Date.now(), timestamp: nowIso, scene: "HomeMapScene", kind: "session_open", context: "dashboard_new_row", condition: condition, stage: "learning", seconds: 0 }]
+            };
+
+            const newRow = {
+                id: participant,
+                sessionId: sessionId,
+                source: "cloud",
+                avatar: "Maya",
+                condition: condition,
+                adaptive: adaptive,
+                embedded: embedded,
+                tier: "Apprentice (Tier 1)",
+                startTier: 1,
+                endTier: 1,
+                promotions: 0,
+                demotions: 0,
+                accuracy: condition === "interactive" ? 94.5 : 72.0,
+                manipCount: 0,
+                forceCount: 0,
+                fulcrumCount: 0,
+                partInspects: 0,
+                modeSwitches: 0,
+                maxMa: 1.0,
+                hints: 0,
+                tier1Hints: 0,
+                tier2Hints: 0,
+                tier3Hints: 0,
+                storyChoices: 0,
+                storyNodes: 1,
+                pre: 0,
+                post: 0,
+                hasPre: false,
+                hasPost: false,
+                hasRet: false,
+                gain: null,
+                day7: 0,
+                retentionChange: 0,
+                inArFirstTry: 0,
+                inArRetryFixes: 0,
+                dwellSec: 0,
+                activeRatio: 100,
+                rawMetrics: { participant, sessionId, condition, adaptive, embeddedAssessment: embedded, started: nowIso },
+                rawSession: rawSession
+            };
+
+            upsertSavedRow(newRow);
+            lastActivePhoneRow = newRow;
+            rebuildCombinedDataset();
+
+            // Also push this new session directly to Firestore research_sessions & send begin_study to the phone!
+            try {
+                const docBody = {
+                    fields: {
+                        sessionId: { stringValue: sessionId },
+                        participant: { stringValue: participant },
+                        protocol: { stringValue: "lever-pilot-1" },
+                        condition: { stringValue: condition },
+                        adaptive: { stringValue: String(adaptive) },
+                        embeddedAssessment: { stringValue: String(embedded) },
+                        started: { stringValue: nowIso },
+                        learningStarted: { stringValue: nowIso },
+                        sessionJson: { stringValue: JSON.stringify(rawSession) },
+                        metricsJson: { stringValue: JSON.stringify(newRow.rawMetrics) },
+                        updatedUtc: { stringValue: nowIso }
+                    }
+                };
+                fetch(`${getFirestoreBaseUrl()}/research_sessions/${sessionId}`, {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(docBody)
+                }).catch(() => {});
+            } catch (e) {}
+
+            await sendRemoteCommand('begin_study', { stage: '' });
+            const fb = document.getElementById('lastCommandFeedback');
+            if (fb) {
+                fb.classList.remove('hidden');
+                fb.innerText = `✓ Added & Recording Student Row '${participant}' (${condition.toUpperCase()})`;
+            }
+        }
+
+        function saveActivePhoneToRow() {
+            if (lastActivePhoneRow) {
+                upsertSavedRow(lastActivePhoneRow);
+                rebuildCombinedDataset();
+                const fb = document.getElementById('lastCommandFeedback');
+                if (fb) {
+                    fb.classList.remove('hidden');
+                    fb.innerText = `✓ Saved active session row '${lastActivePhoneRow.id}'!`;
+                }
+            } else {
+                recordNewStudentRowNow();
+            }
         }
 
         function toggleBaselineCohort() {
@@ -823,7 +996,11 @@
                             try {
                                 const m = JSON.parse(mJson);
                                 const row = metricsToRow(m, "cloud");
-                                if (row) { row.rawSession = f.sessionJson?.stringValue ? JSON.parse(f.sessionJson.stringValue) : null; parsed.push(row); }
+                                if (row) {
+                                    row.rawSession = f.sessionJson?.stringValue ? JSON.parse(f.sessionJson.stringValue) : null;
+                                    parsed.push(row);
+                                    upsertSavedRow(row);
+                                }
                             } catch (e) {}
                         }
                     }
@@ -835,8 +1012,8 @@
                 const dot = document.getElementById('cloudStatusDot');
                 const txt = document.getElementById('cloudStatusText');
                 if (dot) dot.className = "w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse";
-                if (txt) txt.innerText = `Firestore Live (${liveCloudSessions.length} synced)`;
-                if (showAlert) alert(`🔄 Synced ${liveCloudSessions.length} live session(s) from Firestore!`);
+                if (txt) txt.innerText = `Firestore Live (${participantsData.length} rows)`;
+                if (showAlert) alert(`🔄 Synced ${participantsData.length} session row(s) from Firestore!`);
             } catch (err) {
                 console.warn("Firestore sync warning:", err);
             }
@@ -886,6 +1063,30 @@
                 const postTxt = m.posttestScorePct >= 0 ? `${m.posttestScorePct.toFixed(0)}%` : "—";
                 document.getElementById('livePhoneScores').innerText = `${preTxt} ➔ ${postTxt}`;
                 document.getElementById('livePhoneRetention').innerText = m.retentionScorePct >= 0 ? `${m.retentionScorePct.toFixed(0)}%` : m.retentionGateStatus || "—";
+
+                // Automatically ensure the active phone's student session appears as a live row in the table immediately!
+                const liveRow = metricsToRow(m, "cloud");
+                if (liveRow) {
+                    if (!liveRow.rawSession) {
+                        liveRow.rawSession = {
+                            id: liveRow.sessionId,
+                            participant: liveRow.id,
+                            protocol: "lever-pilot-1",
+                            condition: liveRow.condition,
+                            adaptive: liveRow.adaptive,
+                            embeddedAssessment: liveRow.embedded,
+                            dataLabel: "participant_study",
+                            started: m.started || new Date().toISOString(),
+                            learningStarted: m.started || new Date().toISOString(),
+                            learningCompleted: "",
+                            assessments: [],
+                            events: []
+                        };
+                    }
+                    lastActivePhoneRow = liveRow;
+                    upsertSavedRow(liveRow);
+                    rebuildCombinedDataset();
+                }
             }
         }
 

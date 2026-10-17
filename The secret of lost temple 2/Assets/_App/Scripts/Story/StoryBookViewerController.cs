@@ -108,6 +108,13 @@ namespace SecretOfLostTemple.Story
                 PlayerPrefs.Save();
             }
 
+            if (SecretOfLostTemple.Research.Research.Store.Current == null && !SecretOfLostTemple.Research.Research.DemoMode)
+            {
+                SecretOfLostTemple.Research.Research.Store.EnsureAutoParticipantSession("interactive");
+            }
+            SecretOfLostTemple.Research.Research.Record("storybook_opened", machineName);
+            SecretOfLostTemple.Research.ResearchCloudSync.Instance?.TriggerImmediateSync($"Reading {machineName} StoryBook");
+
             if (machineName == "Lever")
             {
                 startPageIndex = 0;
@@ -252,6 +259,18 @@ namespace SecretOfLostTemple.Story
             resumePage = currentPageIndex;
             resumeMachine = activeMachine;
             PlaySound(activityStartClip != null ? activityStartClip : pageTurnClip);
+
+            var store = SecretOfLostTemple.Research.Research.Store;
+            if (store.Current == null && !SecretOfLostTemple.Research.Research.DemoMode)
+            {
+                store.EnsureAutoParticipantSession("interactive");
+            }
+            if (store.Current != null && string.IsNullOrEmpty(store.Current.learningStarted))
+            {
+                store.Current.learningStarted = System.DateTime.UtcNow.ToString("O");
+            }
+            SecretOfLostTemple.Research.Research.Record("scan_marker_button_clicked", activeMachine);
+            SecretOfLostTemple.Research.ResearchCloudSync.Instance?.TriggerImmediateSync($"Scanning Page 9 Marker ({activeMachine})");
 
             PlayerPrefs.SetString("LostTemple_App_Mode", "Quest");
             PlayerPrefs.SetString("Sandbox_Selected_Machine", activeMachine);

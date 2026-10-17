@@ -426,9 +426,20 @@ namespace SecretOfLostTemple.Home
         public void OnQuestMachineSelected(string machineName)
         {
             if (machineName != "Lever") { ShowLockedChapter(); return; }
-            if (ResearchData.Store.IsStudy) { SetStatus("Use Researcher Panel to start learning or review."); return; }
             PlaySound(buttonClickClip);
             CloseQuestModal();
+
+            // Automatically start/ensure a recorded participant session row from the moment the student begins the expedition!
+            if (ResearchData.Store.Current == null && !ResearchData.DemoMode)
+            {
+                ResearchData.Store.EnsureAutoParticipantSession("interactive");
+            }
+            else if (ResearchData.Store.Current != null && string.IsNullOrEmpty(ResearchData.Store.Current.learningStarted))
+            {
+                try { ResearchData.Store.StartLearning(); } catch { }
+            }
+            ResearchData.Record("expedition_chapter_selected", machineName);
+            ResearchCloudSync.Instance?.TriggerImmediateSync($"Student started {machineName} Expedition");
 
             if (storyBookViewer != null)
             {
@@ -445,7 +456,6 @@ namespace SecretOfLostTemple.Home
 
         public void OnSandboxClicked()
         {
-            if (ResearchData.Store.IsStudy) { SetStatus("Use Researcher Panel to start learning or review."); return; }
             PlaySound(buttonClickClip);
             if (sandboxModalPanel != null)
             {
@@ -479,7 +489,6 @@ namespace SecretOfLostTemple.Home
         public void SelectSandboxMachine(string machineName)
         {
             if (machineName != "Lever") { ShowLockedChapter(); return; }
-            if (ResearchData.Store.IsStudy) { SetStatus("Use Researcher Panel to start learning or review."); return; }
             PlaySound(buttonClickClip);
             PlayerPrefs.SetString("LostTemple_App_Mode", "Sandbox");
             PlayerPrefs.SetString("Sandbox_Selected_Machine", machineName);
@@ -491,7 +500,6 @@ namespace SecretOfLostTemple.Home
 
         public void On3DPhysicsClicked()
         {
-            if (ResearchData.Store.IsStudy) { SetStatus("Use Researcher Panel to start learning or review."); return; }
             PlaySound(buttonClickClip);
             PlayerPrefs.SetString("LostTemple_App_Mode", "PhysicsLab");
             PlayerPrefs.SetString("Sandbox_Selected_Machine", "Lever");

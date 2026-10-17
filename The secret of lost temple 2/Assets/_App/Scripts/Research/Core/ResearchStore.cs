@@ -98,7 +98,18 @@ namespace SecretOfLostTemple.Research
         {
             code = (code ?? "").Trim().ToUpperInvariant();
             if (!Regex.IsMatch(code, "^P[0-9]{3,8}$")) throw new ArgumentException("Use an anonymous code such as P001 (P plus 3–8 digits).");
-            if (Current != null) throw new InvalidOperationException("End the current session before switching participants.");
+            if (Current != null)
+            {
+                bool isAutoSession = Current.events != null && Current.events.Any(e => e.context != null && e.context.Contains("auto_student_session"));
+                if (isAutoSession)
+                {
+                    End();
+                }
+                else
+                {
+                    throw new InvalidOperationException("End the current session before switching participants.");
+                }
+            }
             var unfinished = data.sessions.LastOrDefault(s => s.participant == code && string.IsNullOrEmpty(s.ended));
             if (resume && unfinished == null) throw new InvalidOperationException("No unfinished session for this code. Choose New session.");
             if (!resume && unfinished != null) throw new InvalidOperationException("An unfinished session exists. Resume and end it before creating another.");
@@ -119,10 +130,73 @@ namespace SecretOfLostTemple.Research
             ActiveId = null;
         }
         public void Practice() { End(); ParticipantCode = null; }
+        public ResearchSession EnsureAutoParticipantSession(string defaultCondition = "interactive")
+        {
+            if (Current != null) return Current;
+            if (IsPresentationStore) return null;
+
+            int maxNum = 100;
+            foreach (var p in data.participants)
+            {
+                if (!string.IsNullOrEmpty(p.code) && p.code.StartsWith("P", StringComparison.OrdinalIgnoreCase) &&
+                    int.TryParse(p.code.Substring(1), out int n) && n >= maxNum)
+                {
+                    maxNum = n;
+                }
+            }
+            foreach (var s in data.sessions)
+            {
+                if (!string.IsNullOrEmpty(s.participant) && s.participant.StartsWith("P", StringComparison.OrdinalIgnoreCase) &&
+                    int.TryParse(s.participant.Substring(1), out int n) && n >= maxNum)
+                {
+                    maxNum = n;
+                }
+            }
+
+            string autoCode = "P" + (maxNum + 1).ToString("D3", CultureInfo.InvariantCulture);
+            string id = Guid.NewGuid().ToString("N");
+            string nowIso = DateTime.UtcNow.ToString("O");
+            string cond = string.IsNullOrEmpty(defaultCondition) ? "interactive" : defaultCondition;
+
+            Mutate(() =>
+            {
+                if (!data.participants.Any(p => p.code == autoCode))
+                    data.participants.Add(new Participant { code = autoCode });
+
+                data.sessions.Add(new ResearchSession
+                {
+                    id = id,
+                    participant = autoCode,
+                    started = nowIso,
+                    learningStarted = nowIso,
+                    protocol = "lever-pilot-1",
+                    condition = cond,
+                    adaptive = true,
+                    embeddedAssessment = true,
+                    appVersion = Application.version,
+                    contentVersion = LeverTestBank.Version
+                });
+            });
+
+            ParticipantCode = autoCode;
+            ActiveId = id;
+            Record("session_open", "auto_student_session");
+            Record("study_assignment", "auto_student_session;adaptive=True;embedded=True");
+            Record("learning_open", "auto_student_session");
+            return Current;
+        }
         public void Record(string kind, string context = "", bool hasAnswer = false, bool correct = false, float seconds = 0)
         {
             var session = Current;
-            if (session == null) return;
+            if (session == null)
+            {
+                // Auto-create a student session row as soon as the student begins interacting with the app in playmode
+                if (Application.isPlaying && !IsPresentationStore && kind != "scene_enter" && kind != "visit_end")
+                {
+                    session = EnsureAutoParticipantSession("interactive");
+                }
+                if (session == null) return;
+            }
             if (float.IsNaN(seconds) || float.IsInfinity(seconds) || seconds < 0) throw new ArgumentException("Invalid response time.");
             var entry = new ResearchEvent { id = Guid.NewGuid().ToString("N"), timestamp = DateTime.UtcNow.ToString("O"),
                 scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name, kind = kind, context = context,

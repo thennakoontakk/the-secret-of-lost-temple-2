@@ -806,6 +806,7 @@ namespace SecretOfLostTemple.AR
             if (researchForeground && quizModalPanel != null && quizModalPanel.activeSelf && !researchAnswerSubmitted) researchQuestionSeconds += Time.unscaledDeltaTime;
             if (pendingFulcrumLog >= 0 && Time.unscaledTime - pendingFulcrumLog > .4f) {
                 ResearchData.Record("fulcrum_committed", fulcrumOffset.ToString(System.Globalization.CultureInfo.InvariantCulture)); pendingFulcrumLog = -1;
+                ResearchCloudSync.Instance?.TriggerImmediateSync($"Fulcrum moved to {fulcrumOffset:+0.00;-0.00;0.00}m");
             }
             if (StudyPolicy.Passive) {
                 demonstrationTime += Time.deltaTime;
@@ -1112,6 +1113,7 @@ namespace SecretOfLostTemple.AR
             }
 
             CognitiveTelemetryLogger.Instance?.LogInteraction("inspect_part", null, $"{{\"part\":\"{partKey}\"}}");
+            ResearchCloudSync.Instance?.TriggerImmediateSync($"Inspected part: {partKey}");
         }
 
         public void ClosePartDetailsModal()
@@ -1205,6 +1207,7 @@ namespace SecretOfLostTemple.AR
             UpdateForceUI();
 
             CognitiveTelemetryLogger.Instance?.LogInteraction("adjust_force", null, $"{{\"forceN\":{currentEffortForceN}}}");
+            ResearchCloudSync.Instance?.TriggerImmediateSync($"Effort Force set to {currentEffortForceN:F0}N");
         }
 
         public void MoveFulcrumStep(float delta)

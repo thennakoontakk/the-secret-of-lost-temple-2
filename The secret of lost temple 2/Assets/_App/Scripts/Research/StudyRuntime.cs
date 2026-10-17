@@ -20,10 +20,18 @@ public class StudyRuntime : MonoBehaviour
     void Start()
     {
         StudyPolicy.Tracking=false;
+        if(!StudyPolicy.Measured && !Data.DemoMode)
+        {
+            Data.Store.EnsureAutoParticipantSession("interactive");
+        }
         if(!StudyPolicy.Measured)return;
         var s=Data.Store.Current;
-        if(Data.Store.PendingTest!=null||string.IsNullOrEmpty(s.learningStarted)||(!string.IsNullOrEmpty(s.learningCompleted)&&!StudyPolicy.Review))
+        if(Data.Store.PendingTest!=null)
         {SceneManager.LoadScene("HomeMapScene");return;}
+        if(string.IsNullOrEmpty(s.learningStarted))
+        {
+            s.learningStarted = System.DateTime.UtcNow.ToString("O");
+        }
         Data.Record(StudyPolicy.Review?"review_start":"learning_scene_start","lever");
     }
     void Update()
