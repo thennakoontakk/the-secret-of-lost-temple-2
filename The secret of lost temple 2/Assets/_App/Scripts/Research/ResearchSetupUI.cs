@@ -52,11 +52,13 @@ public class ResearchSetupUI : MonoBehaviour
         scale.referenceResolution=new Vector2(1920,1080);scale.matchWidthOrHeight=1;
         gameObject.AddComponent<GraphicRaycaster>();
         string scene=SceneManager.GetActiveScene().name;
-        bool storyActivity=scene=="MainARScene" && SecretOfLostTemple.Story.StoryBookViewerController.StoryActivityActive && !Data.Store.IsStudy;
-        var launcher=MakeButton(storyActivity?"Continue Story":scene=="AuthScene"?"Research (offline)":scene=="MainARScene"?"Return to research":"Researcher Panel",transform,0,0,380,65,
-            ()=>{if(storyActivity)SecretOfLostTemple.Story.StoryBookViewerController.ReturnToStory(true);else if(scene=="HomeMapScene")ShowSession();else ReturnToPanel();});
-        var rect=(RectTransform)launcher.transform;rect.anchorMin=rect.anchorMax=rect.pivot=new Vector2(.5f,0);rect.anchoredPosition=new Vector2(0,18);
-        overlay=Box("StudyOverlay",transform,0,0,0,0);rect=(RectTransform)overlay.transform;
+        if (scene != "MainARScene" && scene != "HomeMapScene")
+        {
+            var launcher=MakeButton(scene=="AuthScene"?"Research (offline)":"Researcher Panel",transform,0,0,380,65,
+                ()=>{if(scene=="HomeMapScene")ShowSession();else ReturnToPanel();});
+            var lRect=(RectTransform)launcher.transform;lRect.anchorMin=lRect.anchorMax=lRect.pivot=new Vector2(.5f,0);lRect.anchoredPosition=new Vector2(0,18);
+        }
+        overlay=Box("StudyOverlay",transform,0,0,0,0);var rect=(RectTransform)overlay.transform;
         rect.anchorMin=Vector2.zero;rect.anchorMax=Vector2.one;rect.offsetMin=rect.offsetMax=Vector2.zero;
         overlay.AddComponent<Image>().color=new Color(0,0,0,.92f);
         card=Box("StudyCard",overlay.transform,0,0,1460,950);card.AddComponent<Image>().color=new Color(.10f,.08f,.045f,1);

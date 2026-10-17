@@ -187,6 +187,9 @@ namespace SecretOfLostTemple.AR
         private float sessionStartTime;
         private Vector3 baseHintScale = Vector3.one;
         private bool questMarkerScanned = false;
+        private bool hasUserInteractedWithPhysics = false;
+        private Coroutine companionBubbleCoroutine;
+        private Button continueStoryVictoryButton;
 
         private void Awake()
         {
@@ -199,18 +202,28 @@ namespace SecretOfLostTemple.AR
             InitializeCharacterCompanion();
             SetupButtonListeners();
             CaptureInitialObjectPositions();
+
+            // Requirement 1 & 2: Hide "How It Works" tablet and Companion Avatar by default for a clean AR screen
+            if (howItWorksPanel != null) howItWorksPanel.SetActive(false);
+            if (characterCompanionImage != null) characterCompanionImage.gameObject.SetActive(false);
+            if (liftStatusBannerText != null && liftStatusBannerText.transform.parent != null)
+            {
+                liftStatusBannerText.transform.parent.gameObject.SetActive(false);
+            }
+            if (challengeModalPanel != null) challengeModalPanel.SetActive(false);
         }
 
         private void Start()
         {
             AutoBindAllReferences();
             SetupButtonListeners();
+            hasUserInteractedWithPhysics = false;
             ResetMechanism();
 
             string appMode = PlayerPrefs.GetString("LostTemple_App_Mode", "Quest");
             if (questMarkerScanned || appMode == "Quest")
             {
-                // In Quest mode (after scanning Page 9 marker), start directly in Interactive Mode with Challenge active
+                // In Quest mode (after scanning Page 9 marker), activate Interactive Mode console so student can freely experiment
                 SetInteractionMode(InteractionMode.Interactive);
             }
             else
@@ -225,23 +238,36 @@ namespace SecretOfLostTemple.AR
             SecretOfLostTemple.Adaptive.EngagementTracker.Instance?.StartTracking(ResearchData.Store.ParticipantCode);
             InitializeInteractiveStoryBranchUI();
 
-            if (questMarkerScanned || appMode == "Quest")
+            // Requirement 1, 2 & 3: Ensure How It Works, Companion Avatar, and Challenge Modal are hidden until explicitly triggered
+            if (howItWorksPanel != null) howItWorksPanel.SetActive(false);
+            if (characterCompanionImage != null) characterCompanionImage.gameObject.SetActive(false);
+            if (liftStatusBannerText != null && liftStatusBannerText.transform.parent != null)
             {
-                OpenChallengeModal();
+                liftStatusBannerText.transform.parent.gameObject.SetActive(false);
             }
+            if (challengeModalPanel != null) challengeModalPanel.SetActive(false);
         }
 
         /// <summary>
-        /// Called by QuestARMarkerSpawner immediately when the Page 9 Lever Marker is scanned and locked.
-        /// Transitions directly into Interactive Mode and opens the Temple Lever Challenge HUD.
+        /// Called by QuestARMarkerSpawner when the Page 9 Lever Marker is scanned and locked.
+        /// Transitions into Interactive Mode with the bottom console active, WITHOUT auto-popping the Challenge Modal.
         /// </summary>
         public void OnQuestMarkerScanned()
         {
             questMarkerScanned = true;
+            hasUserInteractedWithPhysics = false;
             AutoBindAllReferences();
             SetupButtonListeners();
             SetInteractionMode(InteractionMode.Interactive);
-            OpenChallengeModal();
+
+            // Keep screen clean: hide How It Works, Companion, and Challenge Modal (Challenge opens ONLY when tapping TRY CHALLENGE)
+            if (howItWorksPanel != null) howItWorksPanel.SetActive(false);
+            if (characterCompanionImage != null) characterCompanionImage.gameObject.SetActive(false);
+            if (liftStatusBannerText != null && liftStatusBannerText.transform.parent != null)
+            {
+                liftStatusBannerText.transform.parent.gameObject.SetActive(false);
+            }
+            if (challengeModalPanel != null) challengeModalPanel.SetActive(false);
         }
 
         private void ApplyAppModeVisibility()
@@ -254,6 +280,7 @@ namespace SecretOfLostTemple.AR
                 // In Sandbox ("Free Practice") mode:
                 // No challenges, quizzes, hints, or rank badges — pure free 3D spatial exploration!
                 if (tryChallengeButton != null) tryChallengeButton.gameObject.SetActive(false);
+                if (continueStoryVictoryButton != null) continueStoryVictoryButton.gameObject.SetActive(false);
                 if (challengeModalPanel != null) challengeModalPanel.SetActive(false);
                 if (btnSmartHint != null) btnSmartHint.gameObject.SetActive(false);
                 if (smartHintModalPanel != null) smartHintModalPanel.SetActive(false);
@@ -272,7 +299,8 @@ namespace SecretOfLostTemple.AR
             else
             {
                 // In Quest / Expedition / Story mode:
-                if (tryChallengeButton != null) tryChallengeButton.gameObject.SetActive(true);
+                if (tryChallengeButton != null) tryChallengeButton.gameObject.SetActive(!challengeResolved);
+                if (continueStoryVictoryButton != null) continueStoryVictoryButton.gameObject.SetActive(challengeResolved);
                 if (modeToggleButton != null) modeToggleButton.interactable = !StudyPolicy.Measured;
                 if (btnExplodedParts != null) btnExplodedParts.interactable = !StudyPolicy.Passive;
                 if (btnARQuiz != null) btnARQuiz.gameObject.SetActive(!StudyPolicy.Measured || ResearchData.Store.Current.embeddedAssessment);
@@ -291,6 +319,10 @@ namespace SecretOfLostTemple.AR
             if (uiRoot != null)
             {
                 EnsureChallengeModalBuilt(uiRoot);
+                if (howItWorksPanel == null) howItWorksPanel = uiRoot.Find("Panel_HowItWorks")?.gameObject;
+                if (toggleHowItWorksBtn == null) toggleHowItWorksBtn = uiRoot.Find("TopBar/Btn_HowItWorks")?.GetComponent<Button>();
+                EnsureHowItWorksToggleButtonBuilt(uiRoot);
+
                 if (backOrSettingsButton == null) backOrSettingsButton = uiRoot.Find("TopBar/Btn_Back")?.GetComponent<Button>();
                 if (modeToggleButton == null) modeToggleButton = uiRoot.Find("TopBar/Btn_ModeToggle")?.GetComponent<Button>();
                 if (modeToggleText == null) modeToggleText = uiRoot.Find("TopBar/Btn_ModeToggle/Text")?.GetComponent<Text>();
@@ -317,6 +349,7 @@ namespace SecretOfLostTemple.AR
                 if (fulcrumSlider == null) fulcrumSlider = uiRoot.Find("BottomConsole/Box_Fulcrum/Slider")?.GetComponent<Slider>();
                 if (resetButton == null) resetButton = uiRoot.Find("BottomConsole/Btn_Reset")?.GetComponent<Button>();
                 if (tryChallengeButton == null) tryChallengeButton = uiRoot.Find("BottomConsole/Btn_TryChallenge")?.GetComponent<Button>();
+                EnsureContinueStoryVictoryButtonBuilt();
                 if (liftStatusBannerText == null) liftStatusBannerText = uiRoot.Find("Banner_LiftStatus/Text")?.GetComponent<Text>();
 
                 if (partDetailModalPanel == null) partDetailModalPanel = uiRoot.Find("Panel_PartDetailModal")?.gameObject;
@@ -526,41 +559,88 @@ namespace SecretOfLostTemple.AR
 
             // Interactive Bottom Console Buttons
             if (rotateButton != null)
+            {
+                rotateButton.onClick.RemoveAllListeners();
                 rotateButton.onClick.AddListener(OnRotateClicked);
+            }
 
             if (forceDecreaseBtn != null)
+            {
+                forceDecreaseBtn.onClick.RemoveAllListeners();
                 forceDecreaseBtn.onClick.AddListener(() => AdjustForce(-20f));
+            }
 
             if (forceIncreaseBtn != null)
+            {
+                forceIncreaseBtn.onClick.RemoveAllListeners();
                 forceIncreaseBtn.onClick.AddListener(() => AdjustForce(+20f));
+            }
 
             if (fulcrumLeftBtn != null)
+            {
+                fulcrumLeftBtn.onClick.RemoveAllListeners();
                 fulcrumLeftBtn.onClick.AddListener(() => MoveFulcrumStep(-0.10f));
+            }
 
             if (fulcrumRightBtn != null)
+            {
+                fulcrumRightBtn.onClick.RemoveAllListeners();
                 fulcrumRightBtn.onClick.AddListener(() => MoveFulcrumStep(+0.10f));
+            }
 
             if (fulcrumSlider != null)
+            {
+                fulcrumSlider.onValueChanged.RemoveAllListeners();
                 fulcrumSlider.onValueChanged.AddListener(OnFulcrumSliderChanged);
+            }
 
             if (resetButton != null)
+            {
+                resetButton.onClick.RemoveAllListeners();
                 resetButton.onClick.AddListener(ResetMechanism);
+            }
 
             if (tryChallengeButton != null)
+            {
+                tryChallengeButton.onClick.RemoveAllListeners();
                 tryChallengeButton.onClick.AddListener(OpenChallengeModal);
+            }
 
             if (challengeCloseBtn != null)
+            {
+                challengeCloseBtn.onClick.RemoveAllListeners();
                 challengeCloseBtn.onClick.AddListener(CloseChallengeModal);
+            }
 
             if (challengeSubmitBtn != null)
+            {
+                challengeSubmitBtn.onClick.RemoveAllListeners();
                 challengeSubmitBtn.onClick.AddListener(EvaluateChallenge);
+            }
 
             if (toggleHowItWorksBtn != null)
+            {
+                toggleHowItWorksBtn.onClick.RemoveAllListeners();
                 toggleHowItWorksBtn.onClick.AddListener(ToggleHowItWorks);
+            }
         }
 
         private void Update()
         {
+            // Requirement 1: If user taps anywhere outside howItWorksPanel while it is open, close it
+            if (howItWorksPanel != null && howItWorksPanel.activeSelf && Input.GetMouseButtonDown(0))
+            {
+                var panelRt = howItWorksPanel.GetComponent<RectTransform>();
+                var btnRt = toggleHowItWorksBtn != null ? toggleHowItWorksBtn.GetComponent<RectTransform>() : null;
+                Vector2 mousePos = Input.mousePosition;
+                bool insidePanel = panelRt != null && RectTransformUtility.RectangleContainsScreenPoint(panelRt, mousePos, null);
+                bool insideToggle = btnRt != null && RectTransformUtility.RectangleContainsScreenPoint(btnRt, mousePos, null);
+                if (!insidePanel && !insideToggle)
+                {
+                    howItWorksPanel.SetActive(false);
+                }
+            }
+
             // Track user activity for Abeywickrama's Smart Hint & Engagement Tracker
             if (StudyPolicy.Measured && !StudyPolicy.Tracking) return;
             if (researchForeground && quizModalPanel != null && quizModalPanel.activeSelf && !researchAnswerSubmitted) researchQuestionSeconds += Time.unscaledDeltaTime;
@@ -955,6 +1035,7 @@ namespace SecretOfLostTemple.AR
         public void AdjustForce(float deltaN)
         {
             if (StudyPolicy.Measured && !StudyPolicy.InputAllowed) return;
+            hasUserInteractedWithPhysics = true;
             PlaySound(forceChangeClip != null ? forceChangeClip : clickClip);
             currentEffortForceN = Mathf.Clamp(currentEffortForceN + deltaN, 0f, 160f);
             forceChangeCount++;
@@ -968,6 +1049,7 @@ namespace SecretOfLostTemple.AR
         public void MoveFulcrumStep(float delta)
         {
             if (StudyPolicy.Measured && !StudyPolicy.InputAllowed) return;
+            hasUserInteractedWithPhysics = true;
             PlaySound(clickClip);
             fulcrumOffset = Mathf.Clamp(fulcrumOffset + delta, -0.45f, 0.45f);
             fulcrumChangeCount++;
@@ -982,6 +1064,7 @@ namespace SecretOfLostTemple.AR
         private void OnFulcrumSliderChanged(float val)
         {
             if (StudyPolicy.Measured && !StudyPolicy.InputAllowed) return;
+            hasUserInteractedWithPhysics = true;
             fulcrumOffset = Mathf.Clamp(val, -0.45f, 0.45f);
             fulcrumChangeCount++;
 
@@ -1018,14 +1101,16 @@ namespace SecretOfLostTemple.AR
                 if (netTorque > 5f)
                 {
                     targetBeamAngle = -12f;
-                    if (liftStatusBannerText != null)
-                    {
-                        liftStatusBannerText.text = $"<color=#00ff88><b>🎉 {charName}: \"100 N BOULDER LIFTED!\"</b></color>\n<size=18>Required: {Mathf.CeilToInt(requiredForceN)} N | Applied: {Mathf.RoundToInt(currentEffortForceN)} N | MA: {mechanicalAdvantage:F1}x</size>";
-                    }
+                    string msg = $"<color=#00ff88><b>🎉 {charName}: \"100 N BOULDER LIFTED!\"</b></color>\n<size=18>Required: {Mathf.CeilToInt(requiredForceN)} N | Applied: {Mathf.RoundToInt(currentEffortForceN)} N | MA: {mechanicalAdvantage:F1}x</size>";
+                    if (liftStatusBannerText != null) liftStatusBannerText.text = msg;
+
                     if (lastVoiceState != 0)
                     {
-                        PlayCharacterVoice(0);
                         lastVoiceState = 0;
+                        if (hasUserInteractedWithPhysics)
+                        {
+                            PlayCompanionReaction(0, msg);
+                        }
 
                         if (PlayerPrefs.GetString("LostTemple_App_Mode", "Sandbox") == "Quest")
                         {
@@ -1039,31 +1124,47 @@ namespace SecretOfLostTemple.AR
                             }
                         }
                     }
+                    else if (hasUserInteractedWithPhysics)
+                    {
+                        ShowCompanionAndBubbleTemporary(4.5f);
+                    }
                 }
                 else if (netTorque < -5f)
                 {
                     targetBeamAngle = 6f;
-                    if (liftStatusBannerText != null)
-                    {
-                        liftStatusBannerText.text = $"<color=#ffaa44><b>⚠️ {charName}: \"TOO HEAVY TO LIFT!\"</b></color>\n<size=18>Need at least <b>{Mathf.CeilToInt(requiredForceN)} N</b> with this Fulcrum position!</size>";
-                    }
+                    string msg = $"<color=#ffaa44><b>⚠️ {charName}: \"TOO HEAVY TO LIFT!\"</b></color>\n<size=18>Need at least <b>{Mathf.CeilToInt(requiredForceN)} N</b> with this Fulcrum position!</size>";
+                    if (liftStatusBannerText != null) liftStatusBannerText.text = msg;
+
                     if (lastVoiceState != 1)
                     {
-                        PlayCharacterVoice(1);
                         lastVoiceState = 1;
+                        if (hasUserInteractedWithPhysics)
+                        {
+                            PlayCompanionReaction(1, msg);
+                        }
+                    }
+                    else if (hasUserInteractedWithPhysics)
+                    {
+                        ShowCompanionAndBubbleTemporary(4.5f);
                     }
                 }
                 else
                 {
                     targetBeamAngle = 0f;
-                    if (liftStatusBannerText != null)
-                    {
-                        liftStatusBannerText.text = $"<color=#ffdd44><b>⚖️ {charName}: \"BALANCED EQUILIBRIUM!\"</b></color>\n<size=18>Effort matches Load Torque exactly ({Mathf.RoundToInt(requiredForceN)} N)</size>";
-                    }
+                    string msg = $"<color=#ffdd44><b>⚖️ {charName}: \"BALANCED EQUILIBRIUM!\"</b></color>\n<size=18>Effort matches Load Torque exactly ({Mathf.RoundToInt(requiredForceN)} N)</size>";
+                    if (liftStatusBannerText != null) liftStatusBannerText.text = msg;
+
                     if (lastVoiceState != 2)
                     {
-                        PlayCharacterVoice(2);
                         lastVoiceState = 2;
+                        if (hasUserInteractedWithPhysics)
+                        {
+                            PlayCompanionReaction(2, msg);
+                        }
+                    }
+                    else if (hasUserInteractedWithPhysics)
+                    {
+                        ShowCompanionAndBubbleTemporary(4.5f);
                     }
                 }
             }
@@ -1085,6 +1186,87 @@ namespace SecretOfLostTemple.AR
                         $"<color=#00ff88>✨ <b>Target Reached!</b> Boulder lifted with <b>{currentEffortForceN:F0} N</b> (MA: <b>{mechanicalAdvantage:F1}x</b>) — Tap <b>✅ CHECK SOLUTION</b> to complete!</color>";
                 }
             }
+        }
+
+        /// <summary>
+        /// Requirement 2: Shows Maya/Senuk companion avatar and speech banner simultaneously,
+        /// plays voice reaction, and hides them after ~4.5 seconds when idle.
+        /// </summary>
+        public void PlayCompanionReaction(int voiceState, string feedbackMessage = null)
+        {
+            if (!string.IsNullOrEmpty(feedbackMessage) && liftStatusBannerText != null)
+            {
+                liftStatusBannerText.text = feedbackMessage;
+            }
+            PlayCharacterVoice(voiceState);
+            ShowCompanionAndBubbleTemporary(4.5f);
+        }
+
+        public void ShowCompanionHint()
+        {
+            ShowCompanionAndBubbleTemporary(4.5f);
+        }
+
+        private void ShowCompanionAndBubbleTemporary(float durationSeconds = 4.5f)
+        {
+            string appMode = PlayerPrefs.GetString("LostTemple_App_Mode", "Quest");
+            if (appMode == "Sandbox") return;
+
+            if (companionBubbleCoroutine != null)
+            {
+                StopCoroutine(companionBubbleCoroutine);
+            }
+            companionBubbleCoroutine = StartCoroutine(CompanionBubbleRoutine(durationSeconds));
+        }
+
+        private IEnumerator CompanionBubbleRoutine(float durationSeconds = 4.5f)
+        {
+            GameObject bannerGo = liftStatusBannerText != null && liftStatusBannerText.transform.parent != null
+                ? liftStatusBannerText.transform.parent.gameObject
+                : null;
+
+            CanvasGroup compCg = null;
+            if (characterCompanionImage != null)
+            {
+                characterCompanionImage.gameObject.SetActive(true);
+                compCg = characterCompanionImage.GetComponent<CanvasGroup>();
+                if (compCg == null) compCg = characterCompanionImage.gameObject.AddComponent<CanvasGroup>();
+                compCg.alpha = 1f;
+            }
+
+            CanvasGroup bannerCg = null;
+            if (bannerGo != null)
+            {
+                bannerGo.SetActive(true);
+                bannerCg = bannerGo.GetComponent<CanvasGroup>();
+                if (bannerCg == null) bannerCg = bannerGo.AddComponent<CanvasGroup>();
+                bannerCg.alpha = 1f;
+            }
+
+            yield return new WaitForSeconds(durationSeconds);
+
+            float fadeDuration = 0.35f;
+            float elapsed = 0f;
+            while (elapsed < fadeDuration)
+            {
+                elapsed += Time.deltaTime;
+                float alpha = Mathf.Lerp(1f, 0f, elapsed / fadeDuration);
+                if (compCg != null) compCg.alpha = alpha;
+                if (bannerCg != null) bannerCg.alpha = alpha;
+                yield return null;
+            }
+
+            if (characterCompanionImage != null)
+            {
+                if (compCg != null) compCg.alpha = 1f;
+                characterCompanionImage.gameObject.SetActive(false);
+            }
+            if (bannerGo != null)
+            {
+                if (bannerCg != null) bannerCg.alpha = 1f;
+                bannerGo.SetActive(false);
+            }
+            companionBubbleCoroutine = null;
         }
 
         private void PlayCharacterVoice(int state)
@@ -1162,6 +1344,130 @@ namespace SecretOfLostTemple.AR
             if (howItWorksPanel != null)
             {
                 howItWorksPanel.SetActive(!howItWorksPanel.activeSelf);
+            }
+        }
+
+        private void EnsureHowItWorksToggleButtonBuilt(Transform uiRoot)
+        {
+            if (uiRoot == null || toggleHowItWorksBtn != null) return;
+            var topBar = uiRoot.Find("TopBar");
+            if (topBar == null) return;
+
+            var existing = topBar.Find("Btn_HowItWorks");
+            if (existing != null)
+            {
+                toggleHowItWorksBtn = existing.GetComponent<Button>();
+                return;
+            }
+
+            Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            var btnGo = new GameObject("Btn_HowItWorks", typeof(RectTransform), typeof(Image), typeof(Button));
+            btnGo.transform.SetParent(topBar, false);
+            var rt = (RectTransform)btnGo.transform;
+            rt.anchorMin = new Vector2(1f, 0.5f);
+            rt.anchorMax = new Vector2(1f, 0.5f);
+            rt.pivot = new Vector2(1f, 0.5f);
+            rt.anchoredPosition = new Vector2(-18f, 0f);
+            rt.sizeDelta = new Vector2(210f, 52f);
+
+            var img = btnGo.GetComponent<Image>();
+            img.color = new Color(0.24f, 0.17f, 0.08f, 0.94f);
+            var outline = btnGo.AddComponent<Outline>();
+            outline.effectColor = new Color(0.95f, 0.78f, 0.25f, 0.9f);
+            outline.effectDistance = new Vector2(1.5f, -1.5f);
+
+            toggleHowItWorksBtn = btnGo.GetComponent<Button>();
+            toggleHowItWorksBtn.onClick.AddListener(ToggleHowItWorks);
+
+            var txtGo = new GameObject("Text", typeof(RectTransform), typeof(Text));
+            txtGo.transform.SetParent(btnGo.transform, false);
+            var txtRt = (RectTransform)txtGo.transform;
+            txtRt.anchorMin = Vector2.zero;
+            txtRt.anchorMax = Vector2.one;
+            txtRt.offsetMin = txtRt.offsetMax = Vector2.zero;
+            var txt = txtGo.GetComponent<Text>();
+            txt.font = font;
+            txt.fontSize = 16;
+            txt.fontStyle = FontStyle.Bold;
+            txt.alignment = TextAnchor.MiddleCenter;
+            txt.color = new Color(1f, 0.92f, 0.65f);
+            txt.text = "📘 HOW IT WORKS";
+        }
+
+        private void EnsureContinueStoryVictoryButtonBuilt()
+        {
+            if (continueStoryVictoryButton != null || bottomConsole == null) return;
+
+            var existing = bottomConsole.transform.Find("Btn_ContinueStory");
+            if (existing != null)
+            {
+                continueStoryVictoryButton = existing.GetComponent<Button>();
+                return;
+            }
+
+            Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            var btnGo = new GameObject("Btn_ContinueStory", typeof(RectTransform), typeof(Image), typeof(Button));
+            btnGo.transform.SetParent(bottomConsole.transform, false);
+            var rt = (RectTransform)btnGo.transform;
+
+            if (tryChallengeButton != null)
+            {
+                var tryRt = (RectTransform)tryChallengeButton.transform;
+                rt.anchorMin = tryRt.anchorMin;
+                rt.anchorMax = tryRt.anchorMax;
+                rt.pivot = tryRt.pivot;
+                rt.anchoredPosition = tryRt.anchoredPosition;
+                rt.sizeDelta = new Vector2(Mathf.Min(tryRt.sizeDelta.x, 340f), Mathf.Min(tryRt.sizeDelta.y, 110f));
+            }
+            else
+            {
+                rt.anchorMin = new Vector2(1f, 0.5f);
+                rt.anchorMax = new Vector2(1f, 0.5f);
+                rt.pivot = new Vector2(0.5f, 0.5f);
+                rt.anchoredPosition = new Vector2(-190f, 0f);
+                rt.sizeDelta = new Vector2(340f, 100f);
+            }
+
+            var img = btnGo.GetComponent<Image>();
+            img.color = new Color(0.88f, 0.62f, 0.10f, 0.98f);
+            var outline = btnGo.AddComponent<Outline>();
+            outline.effectColor = new Color(1f, 0.94f, 0.55f, 1f);
+            outline.effectDistance = new Vector2(2.5f, -2.5f);
+
+            continueStoryVictoryButton = btnGo.GetComponent<Button>();
+            continueStoryVictoryButton.onClick.AddListener(OnContinueStoryVictoryClicked);
+
+            var txtGo = new GameObject("Text", typeof(RectTransform), typeof(Text));
+            txtGo.transform.SetParent(btnGo.transform, false);
+            var txtRt = (RectTransform)txtGo.transform;
+            txtRt.anchorMin = Vector2.zero;
+            txtRt.anchorMax = Vector2.one;
+            txtRt.offsetMin = new Vector2(8f, 6f);
+            txtRt.offsetMax = new Vector2(-8f, -6f);
+            var txt = txtGo.GetComponent<Text>();
+            txt.font = font;
+            txt.fontSize = 22;
+            txt.fontStyle = FontStyle.Bold;
+            txt.supportRichText = true;
+            txt.alignment = TextAnchor.MiddleCenter;
+            txt.color = new Color(0.14f, 0.08f, 0.02f, 1f);
+            bool isStory = SecretOfLostTemple.Story.StoryBookViewerController.StoryActivityActive;
+            txt.text = isStory ? "<b>CONTINUE STORY ➡</b>" : "<b>NEXT CHAPTER ➡</b>";
+
+            btnGo.SetActive(false);
+        }
+
+        private void OnContinueStoryVictoryClicked()
+        {
+            PlaySound(clickClip);
+            CloseChallengeModal();
+            if (SecretOfLostTemple.Story.StoryBookViewerController.StoryActivityActive)
+            {
+                SecretOfLostTemple.Story.StoryBookViewerController.ReturnToStory(true);
+            }
+            else
+            {
+                SceneManager.LoadScene("HomeMapScene");
             }
         }
 
@@ -1397,6 +1703,11 @@ namespace SecretOfLostTemple.AR
                 challengeModalPanel.SetActive(false);
         }
 
+        public void CheckChallengeSolution()
+        {
+            EvaluateChallenge();
+        }
+
         public void EvaluateChallenge()
         {
             if (StudyPolicy.Measured && !StudyPolicy.InputAllowed) return;
@@ -1444,34 +1755,39 @@ namespace SecretOfLostTemple.AR
 
                 if (challengeFeedbackText != null)
                 {
-                    challengeFeedbackText.text = $"<color=#00ff88><b>🎉 CHALLENGE COMPLETE ({tierLabel})!</b> MA: <b>{ma:F1}x</b> | Lifted {targetLoadN:F0}N with {Mathf.RoundToInt(currentEffortForceN)}N! Tap <b>📖 CONTINUE STORY</b> to read Page 10!</color>";
+                    challengeFeedbackText.text = $"<color=#00ff88><b>🎉 CHALLENGE COMPLETE ({tierLabel})!</b> MA: <b>{ma:F1}x</b> | Lifted {targetLoadN:F0}N with {Mathf.RoundToInt(currentEffortForceN)}N! Tap <b>CONTINUE STORY ➡</b> to advance!</color>";
                 }
                 if (celebrationParticles != null)
                 {
                     celebrationParticles.Play();
                 }
 
-                // Transform submit button into "CONTINUE STORY"
+                // Requirement 4: Hide tryChallengeButton and activate golden Btn_ContinueStory in its exact position on the bottom console!
+                EnsureContinueStoryVictoryButtonBuilt();
+                if (tryChallengeButton != null)
+                {
+                    tryChallengeButton.gameObject.SetActive(false);
+                }
+                if (continueStoryVictoryButton != null)
+                {
+                    var txt = continueStoryVictoryButton.GetComponentInChildren<Text>();
+                    if (txt != null)
+                    {
+                        bool isStory = SecretOfLostTemple.Story.StoryBookViewerController.StoryActivityActive;
+                        txt.text = isStory ? "<b>CONTINUE STORY ➡</b>" : "<b>NEXT CHAPTER ➡</b>";
+                    }
+                    continueStoryVictoryButton.gameObject.SetActive(true);
+                }
+
+                // Transform submit button inside modal into "CONTINUE STORY ➡" as well
                 if (challengeSubmitBtn != null)
                 {
                     var btnImg = challengeSubmitBtn.GetComponent<Image>();
                     if (btnImg != null) btnImg.color = new Color(0.85f, 0.55f, 0.08f, 1f);
                     var btnText = challengeSubmitBtn.GetComponentInChildren<Text>();
-                    if (btnText != null) btnText.text = "📖 <b>CONTINUE STORY</b>";
+                    if (btnText != null) btnText.text = "<b>CONTINUE STORY ➡</b>";
                     challengeSubmitBtn.onClick.RemoveAllListeners();
-                    challengeSubmitBtn.onClick.AddListener(() =>
-                    {
-                        PlaySound(clickClip);
-                        CloseChallengeModal();
-                        if (SecretOfLostTemple.Story.StoryBookViewerController.StoryActivityActive)
-                        {
-                            SecretOfLostTemple.Story.StoryBookViewerController.ReturnToStory(true);
-                        }
-                        else
-                        {
-                            SceneManager.LoadScene("HomeMapScene");
-                        }
-                    });
+                    challengeSubmitBtn.onClick.AddListener(OnContinueStoryVictoryClicked);
                 }
 
                 // Boulder roll & lift animation
@@ -1482,10 +1798,8 @@ namespace SecretOfLostTemple.AR
 
                 if (PlayerPrefs.GetString("LostTemple_App_Mode", "Sandbox") == "Quest")
                 {
-                    if (liftStatusBannerText != null)
-                    {
-                        liftStatusBannerText.text = $"<color=#00ff88><b>🎉 {targetLoadN:F0} N BOULDER LIFTED!</b></color>\n<size=18><b>LEVER TASK COMPLETE! Tap 'Continue Story' or 'Back' to finish your StoryBook!</b></size>";
-                    }
+                    string victoryMsg = $"<color=#00ff88><b>🎉 {targetLoadN:F0} N BOULDER LIFTED!</b></color>\n<size=18><b>LEVER TASK COMPLETE! Tap 'CONTINUE STORY ➡' to finish your StoryBook!</b></size>";
+                    PlayCompanionReaction(0, victoryMsg);
                     ResearchData.Record("lever_lifted", "lever");
                 }
 
@@ -1514,6 +1828,7 @@ namespace SecretOfLostTemple.AR
                         challengeFeedbackText.text = $"<color=#ffcc00>⚠️ Mechanical Advantage is {ma:F1}x! Increase Force to at least {Mathf.CeilToInt(requiredForce)} N (while keeping ≤ {maxEffortN:F0} N)!</color>";
                     }
                 }
+                ShowCompanionAndBubbleTemporary(4.5f);
                 CognitiveTelemetryLogger.Instance?.LogInteraction("challenge_failed_attempt", null, $"{{\"attempts\":{challengeAttempts},\"ma\":{ma:F2},\"tier\":{tier}}}");
             }
         }
@@ -1950,7 +2265,14 @@ namespace SecretOfLostTemple.AR
 
         private void InitializeInteractiveStoryBranchUI()
         {
-            bool showAdaptiveStory = !StudyPolicy.Measured || (ResearchData.Store.Current != null && ResearchData.Store.Current.adaptive);
+            // When launched from the StoryBook Page 9 activity, story narrative is read in the StoryBook Viewer — keep the AR viewport clean!
+            if (SecretOfLostTemple.Story.StoryBookViewerController.StoryActivityActive)
+            {
+                if (storyChoiceWidget != null) storyChoiceWidget.SetActive(false);
+                return;
+            }
+
+            bool showAdaptiveStory = StudyPolicy.Measured && ResearchData.Store.Current != null && ResearchData.Store.Current.adaptive;
             if (!showAdaptiveStory) return;
 
             var sb = SecretOfLostTemple.Adaptive.StoryBranchManager.Instance;
@@ -2101,6 +2423,10 @@ namespace SecretOfLostTemple.AR
             HighlightConcept(lastFailedConceptPart);
             PlaySound(clickClip);
             lastInteractionTimestamp = Time.time;
+
+            // Requirement 2: Show Companion Avatar & Speech Banner temporarily during hint
+            ShowCompanionHint();
+
             if (smartHintModalPanel == null) AutoBindAllReferences();
             if (smartHintModalPanel == null) return;
 
@@ -2198,6 +2524,7 @@ namespace SecretOfLostTemple.AR
         {
             PlaySound(clickClip);
             if (smartHintModalPanel != null) smartHintModalPanel.SetActive(false);
+            if (characterCompanionImage != null) characterCompanionImage.gameObject.SetActive(false);
         }
 
         public void ProceedToNextChapter()

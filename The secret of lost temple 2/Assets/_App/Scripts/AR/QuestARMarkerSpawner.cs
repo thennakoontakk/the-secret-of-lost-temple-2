@@ -35,8 +35,8 @@ namespace SecretOfLostTemple.AR
         [SerializeField] private ParticleSystem markerSpawnParticles;
 
         [Header("Physical Tracking Geometry")]
-        [SerializeField] private float physicalScale = 0.045f;
-        [SerializeField] private float surfaceElevationOffset = 0.013f;
+        [SerializeField] private float physicalScale = 0.24f;
+        [SerializeField] private float surfaceElevationOffset = 0.005f;
 
         // Active instances
         private GameObject spawnedLeverInstance;
@@ -61,6 +61,13 @@ namespace SecretOfLostTemple.AR
 
         private void Awake()
         {
+            // Enforce realistic StoryBook page marker scale (0.22f - 0.26f) and 5mm surface elevation offset
+            if (physicalScale < 0.22f || physicalScale > 0.26f)
+            {
+                physicalScale = 0.24f;
+            }
+            surfaceElevationOffset = 0.005f;
+
             if (trackedImageManager == null)
             {
                 trackedImageManager = FindFirstObjectByType<ARTrackedImageManager>();
@@ -402,9 +409,9 @@ namespace SecretOfLostTemple.AR
             if (!isQuestMode || isMarkerDetected || questLeverPrefab == null || Camera.main == null) return;
             var camera = Camera.main.transform;
             leverAnchor = new GameObject("SimulatedLeverAnchor").transform;
-            leverAnchor.position = camera.position + camera.forward * 0.85f - Vector3.up * 0.12f;
-            leverAnchor.rotation = Quaternion.Euler(0, camera.eulerAngles.y, 0);
-            leverAnchor.localScale = Vector3.one * 0.20f;
+            leverAnchor.position = camera.position + camera.forward * 0.60f - camera.up * 0.15f;
+            leverAnchor.rotation = Quaternion.Euler(0f, camera.eulerAngles.y, 0f);
+            leverAnchor.localScale = Vector3.one * 0.22f;
             spawnedLeverInstance = Instantiate(questLeverPrefab, leverAnchor, false);
             spawnedLeverInstance.transform.localPosition = Vector3.zero;
             spawnedLeverInstance.transform.localRotation = Quaternion.identity;
@@ -472,13 +479,17 @@ namespace SecretOfLostTemple.AR
         private void SpawnAndAnchorLever(ARTrackedImage trackedImage, bool shouldBeActive)
         {
             if (questLeverPrefab == null) return;
+            float scaleToUse = Mathf.Clamp(physicalScale, 0.22f, 0.26f);
+            float elevation = 0.005f; // 5mm above marker base plane to prevent mesh z-fighting
+
             if (leverAnchor == null)
             {
                 leverAnchor = new GameObject("LeverMarkerAnchor").transform;
                 leverAnchor.SetParent(trackedImage.transform, false);
-                leverAnchor.localPosition = new Vector3(0, surfaceElevationOffset, 0);
-                leverAnchor.localScale = Vector3.one * physicalScale;
-                spawnedLeverInstance = Instantiate(questLeverPrefab, leverAnchor);
+                leverAnchor.localPosition = new Vector3(0f, elevation, 0f);
+                leverAnchor.localRotation = Quaternion.identity;
+                leverAnchor.localScale = Vector3.one * scaleToUse;
+                spawnedLeverInstance = Instantiate(questLeverPrefab, leverAnchor, false);
                 spawnedLeverInstance.name = "Quest_Lever_3D_Model";
                 spawnedLeverInstance.transform.localPosition = Vector3.zero;
                 spawnedLeverInstance.transform.localRotation = Quaternion.identity;
@@ -492,9 +503,15 @@ namespace SecretOfLostTemple.AR
             else if (leverAnchor.parent != trackedImage.transform)
             {
                 leverAnchor.SetParent(trackedImage.transform, false);
-                leverAnchor.localPosition = new Vector3(0, surfaceElevationOffset, 0);
+                leverAnchor.localPosition = new Vector3(0f, elevation, 0f);
                 leverAnchor.localRotation = Quaternion.identity;
-                leverAnchor.localScale = Vector3.one * physicalScale;
+                leverAnchor.localScale = Vector3.one * scaleToUse;
+            }
+            else
+            {
+                leverAnchor.localPosition = new Vector3(0f, elevation, 0f);
+                leverAnchor.localRotation = Quaternion.identity;
+                leverAnchor.localScale = Vector3.one * scaleToUse;
             }
             spawnedLeverInstance.SetActive(shouldBeActive);
         }
