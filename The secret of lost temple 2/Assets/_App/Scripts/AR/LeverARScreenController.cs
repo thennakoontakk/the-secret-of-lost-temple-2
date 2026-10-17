@@ -186,6 +186,7 @@ namespace SecretOfLostTemple.AR
         private int challengeAttempts = 0;
         private float sessionStartTime;
         private Vector3 baseHintScale = Vector3.one;
+        private bool questMarkerScanned = false;
 
         private void Awake()
         {
@@ -205,13 +206,42 @@ namespace SecretOfLostTemple.AR
             AutoBindAllReferences();
             SetupButtonListeners();
             ResetMechanism();
-            // Start in View-Only Mode as requested
-            SetInteractionMode(InteractionMode.ViewOnly);
-            SetViewOnlySubMode(ViewOnlySubMode.ForcesAndMotion);
+
+            string appMode = PlayerPrefs.GetString("LostTemple_App_Mode", "Quest");
+            if (questMarkerScanned || appMode == "Quest")
+            {
+                // In Quest mode (after scanning Page 9 marker), start directly in Interactive Mode with Challenge active
+                SetInteractionMode(InteractionMode.Interactive);
+            }
+            else
+            {
+                // In Sandbox mode, start in View-Only Mode
+                SetInteractionMode(InteractionMode.ViewOnly);
+                SetViewOnlySubMode(ViewOnlySubMode.ForcesAndMotion);
+            }
+
             ApplyAppModeVisibility();
             UpdateAdaptiveTierHUD();
             SecretOfLostTemple.Adaptive.EngagementTracker.Instance?.StartTracking(ResearchData.Store.ParticipantCode);
             InitializeInteractiveStoryBranchUI();
+
+            if (questMarkerScanned || appMode == "Quest")
+            {
+                OpenChallengeModal();
+            }
+        }
+
+        /// <summary>
+        /// Called by QuestARMarkerSpawner immediately when the Page 9 Lever Marker is scanned and locked.
+        /// Transitions directly into Interactive Mode and opens the Temple Lever Challenge HUD.
+        /// </summary>
+        public void OnQuestMarkerScanned()
+        {
+            questMarkerScanned = true;
+            AutoBindAllReferences();
+            SetupButtonListeners();
+            SetInteractionMode(InteractionMode.Interactive);
+            OpenChallengeModal();
         }
 
         private void ApplyAppModeVisibility()
@@ -260,6 +290,7 @@ namespace SecretOfLostTemple.AR
             var uiRoot = canvasTr.Find("LeverAR_UIRoot");
             if (uiRoot != null)
             {
+                EnsureChallengeModalBuilt(uiRoot);
                 if (backOrSettingsButton == null) backOrSettingsButton = uiRoot.Find("TopBar/Btn_Back")?.GetComponent<Button>();
                 if (modeToggleButton == null) modeToggleButton = uiRoot.Find("TopBar/Btn_ModeToggle")?.GetComponent<Button>();
                 if (modeToggleText == null) modeToggleText = uiRoot.Find("TopBar/Btn_ModeToggle/Text")?.GetComponent<Text>();
@@ -1041,6 +1072,19 @@ namespace SecretOfLostTemple.AR
             {
                 fulcrumStatusText.text = $"<b>{fulcrumOffset:+0.00;-0.00;0.00} m</b>";
             }
+
+            // Live challenge progress helper so the student knows immediately when their Fulcrum & Force settings solve the mission
+            if (isChallengeActive && !challengeResolved && challengeFeedbackText != null)
+            {
+                GetChallengeParametersForTier(out int cTier, out float cLoadN, out float cMaxEffortN, out string cTierLabel);
+                float cLoadTorque = cLoadN * loadArm;
+                float cEffortTorque = currentEffortForceN * effortArm;
+                if (cEffortTorque > cLoadTorque + 5f && currentEffortForceN <= cMaxEffortN)
+                {
+                    challengeFeedbackText.text =
+                        $"<color=#00ff88>✨ <b>Target Reached!</b> Boulder lifted with <b>{currentEffortForceN:F0} N</b> (MA: <b>{mechanicalAdvantage:F1}x</b>) — Tap <b>✅ CHECK SOLUTION</b> to complete!</color>";
+                }
+            }
         }
 
         private void PlayCharacterVoice(int state)
@@ -1121,6 +1165,156 @@ namespace SecretOfLostTemple.AR
             }
         }
 
+        private void EnsureChallengeModalBuilt(Transform uiRoot)
+        {
+            if (uiRoot == null) return;
+
+            if (challengeModalPanel == null)
+            {
+                var existing = uiRoot.Find("Panel_ChallengeModal");
+                if (existing != null) challengeModalPanel = existing.gameObject;
+            }
+
+            if (challengeModalPanel == null)
+            {
+                Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+
+                // Non-blocking upper Mission HUD Card so the user can simultaneously adjust Fulcrum & Force in BottomConsole
+                challengeModalPanel = new GameObject("Panel_ChallengeModal", typeof(RectTransform));
+                challengeModalPanel.transform.SetParent(uiRoot, false);
+                var panelRt = (RectTransform)challengeModalPanel.transform;
+                panelRt.anchorMin = new Vector2(0.5f, 1f);
+                panelRt.anchorMax = new Vector2(0.5f, 1f);
+                panelRt.pivot = new Vector2(0.5f, 1f);
+                panelRt.anchoredPosition = new Vector2(0f, -92f);
+                panelRt.sizeDelta = new Vector2(980f, 200f);
+
+                var cardImg = challengeModalPanel.AddComponent<Image>();
+                cardImg.color = new Color(0.08f, 0.06f, 0.03f, 0.94f);
+                var cardOutline = challengeModalPanel.AddComponent<Outline>();
+                cardOutline.effectColor = new Color(0.95f, 0.76f, 0.22f, 0.92f);
+                cardOutline.effectDistance = new Vector2(2f, -2f);
+
+                // Title Header
+                var titleGo = new GameObject("TitleText", typeof(RectTransform));
+                titleGo.transform.SetParent(challengeModalPanel.transform, false);
+                var titleRt = (RectTransform)titleGo.transform;
+                titleRt.anchorMin = new Vector2(0f, 1f);
+                titleRt.anchorMax = new Vector2(1f, 1f);
+                titleRt.pivot = new Vector2(0.5f, 1f);
+                titleRt.anchoredPosition = new Vector2(-20f, -10f);
+                titleRt.sizeDelta = new Vector2(-70f, 32f);
+                challengeTitleText = titleGo.AddComponent<Text>();
+                challengeTitleText.font = font;
+                challengeTitleText.fontSize = 20;
+                challengeTitleText.fontStyle = FontStyle.Bold;
+                challengeTitleText.alignment = TextAnchor.MiddleLeft;
+                challengeTitleText.color = new Color(1f, 0.85f, 0.28f);
+
+                // Close Button (top-right corner)
+                var closeGo = new GameObject("Btn_Close", typeof(RectTransform));
+                closeGo.transform.SetParent(challengeModalPanel.transform, false);
+                var closeRt = (RectTransform)closeGo.transform;
+                closeRt.anchorMin = new Vector2(1f, 1f);
+                closeRt.anchorMax = new Vector2(1f, 1f);
+                closeRt.pivot = new Vector2(1f, 1f);
+                closeRt.anchoredPosition = new Vector2(-10f, -10f);
+                closeRt.sizeDelta = new Vector2(36f, 36f);
+                var closeImg = closeGo.AddComponent<Image>();
+                closeImg.color = new Color(0.35f, 0.14f, 0.12f, 0.95f);
+                challengeCloseBtn = closeGo.AddComponent<Button>();
+                challengeCloseBtn.onClick.AddListener(CloseChallengeModal);
+
+                var closeTxtGo = new GameObject("Text", typeof(RectTransform));
+                closeTxtGo.transform.SetParent(closeGo.transform, false);
+                var closeTxtRt = (RectTransform)closeTxtGo.transform;
+                closeTxtRt.anchorMin = Vector2.zero;
+                closeTxtRt.anchorMax = Vector2.one;
+                closeTxtRt.offsetMin = closeTxtRt.offsetMax = Vector2.zero;
+                var closeTxt = closeTxtGo.AddComponent<Text>();
+                closeTxt.font = font;
+                closeTxt.fontSize = 18;
+                closeTxt.fontStyle = FontStyle.Bold;
+                closeTxt.alignment = TextAnchor.MiddleCenter;
+                closeTxt.color = Color.white;
+                closeTxt.text = "✕";
+
+                // Mission Description Text (left column)
+                var descGo = new GameObject("DescText", typeof(RectTransform));
+                descGo.transform.SetParent(challengeModalPanel.transform, false);
+                var descRt = (RectTransform)descGo.transform;
+                descRt.anchorMin = new Vector2(0f, 1f);
+                descRt.anchorMax = new Vector2(0f, 1f);
+                descRt.pivot = new Vector2(0f, 1f);
+                descRt.anchoredPosition = new Vector2(18f, -44f);
+                descRt.sizeDelta = new Vector2(650f, 82f);
+                challengeDescText = descGo.AddComponent<Text>();
+                challengeDescText.font = font;
+                challengeDescText.fontSize = 16;
+                challengeDescText.supportRichText = true;
+                challengeDescText.alignment = TextAnchor.UpperLeft;
+                challengeDescText.color = new Color(0.95f, 0.92f, 0.84f);
+
+                // Feedback Text (bottom-left column)
+                var fbGo = new GameObject("FeedbackText", typeof(RectTransform));
+                fbGo.transform.SetParent(challengeModalPanel.transform, false);
+                var fbRt = (RectTransform)fbGo.transform;
+                fbRt.anchorMin = new Vector2(0f, 0f);
+                fbRt.anchorMax = new Vector2(0f, 0f);
+                fbRt.pivot = new Vector2(0f, 0f);
+                fbRt.anchoredPosition = new Vector2(18f, 12f);
+                fbRt.sizeDelta = new Vector2(650f, 62f);
+                challengeFeedbackText = fbGo.AddComponent<Text>();
+                challengeFeedbackText.font = font;
+                challengeFeedbackText.fontSize = 16;
+                challengeFeedbackText.supportRichText = true;
+                challengeFeedbackText.alignment = TextAnchor.MiddleLeft;
+                challengeFeedbackText.color = new Color(0.45f, 0.95f, 1f);
+
+                // Submit / Check Solution / Continue Story Button (right column)
+                var submitGo = new GameObject("Btn_Submit", typeof(RectTransform));
+                submitGo.transform.SetParent(challengeModalPanel.transform, false);
+                var submitRt = (RectTransform)submitGo.transform;
+                submitRt.anchorMin = new Vector2(1f, 0.5f);
+                submitRt.anchorMax = new Vector2(1f, 0.5f);
+                submitRt.pivot = new Vector2(1f, 0.5f);
+                submitRt.anchoredPosition = new Vector2(-18f, -14f);
+                submitRt.sizeDelta = new Vector2(276f, 68f);
+                var submitImg = submitGo.AddComponent<Image>();
+                submitImg.color = new Color(0.14f, 0.62f, 0.28f, 0.98f);
+                var submitOutline = submitGo.AddComponent<Outline>();
+                submitOutline.effectColor = new Color(1f, 0.86f, 0.32f, 0.95f);
+                submitOutline.effectDistance = new Vector2(2f, -2f);
+                challengeSubmitBtn = submitGo.AddComponent<Button>();
+                challengeSubmitBtn.onClick.AddListener(EvaluateChallenge);
+
+                var submitTxtGo = new GameObject("Text", typeof(RectTransform));
+                submitTxtGo.transform.SetParent(submitGo.transform, false);
+                var submitTxtRt = (RectTransform)submitTxtGo.transform;
+                submitTxtRt.anchorMin = Vector2.zero;
+                submitTxtRt.anchorMax = Vector2.one;
+                submitTxtRt.offsetMin = submitTxtRt.offsetMax = Vector2.zero;
+                var submitTxt = submitTxtGo.AddComponent<Text>();
+                submitTxt.font = font;
+                submitTxt.fontSize = 19;
+                submitTxt.fontStyle = FontStyle.Bold;
+                submitTxt.supportRichText = true;
+                submitTxt.alignment = TextAnchor.MiddleCenter;
+                submitTxt.color = Color.white;
+                submitTxt.text = "✅ CHECK SOLUTION";
+
+                challengeModalPanel.SetActive(false);
+            }
+            else
+            {
+                if (challengeTitleText == null) challengeTitleText = challengeModalPanel.transform.Find("TitleText")?.GetComponent<Text>();
+                if (challengeDescText == null) challengeDescText = challengeModalPanel.transform.Find("DescText")?.GetComponent<Text>();
+                if (challengeFeedbackText == null) challengeFeedbackText = challengeModalPanel.transform.Find("FeedbackText")?.GetComponent<Text>();
+                if (challengeSubmitBtn == null) challengeSubmitBtn = challengeModalPanel.transform.Find("Btn_Submit")?.GetComponent<Button>();
+                if (challengeCloseBtn == null) challengeCloseBtn = challengeModalPanel.transform.Find("Btn_Close")?.GetComponent<Button>();
+            }
+        }
+
         private void GetChallengeParametersForTier(out int tier, out float targetLoadN, out float maxAllowedEffortN, out string tierLabel)
         {
             bool useAdaptive = !StudyPolicy.Measured || (ResearchData.Store.Current != null && ResearchData.Store.Current.adaptive);
@@ -1149,6 +1343,14 @@ namespace SecretOfLostTemple.AR
         public void OpenChallengeModal()
         {
             if (StudyPolicy.Passive) return;
+            AutoBindAllReferences();
+
+            // Ensure the user is in Interactive Mode so the BottomConsole (Fulcrum slider & Force -/+ buttons) is visible!
+            if (currentMode != InteractionMode.Interactive)
+            {
+                SetInteractionMode(InteractionMode.Interactive);
+            }
+
             challengeResolved = false; challengeStarted = Time.time;
             currentHintTierStep = 0;
             PlaySound(clickClip);
@@ -1157,24 +1359,32 @@ namespace SecretOfLostTemple.AR
 
             GetChallengeParametersForTier(out int tier, out float targetLoadN, out float maxEffortN, out string tierLabel);
 
+            if (storyChoiceWidget != null)
+            {
+                storyChoiceWidget.SetActive(false);
+            }
+
             if (challengeModalPanel != null)
             {
                 challengeModalPanel.SetActive(true);
+                challengeModalPanel.transform.SetAsLastSibling();
             }
 
             if (challengeTitleText != null)
                 challengeTitleText.text = $"⭐ TEMPLE LEVER CHALLENGE — {tierLabel.ToUpper()}";
 
             if (challengeDescText != null)
-                challengeDescText.text = $"<b>Mission ({tierLabel}):</b> Lift the heavy <b>{targetLoadN:F0} N</b> temple gate stone using <b>only {maxEffortN:F0} N or less</b> of applied effort force!\n\n<i>Hint: Adjust the Fulcrum slider closer to the Boulder to reach Mechanical Advantage ≥ {(targetLoadN / maxEffortN):F1}x!</i>";
+                challengeDescText.text = $"<b>Mission ({tierLabel}):</b> Lift the heavy <b>{targetLoadN:F0} N</b> temple gate stone using <b>only {maxEffortN:F0} N or less</b> of applied effort force!\n<i>Hint: Slide the <b>Fulcrum</b> left toward the Boulder (to reach MA ≥ {(targetLoadN / maxEffortN):F1}x), then tap <b>Check Solution</b>!</i>";
 
             if (challengeFeedbackText != null)
-                challengeFeedbackText.text = "Set your configuration and tap <b>Check Solution</b>!";
+                challengeFeedbackText.text = "👇 Use the bottom console to slide the <b>Fulcrum</b> & adjust <b>Force</b>, then tap <b>✅ CHECK SOLUTION</b>!";
 
             if (challengeSubmitBtn != null)
             {
+                var btnImg = challengeSubmitBtn.GetComponent<Image>();
+                if (btnImg != null) btnImg.color = new Color(0.14f, 0.62f, 0.28f, 0.98f);
                 var btnText = challengeSubmitBtn.GetComponentInChildren<Text>();
-                if (btnText != null) btnText.text = "Check Solution";
+                if (btnText != null) btnText.text = "✅ CHECK SOLUTION";
                 challengeSubmitBtn.onClick.RemoveAllListeners();
                 challengeSubmitBtn.onClick.AddListener(EvaluateChallenge);
             }
@@ -1234,7 +1444,7 @@ namespace SecretOfLostTemple.AR
 
                 if (challengeFeedbackText != null)
                 {
-                    challengeFeedbackText.text = $"<color=#00ff88><b>🎉 BRILLIANT DISCOVERY ({tierLabel})!</b>\nMechanical Advantage: <b>{ma:F1}x</b>!\nYou successfully hoisted the {targetLoadN:F0}N load with only {Mathf.RoundToInt(currentEffortForceN)}N effort!\n\n<b>LEVER TASK COMPLETE!</b>\n<i>Tap <b>CONTINUE STORY</b> below to return to your StoryBook (Page 10)!</i></color>";
+                    challengeFeedbackText.text = $"<color=#00ff88><b>🎉 CHALLENGE COMPLETE ({tierLabel})!</b> MA: <b>{ma:F1}x</b> | Lifted {targetLoadN:F0}N with {Mathf.RoundToInt(currentEffortForceN)}N! Tap <b>📖 CONTINUE STORY</b> to read Page 10!</color>";
                 }
                 if (celebrationParticles != null)
                 {
@@ -1244,6 +1454,8 @@ namespace SecretOfLostTemple.AR
                 // Transform submit button into "CONTINUE STORY"
                 if (challengeSubmitBtn != null)
                 {
+                    var btnImg = challengeSubmitBtn.GetComponent<Image>();
+                    if (btnImg != null) btnImg.color = new Color(0.85f, 0.55f, 0.08f, 1f);
                     var btnText = challengeSubmitBtn.GetComponentInChildren<Text>();
                     if (btnText != null) btnText.text = "📖 <b>CONTINUE STORY</b>";
                     challengeSubmitBtn.onClick.RemoveAllListeners();

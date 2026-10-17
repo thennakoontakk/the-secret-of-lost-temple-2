@@ -9,6 +9,7 @@ namespace SecretOfLostTemple.Story
     public class StoryBookViewerController : MonoBehaviour
     {
         public static bool StoryActivityActive { get; private set; }
+        public static Sprite ActiveTargetPageSprite { get; private set; }
         static bool resumeRequested;
         static int resumePage;
         static string resumeMachine = "Lever";
@@ -247,6 +248,7 @@ namespace SecretOfLostTemple.Story
         public void OnStartARActivityClicked()
         {
             StoryActivityActive = true;
+            if (pageDisplayImage != null) ActiveTargetPageSprite = pageDisplayImage.sprite;
             resumePage = currentPageIndex;
             resumeMachine = activeMachine;
             PlaySound(activityStartClip != null ? activityStartClip : pageTurnClip);
