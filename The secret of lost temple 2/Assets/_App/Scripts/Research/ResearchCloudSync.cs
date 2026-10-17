@@ -358,6 +358,7 @@ namespace SecretOfLostTemple.Research
             AppendField(sb, "learningStarted", s.learningStarted ?? "", true);
             AppendField(sb, "learningCompleted", s.learningCompleted ?? "", true);
             AppendField(sb, "ended", s.ended ?? "", true);
+            AppendField(sb, "sessionJson", JsonUtility.ToJson(s), true);
             AppendField(sb, "updatedUtc", DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture), true);
             AppendField(sb, "metricsJson", metricsJson, false);
             sb.Append("}}");

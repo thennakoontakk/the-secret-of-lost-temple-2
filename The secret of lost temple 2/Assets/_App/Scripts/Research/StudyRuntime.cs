@@ -28,13 +28,19 @@ public class StudyRuntime : MonoBehaviour
     }
     void Update()
     {
-        if(!StudyPolicy.Measured||!foreground||!StudyPolicy.Tracking||StudyPolicy.SimulatedTracking)return;
+        if(!StudyPolicy.Measured||!foreground||!StudyPolicy.Tracking)return;
+        if(!StudyPolicy.Review && Data.Store.Stage != "learning") return;
         seconds+=Time.unscaledDeltaTime;if(seconds>=10)Flush();
     }
     void Flush()
     {
         if(seconds<=0)return;
-        Data.Record(StudyPolicy.Review?"review_exposure":"learning_exposure","foreground_and_marker_tracked",false,false,seconds);seconds=0;
+        Data.Store.Record(StudyPolicy.Review?"review_exposure":"learning_exposure",StudyPolicy.SimulatedTracking?"foreground_and_camera_locked":"foreground_and_marker_tracked",false,false,seconds);seconds=0;
+    }
+    public static void FlushActive()
+    {
+        var runtime = FindFirstObjectByType<StudyRuntime>();
+        if (runtime != null) runtime.Flush();
     }
     void OnApplicationPause(bool paused){Flush();foreground=!paused;Data.Record(paused?"app_background":"app_foreground");}
     void OnApplicationFocus(bool focus){Flush();foreground=focus;}

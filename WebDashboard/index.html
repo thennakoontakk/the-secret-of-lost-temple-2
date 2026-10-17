@@ -90,7 +90,7 @@
             </label>
 
             <div class="relative group">
-                <button onclick="exportCSV('unified')" class="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg shadow-emerald-600/30 transition flex items-center gap-1.5">
+                <button onclick="exportStudyCSVs()" class="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs shadow-lg shadow-emerald-600/30 transition flex items-center gap-1.5">
                     <i class="fa-solid fa-file-csv"></i> Export CSVs ▾
                 </button>
                 <div class="hidden group-hover:block absolute right-0 mt-1 w-60 glass-card rounded-xl border border-slate-700 p-1.5 z-50 space-y-1">
@@ -282,14 +282,14 @@
                 <div>
                     <p class="text-xs uppercase tracking-wider font-semibold text-slate-400">Active Cohort Sessions</p>
                     <h3 id="statTotalParticipants" class="text-3xl font-black text-white mt-1">0</h3>
-                    <p id="statCohortSourceLabel" class="text-xs text-amber-400/90 mt-1"><i class="fa-solid fa-users text-[10px]"></i> Live + Reference Cohort</p>
+                    <p id="statCohortSourceLabel" class="text-xs text-amber-400/90 mt-1"><i class="fa-solid fa-users text-[10px]"></i> Live sessions only</p>
                 </div>
                 <div class="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-400 text-xl border border-amber-500/20">
                     <i class="fa-solid fa-id-badge"></i>
                 </div>
             </div>
 
-            <!-- Normalized Learning Gain -->
+            <!-- Learning Gain (percentage points) -->
             <div class="glass-card p-5 rounded-2xl flex items-center justify-between border-l-4 border-emerald-500">
                 <div>
                     <p class="text-xs uppercase tracking-wider font-semibold text-slate-400">Mean Learning Gain (ΔG)</p>
@@ -358,7 +358,7 @@
                             <input type="text" id="tableSearch" onkeyup="filterTable()" placeholder="Search participant or condition..." class="w-full bg-slate-900/80 border border-slate-700 rounded-xl pl-9 pr-4 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500">
                         </div>
                         <button onclick="toggleBaselineCohort()" id="btnToggleBaseline" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700 whitespace-nowrap">
-                            <i class="fa-solid fa-filter"></i> Show: Live + Reference
+                            <i class="fa-solid fa-filter"></i> Show: Live Phone Only
                         </button>
                         <button onclick="generateMockCohort()" class="px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-amber-300 text-xs font-semibold border border-amber-500/30 whitespace-nowrap">
                             <i class="fa-solid fa-shuffle"></i> + Simulate N=25 Cohort
@@ -451,7 +451,7 @@
         </section>
 
         <!-- TAB 3: Abeywickrama (RQ2) -->
-        <section id="tab-abeywickrama" class="hidden space-y-6">
+        <section id="tab-abeywickrama" class="hidden space-y-6"><p id="rq2Summary" class="text-amber-300">No data loaded.</p>
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div class="glass-card p-6 rounded-2xl">
                     <div class="flex items-center justify-between mb-4">
@@ -509,7 +509,7 @@
         </section>
 
         <!-- TAB 4: Pathirana (RQ3) -->
-        <section id="tab-pathirana" class="hidden space-y-6">
+        <section id="tab-pathirana" class="hidden space-y-6"><p id="rq3Summary" class="text-emerald-300">No data loaded.</p>
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div class="glass-card p-6 rounded-2xl">
                     <div class="flex items-center justify-between mb-4">
@@ -518,7 +518,7 @@
                         </h3>
                         <span class="text-xs px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-800">RQ3: Pathirana (IT21817458)</span>
                     </div>
-                    <p class="text-xs text-slate-400 mb-4">3-Stage assessment comparison (6-item validated Lever test bank + embedded AR formative quiz)</p>
+                    <p class="text-xs text-slate-400 mb-4">3-Stage assessment comparison (6-item pilot Lever test bank + embedded AR formative quiz)</p>
                     <div class="h-64">
                         <canvas id="chartPrePost"></canvas>
                     </div>
@@ -638,7 +638,7 @@
     <script>
         const DEFAULT_PROJECT_ID = "the-secret-of-lost-temple";
         let firestoreProjectId = DEFAULT_PROJECT_ID;
-        let showBaselineCohort = true;
+        let showBaselineCohort = false;
 
         // Reference Cohort Dataset (scientifically structured with RQ1, RQ2, and RQ3 fields)
         const baselineCohort = [
@@ -676,7 +676,7 @@
             if (!m) return null;
             const pre = m.pretestScorePct >= 0 ? m.pretestScorePct : 0;
             const post = m.posttestScorePct >= 0 ? m.posttestScorePct : 0;
-            const gain = m.normalizedGainPct > -900 ? m.normalizedGainPct : (post > pre && pre < 100 ? ((post - pre) / (100 - pre)) * 100 : 0);
+            const gain = m.pretestScorePct >= 0 && m.posttestScorePct >= 0 ? post - pre : null;
             const day7 = m.retentionScorePct >= 0 ? m.retentionScorePct : 0;
             return {
                 id: m.participant || "P_LIVE",
@@ -714,7 +714,7 @@
                 retentionChange: m.retentionChangePct > -900 ? m.retentionChangePct : 0,
                 inArFirstTry: m.inArFirstTryAccuracyPct || 0,
                 inArRetryFixes: m.inArSecondTryCorrections || 0,
-                dwellSec: (m.learningExposureSeconds || 0) + (m.reviewExposureSeconds || 0),
+                dwellSec: m.learningExposureSeconds || 0,
                 activeRatio: m.activeEngagementRatioPct || 0,
                 rawMetrics: m
             };
@@ -823,7 +823,7 @@
                             try {
                                 const m = JSON.parse(mJson);
                                 const row = metricsToRow(m, "cloud");
-                                if (row) parsed.push(row);
+                                if (row) { row.rawSession = f.sessionJson?.stringValue ? JSON.parse(f.sessionJson.stringValue) : null; parsed.push(row); }
                             } catch (e) {}
                         }
                     }
@@ -909,80 +909,63 @@
             reader.readAsText(file);
         }
 
+
         function computeMetricsFromRawSession(s) {
             if (!s) return null;
-            const evs = s.events || [];
-            const countType = (t) => evs.filter(e => e.type === t).length;
-            const sumSec = (t) => evs.filter(e => e.type === t).reduce((a, b) => a + (b.seconds || 0), 0);
-
-            const forceAdj = countType("adjust_force");
-            const fulcAdj = countType("fulcrum_committed");
-            const partInsp = countType("inspect_part");
-            const modeSw = countType("mode_switch");
-            const chDone = countType("challenge_completed");
-            const chFail = countType("challenge_failed_attempt");
-            const lifted = countType("lever_lifted");
-            const hints = countType("hint_requested") + countType("smart_hint_opened");
-            const storyChoices = countType("story_choice") + countType("story_transition");
-            const storyNodes = countType("story_node");
-
-            const latestTest = (stage) => {
-                const list = (s.assessments || []).filter(a => a.stage === stage && a.completed && a.adminConfirmed);
-                return list.length ? list[list.length - 1] : null;
-            };
-            const preT = latestTest("pretest");
-            const postT = latestTest("posttest");
-            const retT = latestTest("retention");
-
-            const prePct = preT ? preT.percentage : -1;
-            const postPct = postT ? postT.percentage : -1;
-            const retPct = retT ? retT.percentage : -1;
-            const gain = (prePct >= 0 && postPct >= 0 && prePct < 100) ? ((postPct - prePct) / (100 - prePct)) * 100 : 0;
-
-            const totalAttempts = chDone + chFail;
-            const spatialAcc = totalAttempts > 0 ? Math.min(100, (chDone / totalAttempts) * 100 + (lifted > 0 ? 15 : 0)) : (lifted > 0 ? 95 : 85);
-
-            return {
-                id: s.participant || "P_LOCAL",
-                sessionId: s.id || "local",
-                source: s.isSyntheticDemo ? "demo" : "local_json",
-                avatar: "Maya",
-                condition: s.condition || "interactive",
-                adaptive: !!s.adaptive,
-                embedded: !!s.embeddedAssessment,
-                tier: "Scholar (Tier 2)",
-                startTier: 1,
-                endTier: 2,
-                promotions: countType("difficulty_change"),
-                demotions: 0,
-                accuracy: spatialAcc,
-                manipCount: forceAdj + fulcAdj,
-                forceCount: forceAdj,
-                fulcrumCount: fulcAdj,
-                partInspects: partInsp,
-                modeSwitches: modeSw,
-                maxMa: 2.6,
-                hints: hints,
-                tier1Hints: hints,
-                tier2Hints: 0,
-                tier3Hints: 0,
-                storyChoices: storyChoices,
-                storyNodes: storyNodes,
-                pre: Math.max(0, prePct),
-                post: Math.max(0, postPct),
-                hasPre: prePct >= 0,
-                hasPost: postPct >= 0,
-                hasRet: retPct >= 0,
-                gain: gain,
-                day7: Math.max(0, retPct),
-                retentionChange: (postPct >= 0 && retPct >= 0) ? (retPct - postPct) : 0,
-                inArFirstTry: 75.0,
-                inArRetryFixes: 1,
-                dwellSec: sumSec("learning_exposure") + sumSec("review_exposure"),
-                activeRatio: 88.0
-            };
+            const evs = s.events || [], count = (...kinds) => evs.filter(e => kinds.includes(e.kind)).length;
+            const latest = stage => (s.assessments || []).filter(a => a.stage === stage && a.completed && a.denominator > 0).at(-1);
+            const pct = stage => { const a = latest(stage); return a ? 100*a.score/a.denominator : -1; };
+            const hints = evs.filter(e => ['hint','hint_requested','smart_hint_opened'].includes(e.kind));
+            const changes = evs.filter(e => e.kind === 'difficulty_change');
+            let tier = 1, promotions = 0, demotions = 0;
+            changes.forEach(e => { const match = /to=(Master|Scholar|Apprentice|[123])/.exec(e.context || ''); if (match) { const next = ({Master:3,Scholar:2,Apprentice:1})[match[1]] || +match[1]; promotions += next > tier; demotions += next < tier; tier = next; } });
+            const first = evs.filter(e => e.kind === 'formative_answer' && e.attemptNumber === 1);
+            const force = count('adjust_force','drag'), fulcrum = count('fulcrum_committed'), inspect = count('inspect_part');
+            const row = metricsToRow({participant:s.participant, sessionId:s.id, condition:s.condition, adaptive:s.adaptive,
+                embeddedAssessment:s.embeddedAssessment, isSyntheticDemo:/synthetic/i.test(s.dataLabel || ''),
+                pretestScorePct:pct('pretest'), posttestScorePct:pct('posttest'), retentionScorePct:pct('retention'),
+                totalManipulations:force+fulcrum+inspect+count('rotate_step','model_gesture','rotate'),
+                forceAdjustments:force, fulcrumAdjustments:fulcrum, partInspections:inspect,
+                modeSwitches:count('mode_change','condition_set'), startDifficultyTier:1, endDifficultyTier:tier,
+                difficultyPromotions:promotions, difficultyDemotions:demotions, hintsRequested:hints.length,
+                tier1Hints:hints.filter(e => /tier=1|level1|VisualNudge/.test(e.context)).length,
+                tier2Hints:hints.filter(e => /tier=2|level2|CharacterClue/.test(e.context)).length,
+                tier3Hints:hints.filter(e => /tier=3|level3|DirectGuidance/.test(e.context)).length,
+                storyChoicesMade:count('story_choice'), storyNodesVisited:count('story_node'),
+                inArFirstTryAccuracyPct:first.length ? 100*first.filter(e=>e.correct).length/first.length : 0,
+                inArSecondTryCorrections:evs.filter(e=>e.kind==='formative_answer' && e.attemptNumber===2 && e.correct).length,
+                learningExposureSeconds:evs.filter(e=>e.kind==='learning_exposure').reduce((sum,e)=>sum+(e.seconds||0),0)
+            }, 'local_json');
+            row.rawSession = s; return row;
         }
-
+        function buildStudyTables(rows = participantsData) {
+            if (rows.some(r => !r.rawSession)) throw new Error('Full records are unavailable for some sessions. Import records.json or sync using the updated app before exporting study tables.');
+            const tables = {
+                'protocols.csv': [['data_label','participant','session','protocol','condition','adaptive','embedded_assessment','learning_started','learning_completed']],
+                'formal_tests.csv': [['data_label','participant','session','assessment','stage','version','source','score','denominator','percent','completed','replaces']],
+                'formal_answers.csv': [['data_label','participant','session','assessment','question','selected','correct_index','response_seconds','timestamp']],
+                'attempts.csv': [['data_label','participant','session','event','task','attempt_id','attempt_number','selected','correct','response_seconds','difficulty','context']]
+            };
+            const seen = new Set();
+            rows.forEach(r => {
+                const s=r.rawSession; if(seen.has(s.id)) return; seen.add(s.id);
+                const base=[s.dataLabel,s.participant,s.id];
+                tables['protocols.csv'].push([...base,s.protocol,s.condition,s.adaptive,s.embeddedAssessment,s.learningStarted,s.learningCompleted]);
+                (s.assessments||[]).forEach(a=>{
+                    tables['formal_tests.csv'].push([...base,a.id,a.stage,a.version,a.source,a.completed?a.score:'',a.denominator,a.completed&&a.denominator>0?100*a.score/a.denominator:'',a.completed,a.replaces]);
+                    (a.answers||[]).forEach(v=>tables['formal_answers.csv'].push([...base,a.id,v.questionId,v.selected,v.correctIndex,v.seconds,v.timestamp]));
+                });
+                (s.events||[]).filter(e=>e.hasAnswer).forEach(e=>tables['attempts.csv'].push([...base,e.id,e.taskId,e.attemptId,e.attemptNumber,e.selectedAnswer,e.correct,e.seconds,e.difficulty,e.context]));
+            });
+            const quote = v => '"' + String(v ?? '').replaceAll('"','""') + '"';
+            return Object.fromEntries(Object.entries(tables).map(([name,rows])=>[name,rows.map(row=>row.map(quote).join(',')).join('\r\n')+'\r\n']));
+        }
+        function exportStudyCSVs() {
+            try { Object.entries(buildStudyTables()).forEach(([name,csv])=>{
+                const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8;'}));
+                const a=document.createElement('a'); a.href=url; a.download=name; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1000);
+            }); } catch(e) { alert(e.message); }
+        }
         function initCharts() {
             const ctxSpatial = document.getElementById('chartSpatialAccuracy')?.getContext('2d');
             if (ctxSpatial) {
@@ -1125,20 +1108,20 @@
         function updateKPIsAndCharts() {
             const n = participantsData.length;
             document.getElementById('statTotalParticipants').innerText = n;
-            if (n === 0) return;
+
 
             const avg = (arr, fn) => arr.length ? arr.reduce((a, b) => a + fn(b), 0) / arr.length : 0;
             const meanAcc = avg(participantsData, p => p.accuracy || 0);
-            const meanGain = avg(participantsData, p => p.gain || 0);
+            const scored = participantsData.filter(p=>p.hasPre && p.hasPost); const meanGain = avg(scored, p => p.gain);
             const meanRet = avg(participantsData, p => p.day7 || 0);
-            const meanDwell = avg(participantsData, p => p.dwellSec || 210);
+            const meanDwell = avg(participantsData, p => p.dwellSec || 0);
             const meanManip = avg(participantsData, p => p.manipCount || 0);
             const meanInsp = avg(participantsData, p => p.partInspects || 0);
             const meanMa = avg(participantsData, p => p.maxMa || 1);
 
             document.getElementById('statSpatialAccuracy').innerText = `${meanAcc.toFixed(1)}%`;
-            document.getElementById('statMeanGain').innerText = `${meanGain >= 0 ? '+' : ''}${meanGain.toFixed(1)}%`;
-            document.getElementById('statDay7Retention').innerText = `${meanRet.toFixed(1)}%`;
+            document.getElementById('statMeanGain').innerText = scored.length ? `${meanGain >= 0 ? '+' : ''}${meanGain.toFixed(1)} pp` : "Not collected";
+            document.getElementById('statDay7Retention').innerText = participantsData.some(p=>p.hasRet) ? `${avg(participantsData.filter(p=>p.hasRet),p=>p.day7).toFixed(1)}%` : "Not collected";
 
             const elExp = document.getElementById('rq1StatExposure');
             if (elExp) elExp.innerText = formatSeconds(meanDwell);
@@ -1149,11 +1132,36 @@
             const elMa = document.getElementById('rq1StatMaxMa');
             if (elMa) elMa.innerText = `${meanMa.toFixed(2)}x`;
 
+
+
+            const rq2=document.getElementById('rq2Summary'), rq3=document.getElementById('rq3Summary');
+            if(rq2) rq2.innerText=participantsData.reduce((n,p)=>n+p.promotions,0)+' promotions; '+participantsData.reduce((n,p)=>n+p.demotions,0)+' demotions; '+participantsData.reduce((n,p)=>n+p.hints,0)+' hints';
+            const embedded=participantsData.filter(p=>p.embedded);
+            if(rq3) rq3.innerText=embedded.length ? 'Mean embedded first-attempt accuracy: '+avg(embedded,p=>p.inArFirstTry).toFixed(1)+'%; corrections: '+embedded.reduce((n,p)=>n+p.inArRetryFixes,0) : 'Embedded assessment disabled / not collected';
+            const groups = ['interactive','passive'].map(condition=>participantsData.filter(p=>p.condition===condition));
+            const mean = (rows,field,flag) => { const valid=rows.filter(p=>!flag||p[flag]); return valid.length?avg(valid,p=>p[field]):null; };
+            if(charts.spatial) {
+                charts.spatial.data.labels=['Interactive gain (pp)','Passive gain (pp)'];
+                charts.spatial.data.datasets[0].data=groups.map(g=>mean(g.filter(p=>p.hasPre&&p.hasPost),'gain'));
+                charts.spatial.update();
+            }
+            if(charts.prepost) {
+                const all=[...groups,participantsData];
+                ['pre','post','day7'].forEach((field,i)=>charts.prepost.data.datasets[i].data=all.map(g=>mean(g,field,['hasPre','hasPost','hasRet'][i])));
+                charts.prepost.update();
+            }
+            if(charts.retention) {
+                charts.retention.data.labels=['Pre-Test','Post-Test','Retention'];
+                groups.forEach((g,i)=>charts.retention.data.datasets[i].data=['pre','post','day7'].map((f,j)=>mean(g,f,['hasPre','hasPost','hasRet'][j])));
+                charts.retention.update();
+            }
+            // These panels previously displayed hard-coded illustrative trajectories.
+            ['dwell','tier','eng'].forEach(key=>{ if(charts[key]) { charts[key].data.datasets.forEach(d=>d.data=[]); charts[key].update(); } });
             if (charts.hint) {
                 const t1 = participantsData.reduce((a, b) => a + (b.tier1Hints || 0), 0);
                 const t2 = participantsData.reduce((a, b) => a + (b.tier2Hints || 0), 0);
                 const t3 = participantsData.reduce((a, b) => a + (b.tier3Hints || 0), 0);
-                charts.hint.data.datasets[0].data = [Math.max(1, t1), Math.max(1, t2), Math.max(0, t3)];
+                charts.hint.data.datasets[0].data = [t1, t2, t3];
                 charts.hint.update();
             }
         }
@@ -1186,9 +1194,9 @@
                     <td class="p-3.5 text-cyan-400 font-bold">${(p.accuracy || 0).toFixed(1)}% <span class="text-slate-500 font-normal">(${p.manipCount || 0} ops)</span></td>
                     <td class="p-3.5 text-amber-200">${p.hints || 0} hints • ${p.storyChoices || 0} choices</td>
                     <td class="p-3.5"><span class="text-rose-400">${(p.pre || 0).toFixed(0)}%</span> ➔ <span class="text-emerald-400 font-bold">${(p.post || 0).toFixed(0)}%</span></td>
-                    <td class="p-3.5 font-bold text-emerald-400">+${(p.gain || 0).toFixed(1)}%</td>
-                    <td class="p-3.5 text-purple-400 font-bold">${(p.day7 || 0).toFixed(1)}%</td>
-                    <td class="p-3.5 text-slate-400">${formatSeconds(p.dwellSec || 210)}</td>
+                    <td class="p-3.5 font-bold text-emerald-400">${p.hasPre && p.hasPost ? (p.gain>=0?"+":"")+p.gain.toFixed(1)+" pp" : "Not collected"}</td>
+                    <td class="p-3.5 text-purple-400 font-bold">${p.hasRet ? p.day7.toFixed(1)+"%" : "Not collected"}</td>
+                    <td class="p-3.5 text-slate-400">${formatSeconds(p.dwellSec || 0)}</td>
                     <td class="p-3.5 text-right">
                         <button onclick="inspectParticipant(${idx})" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-amber-300 border border-slate-700 text-[11px]">Inspect</button>
                     </td>
@@ -1224,14 +1232,14 @@ Adaptive Enabled     : ${p.adaptive}
 Mastery Tier Reached : ${p.tier} (Promotions: ${p.promotions}, Demotions: ${p.demotions})
 3-Tier Hints Used    : ${p.hints} total (Tier1: ${p.tier1Hints}, Tier2: ${p.tier2Hints}, Tier3: ${p.tier3Hints})
 Story Branch Choices : ${p.storyChoices} choices across ${p.storyNodes} narrative nodes
-Active Engagement    : ${(p.activeRatio || 88).toFixed(1)}%
+Active Engagement    : ${(p.activeRatio || 0).toFixed(1)}%
 
 === RESEARCH 3: PATHIRANA (IT21817458 — ASSESSMENT & 7-DAY RETENTION) ===
 Embedded Assessment  : ${p.embedded}
 Pre-Test Score       : ${(p.pre || 0).toFixed(1)}%
 Post-Test Score      : ${(p.post || 0).toFixed(1)}%
-Normalized Gain (ΔG) : +${(p.gain || 0).toFixed(1)}%
-7-Day Retention      : ${(p.day7 || 0).toFixed(1)}% (Change: ${(p.retentionChange || 0).toFixed(1)}%)
+Learning Gain (pp) (ΔG) : ${p.hasPre && p.hasPost ? (p.gain>=0?"+":"")+p.gain.toFixed(1)+" pp" : "Not collected"}
+7-Day Retention      : ${p.hasRet ? p.day7.toFixed(1)+"%" : "Not collected"} (Change: ${(p.retentionChange || 0).toFixed(1)}%)
 In-AR First-Try Acc  : ${(p.inArFirstTry || 0).toFixed(1)}% (Retry Self-Corrections: ${p.inArRetryFixes || 0})`;
             modal.classList.remove('hidden');
         }
@@ -1305,7 +1313,7 @@ In-AR First-Try Acc  : ${(p.inArFirstTry || 0).toFixed(1)}% (Retry Self-Correcti
 
             if (mode === 'rq1') {
                 filename = "kalish_rq1_interaction.csv";
-                csv = "session_id,participant,condition,learning_exposure_seconds,force_adjustments,fulcrum_adjustments,total_manipulations,part_inspections,mode_switches,max_ma_reached,spatial_accuracy_pct,pretest_pct,posttest_pct,normalized_gain_pct\n";
+                csv = "session_id,participant,condition,learning_exposure_seconds,force_adjustments,fulcrum_adjustments,total_manipulations,part_inspections,mode_switches,max_ma_reached,spatial_accuracy_pct,pretest_pct,posttest_pct,learning_gain_pp\n";
                 participantsData.forEach(p => {
                     csv += `${p.sessionId},${p.id},${p.condition},${p.dwellSec},${p.forceCount},${p.fulcrumCount},${p.manipCount},${p.partInspects},${p.modeSwitches},${(p.maxMa||1).toFixed(2)},${p.accuracy.toFixed(2)},${p.pre.toFixed(2)},${p.post.toFixed(2)},${p.gain.toFixed(2)}\n`;
                 });
@@ -1317,12 +1325,12 @@ In-AR First-Try Acc  : ${(p.inArFirstTry || 0).toFixed(1)}% (Retry Self-Correcti
                 });
             } else if (mode === 'rq3') {
                 filename = "pathirana_rq3_assessment_retention.csv";
-                csv = "session_id,participant,embedded_assessment,in_ar_first_try_accuracy_pct,in_ar_second_try_corrections,pretest_pct,posttest_pct,retention_pct,normalized_gain_pct,retention_change_pct\n";
+                csv = "session_id,participant,embedded_assessment,in_ar_first_try_accuracy_pct,in_ar_second_try_corrections,pretest_pct,posttest_pct,retention_pct,learning_gain_pp,retention_change_pct\n";
                 participantsData.forEach(p => {
                     csv += `${p.sessionId},${p.id},${p.embedded},${(p.inArFirstTry||0).toFixed(2)},${p.inArRetryFixes||0},${p.pre.toFixed(2)},${p.post.toFixed(2)},${p.day7.toFixed(2)},${p.gain.toFixed(2)},${(p.retentionChange||0).toFixed(2)}\n`;
                 });
             } else {
-                csv = "Participant_ID,Session_ID,Source,Condition_RQ1,Adaptive_RQ2,Embedded_RQ3,Mastery_Tier,Spatial_Accuracy_Pct,Manipulations,Hints_Used,Story_Choices,PreTest_Pct,PostTest_Pct,Normalized_Gain_Pct,Day7_Retention_Pct,Exposure_Seconds\n";
+                csv = "Participant_ID,Session_ID,Source,Condition_RQ1,Adaptive_RQ2,Embedded_RQ3,Mastery_Tier,Spatial_Accuracy_Pct,Manipulations,Hints_Used,Story_Choices,PreTest_Pct,PostTest_Pct,Learning_Gain_PP,Day7_Retention_Pct,Exposure_Seconds\n";
                 participantsData.forEach(p => {
                     csv += `${p.id},${p.sessionId},${p.source},${p.condition},${p.adaptive},${p.embedded},"${p.tier}",${p.accuracy.toFixed(2)},${p.manipCount},${p.hints},${p.storyChoices},${p.pre.toFixed(2)},${p.post.toFixed(2)},${p.gain.toFixed(2)},${p.day7.toFixed(2)},${p.dwellSec}\n`;
                 });

@@ -2,6 +2,7 @@
 using System;
 using System.Collections;
 using UnityEngine;
+using Input = StudyInput;
 
 namespace SecretOfLostTemple.AR
 {

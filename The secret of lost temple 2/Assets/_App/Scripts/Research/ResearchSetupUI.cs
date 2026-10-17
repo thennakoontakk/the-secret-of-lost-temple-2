@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
@@ -290,7 +291,18 @@ public class ResearchSetupUI : MonoBehaviour
     }
     public void ExecuteRemoteCompleteLearning(bool autoStartPosttest)
     {
-        Data.Store.CompleteLearning();
+        StudyRuntime.FlushActive();
+        if (Data.Store.Current != null && !Data.Store.Current.events.Any(e => e.kind == "learning_exposure" && e.seconds > 0))
+        {
+            float exposureSec = 5f;
+            if (DateTime.TryParse(Data.Store.Current.learningStarted, out var startedUtc))
+            {
+                var diff = (float)(DateTime.UtcNow - startedUtc.ToUniversalTime()).TotalSeconds;
+                if (diff > 0.5f) exposureSec = Mathf.Clamp(diff, 1f, 600f);
+            }
+            Data.Store.Record("learning_exposure", "active_session_completion", false, false, exposureSec);
+        }
+        Data.Store.CompleteLearning(true);
         if (autoStartPosttest)
         {
             ExecuteRemoteStartTest("posttest");

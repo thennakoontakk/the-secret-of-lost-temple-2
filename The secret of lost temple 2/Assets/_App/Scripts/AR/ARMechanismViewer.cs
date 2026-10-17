@@ -1,4 +1,5 @@
 using UnityEngine;
+using Input = StudyInput;
 using UnityEngine.EventSystems;
 
 namespace SecretOfLostTemple.AR

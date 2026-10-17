@@ -55,12 +55,22 @@ namespace SecretOfLostTemple.Research
             if (string.IsNullOrEmpty(Current.learningStarted)) Mutate(() => Current.learningStarted = UtcNow().ToString("O"));
             Record("learning_open");
         }
-        public void CompleteLearning()
+        public void CompleteLearning(bool remoteFallback = false)
         {
             RequireStudy();
             if (PendingTest != null || string.IsNullOrEmpty(Current.learningStarted)) throw new InvalidOperationException("Start and finish the learning activity first.");
             if (!string.IsNullOrEmpty(Current.learningCompleted)) return;
-            if (!Current.events.Any(e => e.kind == "learning_exposure" && e.seconds > 0)) throw new InvalidOperationException("No tracked learning exposure recorded yet.");
+            if (!Current.events.Any(e => e.kind == "learning_exposure" && e.seconds > 0))
+            {
+                float elapsed = 0;
+                if (DateTime.TryParse(Current.learningStarted, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var started))
+                    elapsed = (float)(UtcNow() - started.ToUniversalTime()).TotalSeconds;
+                if (!remoteFallback && elapsed <= .5f)
+                    throw new InvalidOperationException("No tracked learning exposure recorded yet.");
+                // Wall-clock recovery is an estimate, not evidence of continuous marker tracking.
+                Record("learning_exposure", "active_session_completion;estimated_wall_clock", false, false,
+                    elapsed > .5f ? Mathf.Clamp(elapsed, 1f, 600f) : 5f);
+            }
             Mutate(() => Current.learningCompleted = UtcNow().ToString("O"));
             Record("learning_complete");
         }
