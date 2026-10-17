@@ -171,14 +171,14 @@ namespace SecretOfLostTemple.AR
         // Exploded View smooth transform targets
         private bool isExplodedView = false;
         private Vector3 fulcrumAssembledLocalPos = Vector3.zero;
-        private Vector3 beamAssembledLocalPos = new Vector3(0f, 0.28f, 0f);
+        private Vector3 beamAssembledLocalPos = new Vector3(0f, 0.38f, 0f);
         private Vector3 boulderAssembledLocalPos = new Vector3(-0.90f, 0.15f, 0f);
         private Vector3 effortAssembledLocalPos = new Vector3(0.90f, 0.15f, 0f);
 
         private Vector3 fulcrumExplodedLocalPos = new Vector3(0f, -0.05f, 0f);
-        private Vector3 beamExplodedLocalPos = new Vector3(0f, 0.36f, 0f);
-        private Vector3 boulderExplodedLocalPos = new Vector3(-0.95f, 0.52f, 0f);
-        private Vector3 effortExplodedLocalPos = new Vector3(0.95f, 0.52f, 0f);
+        private Vector3 beamExplodedLocalPos = new Vector3(0f, 0.44f, 0f);
+        private Vector3 boulderExplodedLocalPos = new Vector3(-0.95f, 0.56f, 0f);
+        private Vector3 effortExplodedLocalPos = new Vector3(0.95f, 0.56f, 0f);
 
         // Telemetry
         private int forceChangeCount = 0;
@@ -606,10 +606,34 @@ namespace SecretOfLostTemple.AR
 
         private void CaptureInitialObjectPositions()
         {
-            if (fulcrumRoot != null) fulcrumAssembledLocalPos = fulcrumRoot.localPosition;
-            if (beamPivot != null) beamAssembledLocalPos = beamPivot.localPosition;
-            if (boulderRoot != null) boulderAssembledLocalPos = boulderRoot.localPosition;
-            if (effortPoint != null) effortAssembledLocalPos = effortPoint.localPosition;
+            if (fulcrumRoot != null)
+            {
+                fulcrumRoot.localPosition = new Vector3(0f, 0f, 0f);
+                fulcrumAssembledLocalPos = fulcrumRoot.localPosition;
+            }
+            if (beamPivot != null)
+            {
+                // Ensure Lever_Beam rests cleanly on the apex of Fulcrum_Pivot (y = 0.38f) without piercing
+                beamPivot.localPosition = new Vector3(beamPivot.localPosition.x, 0.38f, beamPivot.localPosition.z);
+                beamAssembledLocalPos = beamPivot.localPosition;
+            }
+            if (boulderRoot != null)
+            {
+                boulderRoot.localPosition = new Vector3(-0.90f, 0.15f, 0f);
+                boulderAssembledLocalPos = boulderRoot.localPosition;
+
+                // Ensure child Model_Instance_Boulder sits on TOP of the wooden beam (y = 0.18f, never negative/sunken)
+                var boulderMesh = boulderRoot.Find("Model_Instance_Boulder");
+                if (boulderMesh != null)
+                {
+                    boulderMesh.localPosition = new Vector3(0f, 0.18f, 0f);
+                }
+            }
+            if (effortPoint != null)
+            {
+                effortPoint.localPosition = new Vector3(0.90f, 0.15f, 0f);
+                effortAssembledLocalPos = effortPoint.localPosition;
+            }
         }
 
         private void InitializeCharacterCompanion()
@@ -1462,6 +1486,13 @@ namespace SecretOfLostTemple.AR
                 beamPivot.localRotation = Quaternion.identity;
                 beamPivot.localPosition = beamAssembledLocalPos;
             }
+            if (boulderRoot != null)
+            {
+                boulderRoot.localPosition = boulderAssembledLocalPos;
+                var boulderMesh = boulderRoot.Find("Model_Instance_Boulder");
+                if (boulderMesh != null) boulderMesh.localPosition = new Vector3(0f, 0.18f, 0f);
+            }
+            if (effortPoint != null) effortPoint.localPosition = effortAssembledLocalPos;
 
             if (leverRoot != null)
             {

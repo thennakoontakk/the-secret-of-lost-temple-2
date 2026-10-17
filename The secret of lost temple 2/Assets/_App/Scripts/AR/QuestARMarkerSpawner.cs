@@ -35,7 +35,7 @@ namespace SecretOfLostTemple.AR
         [SerializeField] private ParticleSystem markerSpawnParticles;
 
         [Header("Physical Tracking Geometry")]
-        [SerializeField] private float physicalScale = 0.24f;
+        [SerializeField] private float physicalScale = 0.12f;
         [SerializeField] private float surfaceElevationOffset = 0.005f;
 
         // Active instances
@@ -61,11 +61,8 @@ namespace SecretOfLostTemple.AR
 
         private void Awake()
         {
-            // Enforce realistic StoryBook page marker scale (0.22f - 0.26f) and 5mm surface elevation offset
-            if (physicalScale < 0.22f || physicalScale > 0.26f)
-            {
-                physicalScale = 0.24f;
-            }
+            // Enforce compact StoryBook page marker scale (~18cm-22cm total visual width -> 0.12f) and 5mm surface elevation offset
+            physicalScale = 0.12f;
             surfaceElevationOffset = 0.005f;
 
             if (trackedImageManager == null)
@@ -412,7 +409,7 @@ namespace SecretOfLostTemple.AR
             leverAnchor = new GameObject("SimulatedLeverAnchor").transform;
             leverAnchor.position = camera.position + camera.forward * 0.60f - camera.up * 0.15f;
             leverAnchor.rotation = Quaternion.Euler(0f, camera.eulerAngles.y, 0f);
-            leverAnchor.localScale = Vector3.one * 0.22f;
+            leverAnchor.localScale = Vector3.one * 0.12f;
             spawnedLeverInstance = Instantiate(questLeverPrefab, leverAnchor, false);
             spawnedLeverInstance.transform.localPosition = Vector3.zero;
             spawnedLeverInstance.transform.localRotation = Quaternion.identity;
@@ -451,7 +448,10 @@ namespace SecretOfLostTemple.AR
                 if (activeTrackedImage != null && kvp.Key == activeTrackedImage.trackableId)
                 {
                     activeTrackedImage = null;
-                    SetTracking(false);
+                    if (!physicalMarkerSeen && !isMarkerDetected)
+                    {
+                        SetTracking(false);
+                    }
                 }
             }
         }
@@ -473,14 +473,23 @@ namespace SecretOfLostTemple.AR
                 simulated = false;
                 SpawnAndAnchorLever(trackedImage, true);
                 OnMarkerRecognized("Lever");
+                SetTracking(true);
             }
-            SetTracking(tracking);
+            else if (physicalMarkerSeen || isMarkerDetected)
+            {
+                // Keep 3D lever persistent at its last known anchor pose during momentary TrackingState.Limited dropouts
+                SetTracking(true);
+            }
+            else
+            {
+                SetTracking(false);
+            }
         }
 
         private void SpawnAndAnchorLever(ARTrackedImage trackedImage, bool shouldBeActive)
         {
             if (questLeverPrefab == null) return;
-            float scaleToUse = Mathf.Clamp(physicalScale, 0.22f, 0.26f);
+            float scaleToUse = 0.12f;
             float elevation = 0.005f; // 5mm above marker base plane to prevent mesh z-fighting
 
             if (leverAnchor == null)
@@ -514,7 +523,7 @@ namespace SecretOfLostTemple.AR
                 leverAnchor.localRotation = Quaternion.identity;
                 leverAnchor.localScale = Vector3.one * scaleToUse;
             }
-            spawnedLeverInstance.SetActive(shouldBeActive);
+            spawnedLeverInstance.SetActive(true);
         }
 
         private void Update()
@@ -526,7 +535,9 @@ namespace SecretOfLostTemple.AR
                 UpdateScannerVisualsAndCameraDetection();
             }
 
-            SetTracking(simulated || (activeTrackedImage != null && activeTrackedImage.trackingState == TrackingState.Tracking));
+            bool isCurrentlyTracking = simulated || physicalMarkerSeen || isMarkerDetected ||
+                                       (activeTrackedImage != null && activeTrackedImage.trackingState == TrackingState.Tracking);
+            SetTracking(isCurrentlyTracking);
         }
 
         private void UpdateScannerVisualsAndCameraDetection()
@@ -651,16 +662,21 @@ namespace SecretOfLostTemple.AR
 
         private void SetTracking(bool tracking)
         {
-            StudyPolicy.SimulatedTracking = simulated && tracking;
-            StudyPolicy.Tracking = tracking && spawnedLeverInstance != null;
-            if (spawnedLeverInstance != null) spawnedLeverInstance.SetActive(tracking);
-            if (scanningMarkerOverlay != null) scanningMarkerOverlay.SetActive(!tracking);
-            if (leverARUIRoot != null) leverARUIRoot.SetActive(tracking);
-            if (wasTracking != tracking)
+            bool effectiveVisible = tracking || physicalMarkerSeen || isMarkerDetected;
+            StudyPolicy.SimulatedTracking = simulated && effectiveVisible;
+            StudyPolicy.Tracking = effectiveVisible && spawnedLeverInstance != null;
+            if (spawnedLeverInstance != null && effectiveVisible)
             {
-                SecretOfLostTemple.Research.Research.Record(tracking ? "tracking_acquired" : "tracking_lost", simulated ? "camera_locked_lever" : "lever_target");
+                if (!spawnedLeverInstance.activeSelf)
+                    spawnedLeverInstance.SetActive(true);
             }
-            wasTracking = tracking;
+            if (scanningMarkerOverlay != null) scanningMarkerOverlay.SetActive(!effectiveVisible);
+            if (leverARUIRoot != null) leverARUIRoot.SetActive(effectiveVisible);
+            if (wasTracking != effectiveVisible)
+            {
+                SecretOfLostTemple.Research.Research.Record(effectiveVisible ? "tracking_acquired" : "tracking_lost", simulated ? "camera_locked_lever" : "lever_target");
+            }
+            wasTracking = effectiveVisible;
         }
 
         private void OnMarkerRecognized(string machineName)
