@@ -682,8 +682,21 @@
             score += (r.hints || 0) * 10;
             score += (r.storyChoices || 0) * 10;
             score += Math.round(r.dwellSec || 0);
-            if (r.sessionId && !String(r.sessionId).startsWith("ses_")) score += 5;
+            const sid = String(r.sessionId || "");
+            if (sid && !sid.startsWith("ses_") && !sid.startsWith("pending_")) score += 50;
             return score;
+        }
+
+        function safeParseJson(str) {
+            if (!str || typeof str !== "string") return null;
+            try {
+                const cleaned = str
+                    .replace(/:\s*NaN\b/g, ":null")
+                    .replace(/:\s*-?Infinity\b/g, ":null");
+                return JSON.parse(cleaned);
+            } catch (e) {
+                return null;
+            }
         }
 
         function mergeStudentRows(existing, incoming) {
@@ -693,9 +706,20 @@
             const sInc = rowActivityScore(incoming);
             const primary = sInc >= sExist ? incoming : existing;
             const secondary = sInc >= sExist ? existing : incoming;
+            const existSid = String(existing.sessionId || "");
+            const incSid = String(incoming.sessionId || "");
+            const bestSessionId = (!incSid.startsWith("pending_") && !incSid.startsWith("ses_") && incSid)
+                ? incSid
+                : ((!existSid.startsWith("pending_") && !existSid.startsWith("ses_") && existSid) ? existSid : (primary.sessionId || secondary.sessionId));
+            const bestTier = (primary.endTier || 1) >= (secondary.endTier || 1) ? primary.tier : secondary.tier;
             return {
                 ...secondary,
                 ...primary,
+                sessionId: bestSessionId,
+                tier: bestTier,
+                endTier: Math.max(primary.endTier || 1, secondary.endTier || 1),
+                promotions: Math.max(primary.promotions || 0, secondary.promotions || 0),
+                demotions: Math.max(primary.demotions || 0, secondary.demotions || 0),
                 hasPre: primary.hasPre || secondary.hasPre,
                 pre: primary.hasPre ? primary.pre : secondary.pre,
                 hasPost: primary.hasPost || secondary.hasPost,
@@ -710,6 +734,7 @@
                 fulcrumCount: Math.max(primary.fulcrumCount || 0, secondary.fulcrumCount || 0),
                 partInspects: Math.max(primary.partInspects || 0, secondary.partInspects || 0),
                 modeSwitches: Math.max(primary.modeSwitches || 0, secondary.modeSwitches || 0),
+                maxMa: Math.max(primary.maxMa || 1.0, secondary.maxMa || 1.0),
                 hints: Math.max(primary.hints || 0, secondary.hints || 0),
                 tier1Hints: Math.max(primary.tier1Hints || 0, secondary.tier1Hints || 0),
                 tier2Hints: Math.max(primary.tier2Hints || 0, secondary.tier2Hints || 0),
@@ -718,7 +743,10 @@
                 storyNodes: Math.max(primary.storyNodes || 0, secondary.storyNodes || 0),
                 dwellSec: Math.max(primary.dwellSec || 0, secondary.dwellSec || 0),
                 inArFirstTry: Math.max(primary.inArFirstTry || 0, secondary.inArFirstTry || 0),
-                inArRetryFixes: Math.max(primary.inArRetryFixes || 0, secondary.inArRetryFixes || 0)
+                inArRetryFixes: Math.max(primary.inArRetryFixes || 0, secondary.inArRetryFixes || 0),
+                rawSession: (primary.rawSession && (primary.rawSession.events?.length || primary.rawSession.assessments?.length))
+                    ? primary.rawSession
+                    : (secondary.rawSession || primary.rawSession)
             };
         }
 
@@ -793,7 +821,7 @@
                 hasRet: hasRet,
                 gain: gain,
                 day7: day7,
-                retentionChange: m.retentionChangePct > -900 ? m.retentionChangePct : 0,
+                retentionChange: (typeof m.retentionChangePct === "number" && m.retentionChangePct > -900) ? m.retentionChangePct : 0,
                 inArFirstTry: m.inArFirstTryAccuracyPct || 0,
                 inArRetryFixes: m.inArSecondTryCorrections || 0,
                 dwellSec: m.learningExposureSeconds || 0,
@@ -1049,16 +1077,18 @@
                         // Skip legacy empty dashboard placeholder docs (ses_*) that had no phone metrics
                         if (sId.startsWith("ses_")) continue;
                         const mJson = f.metricsJson?.stringValue;
-                        if (mJson && mJson !== "{}") {
-                            try {
-                                const m = JSON.parse(mJson);
-                                const row = metricsToRow(m, "cloud");
-                                if (row) {
-                                    row.rawSession = f.sessionJson?.stringValue ? JSON.parse(f.sessionJson.stringValue) : null;
-                                    parsed.push(row);
-                                    upsertSavedRow(row);
-                                }
-                            } catch (e) {}
+                        const sJson = f.sessionJson?.stringValue;
+                        const rawSes = sJson ? safeParseJson(sJson) : null;
+                        const m = mJson && mJson !== "{}" ? safeParseJson(mJson) : null;
+                        let row = m ? metricsToRow(m, "cloud") : null;
+                        if (rawSes) {
+                            const enriched = computeMetricsFromRawSession(rawSes, "cloud");
+                            row = row && enriched ? mergeStudentRows(row, enriched) : (row || enriched);
+                            if (row) row.rawSession = rawSes;
+                        }
+                        if (row) {
+                            parsed.push(row);
+                            upsertSavedRow(row);
                         }
                     }
                     parsed.sort((a, b) => (b.rawMetrics?.started || "").localeCompare(a.rawMetrics?.started || ""));
@@ -1110,8 +1140,7 @@
                 : `${getStr("stage")} (${getStr("scene")})`;
             document.getElementById('livePhoneCondition').innerText = (getStr("condition") || "passive").toUpperCase();
 
-            let m = null;
-            try { m = JSON.parse(getStr("metricsJson") || "{}"); } catch (e) {}
+            const m = safeParseJson(getStr("metricsJson") || "{}");
             if (m && m.participant) {
                 document.getElementById('livePhoneTier').innerText = `Tier ${m.endDifficultyTier || 1} (${m.adaptive ? 'Adaptive' : 'Fixed'})`;
                 document.getElementById('livePhoneSpatial').innerText = `${(m.spatialAccuracyPct || 0).toFixed(1)}% (${m.totalManipulations || 0} ops)`;
@@ -1154,9 +1183,9 @@
             const reader = new FileReader();
             reader.onload = (e) => {
                 try {
-                    const db = JSON.parse(e.target.result);
-                    const sessions = db.sessions || [];
-                    const imported = sessions.map(s => computeMetricsFromRawSession(s)).filter(Boolean);
+                    const db = safeParseJson(e.target.result);
+                    const sessions = db?.sessions || [];
+                    const imported = sessions.map(s => computeMetricsFromRawSession(s, 'local_json')).filter(Boolean);
                     liveCloudSessions = [...imported, ...liveCloudSessions];
                     rebuildCombinedDataset();
                     alert(`✅ Loaded ${imported.length} session(s) from local records.json!`);
@@ -1168,33 +1197,38 @@
         }
 
 
-        function computeMetricsFromRawSession(s) {
+        function computeMetricsFromRawSession(s, sourceTag = 'local_json') {
             if (!s) return null;
             const evs = s.events || [], count = (...kinds) => evs.filter(e => kinds.includes(e.kind)).length;
             const latest = stage => (s.assessments || []).filter(a => a.stage === stage && a.completed && a.denominator > 0).at(-1);
             const pct = stage => { const a = latest(stage); return a ? 100*a.score/a.denominator : -1; };
-            const hints = evs.filter(e => ['hint','hint_requested','smart_hint_opened'].includes(e.kind));
+            const hints = evs.filter(e => ['hint','hint_requested','smart_hint_opened','auto_hint_shown'].includes(e.kind));
             const changes = evs.filter(e => e.kind === 'difficulty_change');
             let tier = 1, promotions = 0, demotions = 0;
             changes.forEach(e => { const match = /to=(Master|Scholar|Apprentice|[123])/.exec(e.context || ''); if (match) { const next = ({Master:3,Scholar:2,Apprentice:1})[match[1]] || +match[1]; promotions += next > tier; demotions += next < tier; tier = next; } });
+            const solvedCount = count('lever_challenge_solved', 'challenge_completed') + evs.filter(e => e.kind === 'challenge_attempt' && e.correct).length;
+            if (s.adaptive && solvedCount > 0 && tier < 2) { tier = 2; promotions = Math.max(promotions, 1); }
             const first = evs.filter(e => e.kind === 'formative_answer' && e.attemptNumber === 1);
-            const force = count('adjust_force','drag'), fulcrum = count('fulcrum_committed'), inspect = count('inspect_part');
+            const force = count('adjust_force','drag'), fulcrum = count('fulcrum_committed','fulcrum_moved'), inspect = count('inspect_part');
+            let maxMa = 1.0;
+            evs.forEach(e => { const m = /ma=([0-9.]+)/i.exec(e.context || ''); if (m) { const v = parseFloat(m[1]); if (!isNaN(v) && v > maxMa) maxMa = v; } });
             const row = metricsToRow({participant:s.participant, sessionId:s.id, condition:s.condition, adaptive:s.adaptive,
                 embeddedAssessment:s.embeddedAssessment, isSyntheticDemo:/synthetic/i.test(s.dataLabel || ''),
                 pretestScorePct:pct('pretest'), posttestScorePct:pct('posttest'), retentionScorePct:pct('retention'),
-                totalManipulations:force+fulcrum+inspect+count('rotate_step','model_gesture','rotate'),
+                totalManipulations:force+fulcrum+inspect+count('rotate_step','model_gesture','rotate','lever_challenge_solved','challenge_attempt'),
                 forceAdjustments:force, fulcrumAdjustments:fulcrum, partInspections:inspect,
-                modeSwitches:count('mode_change','condition_set'), startDifficultyTier:1, endDifficultyTier:tier,
+                modeSwitches:count('mode_change','mode_switch','condition_set'), maxMechanicalAdvantageReached:maxMa, startDifficultyTier:1, endDifficultyTier:tier,
                 difficultyPromotions:promotions, difficultyDemotions:demotions, hintsRequested:hints.length,
-                tier1Hints:hints.filter(e => /tier=1|level1|VisualNudge/.test(e.context)).length,
-                tier2Hints:hints.filter(e => /tier=2|level2|CharacterClue/.test(e.context)).length,
-                tier3Hints:hints.filter(e => /tier=3|level3|DirectGuidance/.test(e.context)).length,
-                storyChoicesMade:count('story_choice'), storyNodesVisited:count('story_node'),
+                tier1Hints:hints.filter(e => /tier=1|tier1|level1|VisualNudge|"hintTier":1/.test(e.context)).length,
+                tier2Hints:hints.filter(e => /tier=2|tier2|level2|CharacterClue|"hintTier":2/.test(e.context)).length,
+                tier3Hints:hints.filter(e => /tier=3|tier3|level3|DirectGuidance|"hintTier":3/.test(e.context)).length,
+                storyChoicesMade:count('story_choice'), storyNodesVisited:Math.max(1, count('story_node')),
                 inArFirstTryAccuracyPct:first.length ? 100*first.filter(e=>e.correct).length/first.length : 0,
                 inArSecondTryCorrections:evs.filter(e=>e.kind==='formative_answer' && e.attemptNumber===2 && e.correct).length,
                 learningExposureSeconds:evs.filter(e=>e.kind==='learning_exposure').reduce((sum,e)=>sum+(e.seconds||0),0)
-            }, 'local_json');
-            row.rawSession = s; return row;
+            }, sourceTag);
+            if (row) row.rawSession = s;
+            return row;
         }
         function buildStudyTables(rows = participantsData) {
             if (rows.some(r => !r.rawSession)) throw new Error('Full records are unavailable for some sessions. Import records.json or sync using the updated app before exporting study tables.');

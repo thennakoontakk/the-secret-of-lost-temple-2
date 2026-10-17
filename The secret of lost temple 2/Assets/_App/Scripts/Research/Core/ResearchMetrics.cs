@@ -122,15 +122,20 @@ namespace SecretOfLostTemple.Research
             m.fulcrumMoveCount = events.Count(e => e.kind == "fulcrum_committed");
             m.partInspectCount = events.Count(e => e.kind == "inspect_part");
             m.resetCount = events.Count(e => e.kind == "reset_mechanism");
-            m.modeSwitches = events.Count(e => e.kind == "mode_change" || e.kind == "condition_set");
-            m.totalManipulations = m.rotateCount + m.forceAdjustCount + m.fulcrumMoveCount + m.partInspectCount;
+            m.modeSwitches = events.Count(e => e.kind == "mode_change" || e.kind == "mode_switch" || e.kind == "condition_set");
+
+            var challenges = events.Where(e => e.kind == "challenge_attempt" || e.kind == "lever_challenge_solved" || e.kind == "challenge_completed").ToList();
+            m.challengeAttempts = Mathf.Max(
+                events.Count(e => e.kind == "challenge_attempt"),
+                events.Count(e => e.kind == "lever_challenge_solved" || e.kind == "challenge_completed") > 0 ? 1 : 0);
+            m.challengeSuccesses = Mathf.Max(
+                events.Count(e => e.kind == "challenge_attempt" && (e.correct || (e.context != null && e.context.Contains("success=True")))),
+                events.Count(e => e.kind == "lever_challenge_solved" || e.kind == "challenge_completed" || e.kind == "lever_lifted") > 0 ? 1 : 0);
+
+            m.totalManipulations = m.rotateCount + m.forceAdjustCount + m.fulcrumMoveCount + m.partInspectCount + m.challengeSuccesses;
             m.forceAdjustments = m.forceAdjustCount;
             m.fulcrumAdjustments = m.fulcrumMoveCount;
             m.partInspections = m.partInspectCount;
-
-            var challenges = events.Where(e => e.kind == "challenge_attempt").ToList();
-            m.challengeAttempts = challenges.Count;
-            m.challengeSuccesses = challenges.Count(e => e.correct || (e.context != null && e.context.Contains("success=True")));
 
             if (m.challengeAttempts > 0)
             {
@@ -148,7 +153,8 @@ namespace SecretOfLostTemple.Research
             var startEvt = events.FirstOrDefault(e => e.kind == "learning_open" || e.kind == "learning_scene_start") ?? events.FirstOrDefault();
             var firstManipEvt = events.FirstOrDefault(e =>
                 e.kind == "adjust_force" || e.kind == "fulcrum_committed" || e.kind == "rotate_step" ||
-                e.kind == "model_gesture" || e.kind == "inspect_part" || e.kind == "challenge_attempt");
+                e.kind == "model_gesture" || e.kind == "inspect_part" || e.kind == "challenge_attempt" ||
+                e.kind == "lever_challenge_solved" || e.kind == "challenge_completed");
             if (startEvt != null && firstManipEvt != null &&
                 DateTime.TryParse(startEvt.timestamp, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out DateTime t0) &&
                 DateTime.TryParse(firstManipEvt.timestamp, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out DateTime t1) &&
@@ -182,6 +188,14 @@ namespace SecretOfLostTemple.Research
                 if (fa.difficulty > maxTier) maxTier = fa.difficulty;
                 if (fa.difficulty > 0) lastTier = fa.difficulty;
             }
+            // If adaptive is enabled and the student solved the lever challenge without explicit difficulty_change events yet, promote to Tier 2 (Scholar)
+            if (s.adaptive && m.challengeSuccesses > 0 && lastTier < 2 && diffEvents.Count == 0)
+            {
+                lastTier = 2;
+                if (maxTier < 2) maxTier = 2;
+                promos = Mathf.Max(1, promos);
+                m.difficultyChanges = Mathf.Max(1, m.difficultyChanges);
+            }
             m.highestTier = maxTier;
             m.currentTier = lastTier;
             m.startDifficultyTier = m.startingTier;
@@ -190,9 +204,9 @@ namespace SecretOfLostTemple.Research
             m.difficultyDemotions = demos;
 
             var hintEvents = events.Where(e => e.kind == "hint" || e.kind == "hint_requested" || e.kind == "smart_hint_opened").ToList();
-            m.tier1Hints = hintEvents.Count(e => e.context != null && (e.context.Contains("level1") || e.context.Contains("VisualNudge") || e.context.Contains("tier=1")));
-            m.tier2Hints = hintEvents.Count(e => e.context != null && (e.context.Contains("level2") || e.context.Contains("CharacterClue") || e.context.Contains("tier=2")));
-            m.tier3Hints = hintEvents.Count(e => e.context != null && (e.context.Contains("level3") || e.context.Contains("DirectGuidance") || e.context.Contains("tier=3")));
+            m.tier1Hints = hintEvents.Count(e => e.context != null && (e.context.Contains("level1") || e.context.Contains("VisualNudge") || e.context.Contains("tier=1") || e.context.Contains("tier1") || e.context.Contains("\"hintTier\":1")));
+            m.tier2Hints = hintEvents.Count(e => e.context != null && (e.context.Contains("level2") || e.context.Contains("CharacterClue") || e.context.Contains("tier=2") || e.context.Contains("tier2") || e.context.Contains("\"hintTier\":2")));
+            m.tier3Hints = hintEvents.Count(e => e.context != null && (e.context.Contains("level3") || e.context.Contains("DirectGuidance") || e.context.Contains("tier=3") || e.context.Contains("tier3") || e.context.Contains("\"hintTier\":3")));
             int untieredHints = hintEvents.Count - (m.tier1Hints + m.tier2Hints + m.tier3Hints);
             if (untieredHints > 0) m.tier1Hints += untieredHints;
             m.totalHints = hintEvents.Count;

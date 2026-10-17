@@ -275,7 +275,7 @@ namespace SecretOfLostTemple.Research
 
             var s = Data.Store.Current ?? Data.Store.Latest;
             var m = s != null ? ResearchStore.ComputeMetrics(s) : null;
-            string metricsJson = m != null ? JsonUtility.ToJson(m) : "{}";
+            string metricsJson = m != null ? SanitizeJsonNumbers(JsonUtility.ToJson(m)) : "{}";
             string sceneName = SceneManager.GetActiveScene().name;
             string pendingStage = Data.Store.PendingTest != null ? Data.Store.PendingTest.stage : "";
             int pendingIdx = Data.Store.PendingTest != null ? Data.Store.PendingTest.answers.Count : -1;
@@ -340,7 +340,7 @@ namespace SecretOfLostTemple.Research
                 var s = all[i];
                 if (s == null || string.IsNullOrEmpty(s.id)) continue;
                 var m = ResearchStore.ComputeMetrics(s);
-                string metricsJson = JsonUtility.ToJson(m);
+                string metricsJson = SanitizeJsonNumbers(JsonUtility.ToJson(m));
                 string sessionDocJson = BuildSessionFirestoreJson(s, m, metricsJson);
                 string safeDocId = SanitizeDocId(s.id);
                 using (UnityWebRequest sesReq = new UnityWebRequest($"{BaseDocsUrl}/research_sessions/{safeDocId}", "PATCH"))
@@ -355,6 +355,15 @@ namespace SecretOfLostTemple.Research
                     yield return sesReq.SendWebRequest();
                 }
             }
+        }
+
+        private static string SanitizeJsonNumbers(string json)
+        {
+            if (string.IsNullOrEmpty(json)) return "{}";
+            return json
+                .Replace(":NaN", ":null")
+                .Replace(":-Infinity", ":null")
+                .Replace(":Infinity", ":null");
         }
 
         private string BuildDeviceFirestoreJson(ResearchSession s, SessionComputedMetrics m, string sceneName, string pendingStage, int pendingIdx, string metricsJson)

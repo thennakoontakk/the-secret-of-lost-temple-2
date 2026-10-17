@@ -1690,8 +1690,20 @@ namespace SecretOfLostTemple.AR
             PlayerPrefs.SetInt("LostTemple_Lever_Challenge_Completed", 1);
             PlayerPrefs.Save();
 
+            float solveSeconds = Mathf.Max(2f, Time.time - challengeStarted);
+            if (challengeAttempts == 0)
+            {
+                challengeAttempts = 1;
+                ResearchData.Record("challenge_attempt", $"lever;tier={tier};load={targetLoadN:F0};effort={currentEffortForceN:F0};success=True", false, true, solveSeconds);
+            }
+            if (SecretOfLostTemple.Adaptive.AdaptiveDifficultyEngine.Instance != null)
+            {
+                SecretOfLostTemple.Adaptive.AdaptiveDifficultyEngine.Instance.RecordTaskResult(true, solveSeconds);
+                UpdateAdaptiveTierHUD();
+            }
+
             // Stream completion data to research dashboard
-            ResearchData.Record("lever_challenge_solved", $"tier={tier};ma={ma:F2};load={targetLoadN:F0};effort={currentEffortForceN:F0}");
+            ResearchData.Record("lever_challenge_solved", $"tier={tier};ma={ma:F2};load={targetLoadN:F0};effort={currentEffortForceN:F0}", false, true, solveSeconds);
             ResearchCloudSync.Instance?.TriggerImmediateSync("Lever Challenge Completed!");
 
             if (challengeFeedbackText != null)
