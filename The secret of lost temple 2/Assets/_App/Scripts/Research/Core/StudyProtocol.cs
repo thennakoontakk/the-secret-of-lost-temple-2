@@ -210,12 +210,12 @@ namespace SecretOfLostTemple.Research
     {
         public const string Version = "lever-pilot-v1";
         public static readonly LeverQuestion[] Questions = {
-            new LeverQuestion("L1", "What is the turning point of a lever called?", 1, "Load", "Fulcrum", "Effort", "Handle"),
-            new LeverQuestion("L2", "Which part is the object the lever lifts?", 2, "Fulcrum", "Effort", "Load", "Pivot"),
-            new LeverQuestion("L3", "For the same load, moving the fulcrum nearer the load usually makes the effort needed...", 0, "Smaller", "Larger", "Always zero", "Unchanged"),
-            new LeverQuestion("L4", "In a first-class lever, which part lies between effort and load?", 3, "Rope", "Wheel", "Weight", "Fulcrum"),
-            new LeverQuestion("L5", "Ignoring friction: effort arm 2 m, load arm 1 m, load 60 N. What effort balances it?", 1, "120 N", "30 N", "60 N", "15 N"),
-            new LeverQuestion("L6", "What happens when effort torque exceeds load torque in the lifting direction?", 2, "The load gets heavier", "The fulcrum disappears", "The load begins to rise", "The beam cannot turn")
+            new LeverQuestion("L1", "What is the fixed pivot point of a lever called?", 1, "Load", "Fulcrum", "Effort", "Handle"),
+            new LeverQuestion("L2", "What is the object that the lever is attempting to lift or move?", 2, "Fulcrum", "Effort", "Load", "Pivot Point"),
+            new LeverQuestion("L3", "For the same load, moving the fulcrum closer to the load causes the required effort to...", 0, "Decrease", "Increase", "Always be zero", "Stay unchanged"),
+            new LeverQuestion("L4", "In a first-class lever, which part is positioned between the Effort and the Load?", 3, "Rope", "Wheel", "Weight", "Fulcrum"),
+            new LeverQuestion("L5", "Ignoring friction: Effort Arm is 2 m, Load Arm is 1 m, Load is 60 N. What effort is required to balance it?", 1, "120 N", "30 N", "60 N", "15 N"),
+            new LeverQuestion("L6", "When the effort torque in the lifting direction is greater than the load torque, what happens?", 2, "The load gets heavier", "The fulcrum detaches", "The load begins to lift upward", "The beam cannot rotate")
         };
     }
 }

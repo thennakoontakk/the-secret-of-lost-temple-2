@@ -9,7 +9,7 @@ public static class StudyPolicy
     public static bool Review, Tracking, SimulatedTracking;
     public static bool Measured => Data.Store.IsStudy;
     public static bool Passive => Measured && Data.Store.Current.condition=="passive";
-    public static bool InputAllowed => Data.Store.CanManipulate && (!Measured||Tracking);
+    public static bool InputAllowed => Data.Store.CanManipulate && (!Measured||Tracking||SimulatedTracking||UnityEngine.SceneManagement.SceneManager.GetActiveScene().name=="FreePracticeScene"||PlayerPrefs.GetString("LostTemple_App_Mode")=="Sandbox");
     public static InteractionMode Resolve(InteractionMode requested) => Measured ? (Passive?InteractionMode.ViewOnly:InteractionMode.Interactive) : requested;
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)] static void Reset(){Review=false;Tracking=false;SimulatedTracking=false;}
 }

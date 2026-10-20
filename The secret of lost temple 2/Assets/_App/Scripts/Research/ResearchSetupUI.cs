@@ -47,7 +47,7 @@ public class ResearchSetupUI : MonoBehaviour
     void OnDestroy() { if (Instance == this) Instance = null; }
     void Start()
     {
-        font=Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        font = Resources.Load<Font>("SinhalaFont") ?? Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
         var canvas=gameObject.AddComponent<Canvas>();canvas.renderMode=RenderMode.ScreenSpaceOverlay;canvas.sortingOrder=200;
         var scale=gameObject.AddComponent<CanvasScaler>();scale.uiScaleMode=CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scale.referenceResolution=new Vector2(1920,1080);scale.matchWidthOrHeight=1;

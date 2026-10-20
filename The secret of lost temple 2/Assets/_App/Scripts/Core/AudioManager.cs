@@ -30,10 +30,16 @@ namespace SecretOfLostTemple.Core
         [SerializeField] private float defaultBGMVolume = 0.65f;
         [SerializeField] private bool autoPlayAfterSplash = true;
 
+        private const string BGM_MUTE_PREF = "LostTemple_BGM_Muted";
+        private bool isMuted = false;
+        public bool IsBGMMuted => isMuted;
+
         private Coroutine fadeRoutine;
 
         private void Awake()
         {
+            isMuted = PlayerPrefs.GetInt(BGM_MUTE_PREF, 0) == 1;
+
             if (instance == null)
             {
                 instance = this;
@@ -57,6 +63,11 @@ namespace SecretOfLostTemple.Core
                 bgmSource.loop = true;
                 bgmSource.playOnAwake = false;
                 bgmSource.volume = defaultBGMVolume;
+                bgmSource.mute = isMuted;
+            }
+            else
+            {
+                bgmSource.mute = isMuted;
             }
 
             if (sfxSource == null)
@@ -133,6 +144,22 @@ namespace SecretOfLostTemple.Core
             }
         }
 
+        public void ToggleBGMMute()
+        {
+            SetBGMMuted(!isMuted);
+        }
+
+        public void SetBGMMuted(bool mute)
+        {
+            isMuted = mute;
+            PlayerPrefs.SetInt(BGM_MUTE_PREF, isMuted ? 1 : 0);
+            PlayerPrefs.Save();
+            if (bgmSource != null)
+            {
+                bgmSource.mute = isMuted;
+            }
+        }
+
         public void PlaySFX(AudioClip clip, float volumeScale = 1.0f)
         {
             if (clip == null) return;
@@ -165,6 +192,7 @@ namespace SecretOfLostTemple.Core
             bgmSource.Stop();
             bgmSource.clip = newClip;
             bgmSource.loop = loop;
+            bgmSource.mute = isMuted;
             bgmSource.volume = 0f;
             bgmSource.Play();
 

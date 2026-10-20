@@ -21,10 +21,10 @@ namespace SecretOfLostTemple.AR
         [SerializeField] private float orbitDamping = 5f;
 
         [Header("Interactive: 2-Finger Pinch Scale")]
-        [SerializeField] private float minScale = 0.4f;
-        [SerializeField] private float maxScale = 2.5f;
+        [SerializeField] private float minScale = 0.35f;
+        [SerializeField] private float maxScale = 3.0f;
         [SerializeField] private float pinchScaleSpeed = 0.005f;
-        [SerializeField] private float scrollScaleSpeed = 0.15f;
+        [SerializeField] private float scrollScaleSpeed = 0.25f;
         [SerializeField] private float scaleSmoothTime = 0.12f;
 
         [Header("Interactive: 1-Finger Force Tilt")]
@@ -111,7 +111,10 @@ namespace SecretOfLostTemple.AR
         private void Update()
         {
 
-            if (StudyPolicy.Measured && !StudyPolicy.Tracking) return;
+            string activeScene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+            string appMode = PlayerPrefs.GetString("LostTemple_App_Mode", "Quest");
+            bool isSandbox = (activeScene == "FreePracticeScene" || appMode == "Sandbox" || activeScene == "Physics3DLabScene");
+            if (StudyPolicy.Measured && !StudyPolicy.Tracking && !isSandbox) return;
             if (StudyPolicy.Passive) { targetYaw += autoOrbitSpeed * Time.deltaTime; ApplySmoothTransforms(); return; }
             float previousYaw = targetYaw;
             float previousScale = targetScaleFactor;
@@ -147,10 +150,13 @@ namespace SecretOfLostTemple.AR
                     {
                         float prevDistance = Vector2.Distance(previousTouchPos0, previousTouchPos1);
                         float currentDistance = Vector2.Distance(t0.position, t1.position);
-                        float delta = currentDistance - prevDistance;
-
-                        targetScaleFactor += delta * pinchScaleSpeed;
-                        targetScaleFactor = Mathf.Clamp(targetScaleFactor, minScale, maxScale);
+                        if (prevDistance > 5f && currentDistance > 5f)
+                        {
+                            float delta = currentDistance - prevDistance;
+                            float scaleDelta = (Screen.dpi > 0) ? (delta / Screen.dpi) * 0.5f : delta * pinchScaleSpeed;
+                            targetScaleFactor += scaleDelta;
+                            targetScaleFactor = Mathf.Clamp(targetScaleFactor, minScale, maxScale);
+                        }
 
                         previousTouchPos0 = t0.position;
                         previousTouchPos1 = t1.position;
@@ -237,12 +243,19 @@ namespace SecretOfLostTemple.AR
 
         private bool IsPointerOverUI(Vector2 screenPos)
         {
-
             if (EventSystem.current == null) return false;
             var pointer = new PointerEventData(EventSystem.current) { position = screenPos };
             var hits = new System.Collections.Generic.List<RaycastResult>();
             EventSystem.current.RaycastAll(pointer, hits);
-            return hits.Count > 0;
+            foreach (var hit in hits)
+            {
+                if (hit.gameObject == null) continue;
+                if (hit.gameObject.GetComponentInParent<UnityEngine.UI.Selectable>() != null)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 }

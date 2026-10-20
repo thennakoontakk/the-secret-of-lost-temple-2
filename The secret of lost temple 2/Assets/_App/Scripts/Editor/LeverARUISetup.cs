@@ -99,22 +99,25 @@ namespace SecretOfLostTemple.Editor
             rtBanner.anchorMin = new Vector2(0.5f, 0.5f);
             rtBanner.anchorMax = new Vector2(0.5f, 0.5f);
             rtBanner.anchoredPosition = new Vector2(0f, 0f);
-            rtBanner.sizeDelta = new Vector2(460f, 95f);
+            rtBanner.sizeDelta = new Vector2(450f, 150f);
             var imgBanner = bannerGo.GetComponent<Image>() ?? bannerGo.AddComponent<Image>();
-            imgBanner.color = new Color(0.38f, 0.22f, 0.10f, 0.96f);
+            var titleSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/UI/lever_ar_title.png");
+            if (titleSprite != null)
+            {
+                imgBanner.sprite = titleSprite;
+                imgBanner.color = Color.white;
+                imgBanner.preserveAspect = true;
+            }
+            else
+            {
+                imgBanner.color = new Color(0.38f, 0.22f, 0.10f, 0.96f);
+            }
 
             var bannerTxtTr = bannerGo.transform.Find("Text");
-            GameObject bannerTxtGo = bannerTxtTr != null ? bannerTxtTr.gameObject : new GameObject("Text", typeof(RectTransform));
-            bannerTxtGo.transform.SetParent(bannerGo.transform, false);
-            var txtBanner = bannerTxtGo.GetComponent<Text>() ?? bannerTxtGo.AddComponent<Text>();
-            txtBanner.text = "<b>LEVER <size=30><color=#ffdd66>AR</color></size></b>";
-            txtBanner.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            txtBanner.fontSize = 48;
-            txtBanner.alignment = TextAnchor.MiddleCenter;
-            txtBanner.color = new Color(1f, 0.88f, 0.45f);
-            txtBanner.rectTransform.anchorMin = Vector2.zero;
-            txtBanner.rectTransform.anchorMax = Vector2.one;
-            txtBanner.rectTransform.sizeDelta = Vector2.zero;
+            if (bannerTxtTr != null)
+            {
+                bannerTxtTr.gameObject.SetActive(false);
+            }
 
             // 1C. Top Right: Mode Toggle Button (2X Enlarger)
             var modeBtnTr = topBar.transform.Find("Btn_ModeToggle");
@@ -413,7 +416,7 @@ namespace SecretOfLostTemple.Editor
             GameObject forcesTxtGo = forcesTxtTr != null ? forcesTxtTr.gameObject : new GameObject("Text", typeof(RectTransform));
             forcesTxtGo.transform.SetParent(forcesBtnGo.transform, false);
             var txtForces = forcesTxtGo.GetComponent<Text>() ?? forcesTxtGo.AddComponent<Text>();
-            txtForces.text = "<b>🔄 360° FORCES & MOTION</b>\n<size=17><color=#ffe066>Vector Arrows & Rotation (බල සහ භ්‍රමණය)</color></size>";
+            txtForces.text = "<b>🔄 360° FORCES & MOTION</b>\n<size=17><color=#ffe066>Vector Arrows & Rotation</color></size>";
             txtForces.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             txtForces.fontSize = 21;
             txtForces.alignment = TextAnchor.MiddleCenter;
@@ -442,7 +445,7 @@ namespace SecretOfLostTemple.Editor
             GameObject explodedTxtGo = explodedTxtTr != null ? explodedTxtTr.gameObject : new GameObject("Text", typeof(RectTransform));
             explodedTxtGo.transform.SetParent(explodedBtnGo.transform, false);
             var txtExploded = explodedTxtGo.GetComponent<Text>() ?? explodedTxtGo.AddComponent<Text>();
-            txtExploded.text = "<b>🔍 PARTS & ANATOMY</b>\n<size=17><color=#80e5ff>Exploded View & Lore (කොටස් සහ විස්තර)</color></size>";
+            txtExploded.text = "<b>🔍 PARTS & ANATOMY</b>\n<size=17><color=#80e5ff>Exploded View & Lore</color></size>";
             txtExploded.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             txtExploded.fontSize = 21;
             txtExploded.alignment = TextAnchor.MiddleCenter;
@@ -493,10 +496,10 @@ namespace SecretOfLostTemple.Editor
                 return pBtn;
             }
 
-            var btnPillFulcrum = CreatePill("Pill_Fulcrum", "🏔️ 1. FULCRUM (ආධාරකය)", -420f, new Color(0.2f, 0.55f, 0.3f, 0.95f));
-            var btnPillBeam = CreatePill("Pill_Beam", "🪵 2. LEVER BEAM (දණ්ඩ)", -140f, new Color(0.55f, 0.35f, 0.15f, 0.95f));
-            var btnPillLoad = CreatePill("Pill_LoadStone", "🪨 3. LOAD STONE (භාරය)", 140f, new Color(0.65f, 0.25f, 0.2f, 0.95f));
-            var btnPillEffort = CreatePill("Pill_Effort", "⚡ 4. EFFORT POINT (ආයාසය)", 420f, new Color(0.7f, 0.55f, 0.1f, 0.95f));
+            var btnPillFulcrum = CreatePill("Pill_Fulcrum", "🏔️ 1. FULCRUM", -420f, new Color(0.2f, 0.55f, 0.3f, 0.95f));
+            var btnPillBeam = CreatePill("Pill_Beam", "🪵 2. LEVER BEAM", -140f, new Color(0.55f, 0.35f, 0.15f, 0.95f));
+            var btnPillLoad = CreatePill("Pill_LoadStone", "🪨 3. LOAD STONE", 140f, new Color(0.65f, 0.25f, 0.2f, 0.95f));
+            var btnPillEffort = CreatePill("Pill_Effort", "⚡ 4. EFFORT POINT", 420f, new Color(0.7f, 0.55f, 0.1f, 0.95f));
 
             pillsGo.SetActive(false);
 
@@ -542,7 +545,7 @@ namespace SecretOfLostTemple.Editor
             rtPTitle.offsetMin = Vector2.zero;
             rtPTitle.offsetMax = Vector2.zero;
             var txtPTitle = pTitleGo.GetComponent<Text>() ?? pTitleGo.AddComponent<Text>();
-            txtPTitle.text = "🏔️ FULCRUM (ආධාරක ලක්ෂ්‍යය)";
+            txtPTitle.text = "🏔️ FULCRUM";
             txtPTitle.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
             txtPTitle.fontSize = 32;
             txtPTitle.fontStyle = FontStyle.Bold;
@@ -851,9 +854,20 @@ namespace SecretOfLostTemple.Editor
             var rtCardCont = cardContGo.GetComponent<RectTransform>();
             rtCardCont.anchorMin = new Vector2(0.5f, 0.5f);
             rtCardCont.anchorMax = new Vector2(0.5f, 0.5f);
-            rtCardCont.sizeDelta = new Vector2(1100f, 620f);
+            rtCardCont.anchoredPosition = new Vector2(0f, 15f);
+            rtCardCont.sizeDelta = new Vector2(1460f, 780f);
             var imgCardCont = cardContGo.AddComponent<Image>();
-            imgCardCont.color = new Color(0.24f, 0.16f, 0.10f, 0.98f);
+            var questCardSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/UI/adventure_quest_modal_bg.png");
+            if (questCardSprite != null)
+            {
+                imgCardCont.sprite = questCardSprite;
+                imgCardCont.color = Color.white;
+                imgCardCont.preserveAspect = true;
+            }
+            else
+            {
+                imgCardCont.color = new Color(0.24f, 0.16f, 0.10f, 0.98f);
+            }
 
             GameObject titleGo = new GameObject("Title", typeof(RectTransform));
             titleGo.transform.SetParent(cardContGo.transform, false);
@@ -861,29 +875,20 @@ namespace SecretOfLostTemple.Editor
             rtTitle.anchorMin = new Vector2(0.5f, 1f);
             rtTitle.anchorMax = new Vector2(0.5f, 1f);
             rtTitle.pivot = new Vector2(0.5f, 1f);
-            rtTitle.anchoredPosition = new Vector2(0f, -25f);
-            rtTitle.sizeDelta = new Vector2(900f, 60f);
-            var txtTitle = titleGo.AddComponent<Text>();
-            txtTitle.text = "<b>ADVENTURE QUEST: SELECT CHAPTER</b>";
-            txtTitle.font = defaultFont;
-            txtTitle.fontSize = 32;
-            txtTitle.alignment = TextAnchor.MiddleCenter;
-            txtTitle.color = new Color(1f, 0.88f, 0.45f);
+            rtTitle.anchoredPosition = new Vector2(0f, -50f);
+            rtTitle.sizeDelta = new Vector2(720f, 130f);
+            var imgTitle = titleGo.AddComponent<Image>();
+            var sSelectLevelLogo = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/UI/ornate_golden_select_level_logo.png");
+            if (sSelectLevelLogo != null)
+            {
+                imgTitle.sprite = sSelectLevelLogo;
+                imgTitle.color = Color.white;
+                imgTitle.preserveAspect = true;
+            }
 
             GameObject subGo = new GameObject("Subtitle", typeof(RectTransform));
             subGo.transform.SetParent(cardContGo.transform, false);
-            var rtSub = subGo.GetComponent<RectTransform>();
-            rtSub.anchorMin = new Vector2(0.5f, 1f);
-            rtSub.anchorMax = new Vector2(0.5f, 1f);
-            rtSub.pivot = new Vector2(0.5f, 1f);
-            rtSub.anchoredPosition = new Vector2(0f, -80f);
-            rtSub.sizeDelta = new Vector2(900f, 35f);
-            var txtSub = subGo.AddComponent<Text>();
-            txtSub.text = "Read the illustrated story, scan the temple marker and solve the interactive challenges!";
-            txtSub.font = defaultFont;
-            txtSub.fontSize = 18;
-            txtSub.alignment = TextAnchor.MiddleCenter;
-            txtSub.color = new Color(0.9f, 0.85f, 0.75f);
+            subGo.SetActive(false);
 
             // Card 1: Lever
             GameObject cardLeverGo = new GameObject("Card_Lever", typeof(RectTransform));
@@ -891,23 +896,13 @@ namespace SecretOfLostTemple.Editor
             var rtCL = cardLeverGo.GetComponent<RectTransform>();
             rtCL.anchorMin = new Vector2(0.5f, 0.5f);
             rtCL.anchorMax = new Vector2(0.5f, 0.5f);
-            rtCL.anchoredPosition = new Vector2(-330f, -25f);
-            rtCL.sizeDelta = new Vector2(300f, 380f);
+            rtCL.anchoredPosition = new Vector2(-420f, -30f);
+            rtCL.sizeDelta = new Vector2(390f, 510f);
             var imgCL = cardLeverGo.AddComponent<Image>();
-            imgCL.color = new Color(0.35f, 0.25f, 0.15f, 1f);
+            var sLever = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/UI/card_lever_lvl1.png");
+            if (sLever != null) { imgCL.sprite = sLever; imgCL.color = Color.white; imgCL.preserveAspect = true; }
+            else { imgCL.color = new Color(0.35f, 0.25f, 0.15f, 1f); }
             var btnCL = cardLeverGo.AddComponent<Button>();
-
-            GameObject clTxtGo = new GameObject("Text", typeof(RectTransform));
-            clTxtGo.transform.SetParent(cardLeverGo.transform, false);
-            var txtCL = clTxtGo.AddComponent<Text>();
-            txtCL.text = "<b>CHAPTER 1</b>\n<color=#ffdd66><b>THE LEVER</b></color>\n\n<size=15><color=#a8d5ba>UNLOCKED</color>\nPages 1 - 9\nAR Marker Inside</size>";
-            txtCL.font = defaultFont;
-            txtCL.fontSize = 20;
-            txtCL.alignment = TextAnchor.MiddleCenter;
-            txtCL.color = Color.white;
-            txtCL.rectTransform.anchorMin = Vector2.zero;
-            txtCL.rectTransform.anchorMax = Vector2.one;
-            txtCL.rectTransform.sizeDelta = Vector2.zero;
 
             // Card 2: Pulley
             GameObject cardPulleyGo = new GameObject("Card_Pulley", typeof(RectTransform));
@@ -915,23 +910,13 @@ namespace SecretOfLostTemple.Editor
             var rtCP = cardPulleyGo.GetComponent<RectTransform>();
             rtCP.anchorMin = new Vector2(0.5f, 0.5f);
             rtCP.anchorMax = new Vector2(0.5f, 0.5f);
-            rtCP.anchoredPosition = new Vector2(0f, -25f);
-            rtCP.sizeDelta = new Vector2(300f, 380f);
+            rtCP.anchoredPosition = new Vector2(0f, -30f);
+            rtCP.sizeDelta = new Vector2(390f, 510f);
             var imgCP = cardPulleyGo.AddComponent<Image>();
-            imgCP.color = new Color(0.30f, 0.22f, 0.15f, 1f);
+            var sPulley = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/UI/card_pulley_lvl2.png");
+            if (sPulley != null) { imgCP.sprite = sPulley; imgCP.color = Color.white; imgCP.preserveAspect = true; }
+            else { imgCP.color = new Color(0.30f, 0.22f, 0.15f, 1f); }
             var btnCP = cardPulleyGo.AddComponent<Button>();
-
-            GameObject cpTxtGo = new GameObject("Text", typeof(RectTransform));
-            cpTxtGo.transform.SetParent(cardPulleyGo.transform, false);
-            var txtCP = cpTxtGo.AddComponent<Text>();
-            txtCP.text = "<b>CHAPTER 2</b>\n<color=#ffdd66><b>THE PULLEY</b></color>\n\n<size=15>Pages 10 - 13\nAR Marker Inside</size>";
-            txtCP.font = defaultFont;
-            txtCP.fontSize = 20;
-            txtCP.alignment = TextAnchor.MiddleCenter;
-            txtCP.color = Color.white;
-            txtCP.rectTransform.anchorMin = Vector2.zero;
-            txtCP.rectTransform.anchorMax = Vector2.one;
-            txtCP.rectTransform.sizeDelta = Vector2.zero;
 
             GameObject lockPGo = new GameObject("LockOverlay", typeof(RectTransform));
             lockPGo.transform.SetParent(cardPulleyGo.transform, false);
@@ -940,18 +925,10 @@ namespace SecretOfLostTemple.Editor
             rtLockP.anchorMax = Vector2.one;
             rtLockP.sizeDelta = Vector2.zero;
             var imgLockP = lockPGo.AddComponent<Image>();
-            imgLockP.color = new Color(0.1f, 0.08f, 0.06f, 0.88f);
-            GameObject lockTxtPGo = new GameObject("Text", typeof(RectTransform));
-            lockTxtPGo.transform.SetParent(lockPGo.transform, false);
-            var txtLockP = lockTxtPGo.AddComponent<Text>();
-            txtLockP.text = "<b>LOCKED</b>\n<size=14><color=#f5d77f>Complete Chapter 1\nLever Activity to Unlock!</color></size>";
-            txtLockP.font = defaultFont;
-            txtLockP.fontSize = 18;
-            txtLockP.alignment = TextAnchor.MiddleCenter;
-            txtLockP.color = Color.white;
-            txtLockP.rectTransform.anchorMin = Vector2.zero;
-            txtLockP.rectTransform.anchorMax = Vector2.one;
-            txtLockP.rectTransform.sizeDelta = Vector2.zero;
+            var sLock = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/UI/card_lock.png");
+            if (sLock != null) { imgLockP.sprite = sLock; imgLockP.color = Color.white; imgLockP.preserveAspect = true; }
+            else { imgLockP.color = new Color(0.1f, 0.08f, 0.06f, 0.88f); }
+            imgLockP.raycastTarget = false;
 
             // Card 3: Incline
             GameObject cardIncGo = new GameObject("Card_Incline", typeof(RectTransform));
@@ -959,23 +936,13 @@ namespace SecretOfLostTemple.Editor
             var rtCI = cardIncGo.GetComponent<RectTransform>();
             rtCI.anchorMin = new Vector2(0.5f, 0.5f);
             rtCI.anchorMax = new Vector2(0.5f, 0.5f);
-            rtCI.anchoredPosition = new Vector2(330f, -25f);
-            rtCI.sizeDelta = new Vector2(300f, 380f);
+            rtCI.anchoredPosition = new Vector2(420f, -30f);
+            rtCI.sizeDelta = new Vector2(390f, 510f);
             var imgCI = cardIncGo.AddComponent<Image>();
-            imgCI.color = new Color(0.30f, 0.22f, 0.15f, 1f);
+            var sIncline = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/UI/card_incline_lvl3.png");
+            if (sIncline != null) { imgCI.sprite = sIncline; imgCI.color = Color.white; imgCI.preserveAspect = true; }
+            else { imgCI.color = new Color(0.30f, 0.22f, 0.15f, 1f); }
             var btnCI = cardIncGo.AddComponent<Button>();
-
-            GameObject ciTxtGo = new GameObject("Text", typeof(RectTransform));
-            ciTxtGo.transform.SetParent(cardIncGo.transform, false);
-            var txtCI = ciTxtGo.AddComponent<Text>();
-            txtCI.text = "<b>CHAPTER 3</b>\n<color=#ffdd66><b>INCLINED PLANE</b></color>\n\n<size=15>Pages 14 - 18\nAR Marker Inside</size>";
-            txtCI.font = defaultFont;
-            txtCI.fontSize = 20;
-            txtCI.alignment = TextAnchor.MiddleCenter;
-            txtCI.color = Color.white;
-            txtCI.rectTransform.anchorMin = Vector2.zero;
-            txtCI.rectTransform.anchorMax = Vector2.one;
-            txtCI.rectTransform.sizeDelta = Vector2.zero;
 
             GameObject lockIGo = new GameObject("LockOverlay", typeof(RectTransform));
             lockIGo.transform.SetParent(cardIncGo.transform, false);
@@ -984,18 +951,9 @@ namespace SecretOfLostTemple.Editor
             rtLockI.anchorMax = Vector2.one;
             rtLockI.sizeDelta = Vector2.zero;
             var imgLockI = lockIGo.AddComponent<Image>();
-            imgLockI.color = new Color(0.1f, 0.08f, 0.06f, 0.88f);
-            GameObject lockTxtIGo = new GameObject("Text", typeof(RectTransform));
-            lockTxtIGo.transform.SetParent(lockIGo.transform, false);
-            var txtLockI = lockTxtIGo.AddComponent<Text>();
-            txtLockI.text = "<b>LOCKED</b>\n<size=14><color=#f5d77f>Complete Chapter 2\nPulley Activity to Unlock!</color></size>";
-            txtLockI.font = defaultFont;
-            txtLockI.fontSize = 18;
-            txtLockI.alignment = TextAnchor.MiddleCenter;
-            txtLockI.color = Color.white;
-            txtLockI.rectTransform.anchorMin = Vector2.zero;
-            txtLockI.rectTransform.anchorMax = Vector2.one;
-            txtLockI.rectTransform.sizeDelta = Vector2.zero;
+            if (sLock != null) { imgLockI.sprite = sLock; imgLockI.color = Color.white; imgLockI.preserveAspect = true; }
+            else { imgLockI.color = new Color(0.1f, 0.08f, 0.06f, 0.88f); }
+            imgLockI.raycastTarget = false;
 
             // Close Button
             GameObject closeQBtnGo = new GameObject("Btn_Close", typeof(RectTransform));
@@ -1003,8 +961,8 @@ namespace SecretOfLostTemple.Editor
             var rtCloseQ = closeQBtnGo.GetComponent<RectTransform>();
             rtCloseQ.anchorMin = new Vector2(1f, 1f);
             rtCloseQ.anchorMax = new Vector2(1f, 1f);
-            rtCloseQ.anchoredPosition = new Vector2(-25f, -25f);
-            rtCloseQ.sizeDelta = new Vector2(50f, 50f);
+            rtCloseQ.anchoredPosition = new Vector2(-45f, -40f);
+            rtCloseQ.sizeDelta = new Vector2(65f, 65f);
             var imgCloseQ = closeQBtnGo.AddComponent<Image>();
             imgCloseQ.color = new Color(0.8f, 0.2f, 0.2f, 1f);
             var btnCloseQ = closeQBtnGo.AddComponent<Button>();

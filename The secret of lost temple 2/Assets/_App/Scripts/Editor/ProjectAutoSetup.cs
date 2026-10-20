@@ -614,7 +614,7 @@ namespace SecretOfLostTemple.EditorScripts
             scaler.matchWidthOrHeight = 0.5f;
             canvasObj.AddComponent<GraphicRaycaster>();
 
-            // 4. Background Image (The new aesthetic adventure map background)
+            // 4. Background Video / Image (Tropical birds flying in jungle video loop)
             GameObject bgObj = new GameObject("MapBackground");
             bgObj.transform.SetParent(canvasObj.transform, false);
             RectTransform bgRect = bgObj.AddComponent<RectTransform>();
@@ -622,10 +622,36 @@ namespace SecretOfLostTemple.EditorScripts
             bgRect.anchorMax = Vector2.one;
             bgRect.sizeDelta = Vector2.zero;
             RawImage bgImg = bgObj.AddComponent<RawImage>();
-            Texture mapTexture = AssetDatabase.LoadAssetAtPath<Texture>("Assets/Art/UI/adventure_map_bg.jpg");
-            if (mapTexture != null) bgImg.texture = mapTexture;
             bgImg.color = Color.white;
             bgImg.raycastTarget = false;
+
+            VideoClip birdVideoClip = AssetDatabase.LoadAssetAtPath<VideoClip>("Assets/Art/Animations/Tropical_birds_flying_in_jungle_20261020001704.mp4");
+            string rtPath = "Assets/Art/Animations/HomeMap_VideoBg_RT.renderTexture";
+            RenderTexture bgRt = AssetDatabase.LoadAssetAtPath<RenderTexture>(rtPath);
+            if (bgRt == null)
+            {
+                bgRt = new RenderTexture(1280, 720, 0, RenderTextureFormat.ARGB32);
+                bgRt.name = "HomeMap_VideoBg_RT";
+                AssetDatabase.CreateAsset(bgRt, rtPath);
+            }
+            bgImg.texture = bgRt;
+
+            VideoPlayer bgVp = bgObj.AddComponent<VideoPlayer>();
+            bgVp.playOnAwake = true;
+            bgVp.isLooping = true;
+            bgVp.renderMode = VideoRenderMode.RenderTexture;
+            bgVp.targetTexture = bgRt;
+            bgVp.aspectRatio = VideoAspectRatio.FitOutside;
+            bgVp.clip = birdVideoClip;
+
+            AudioSource bgAudio = bgObj.AddComponent<AudioSource>();
+            bgAudio.playOnAwake = true;
+            bgAudio.loop = true;
+            bgAudio.volume = 0.35f;
+
+            bgVp.audioOutputMode = VideoAudioOutputMode.AudioSource;
+            bgVp.EnableAudioTrack(0, true);
+            bgVp.SetTargetAudioSource(0, bgAudio);
 
             // Load Sprites
             Sprite mayaSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/UI/profile_maya.png");
@@ -637,6 +663,7 @@ namespace SecretOfLostTemple.EditorScripts
             Sprite physics3DSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/UI/card_3d_physics.png");
             Sprite starCardSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/UI/card_star.png");
             Sprite rankCardSprite = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/UI/card_rank.png");
+            Font montserratFont = AssetDatabase.LoadAssetAtPath<Font>("Assets/Resources/MontserratFont.ttf") ?? Resources.Load<Font>("MontserratFont");
 
             // --- 5. TOP HUD BAR ---
             GameObject topHudObj = new GameObject("TopHUD");
@@ -670,7 +697,7 @@ namespace SecretOfLostTemple.EditorScripts
             if (mayaSprite != null) avatarImg.sprite = mayaSprite;
             avatarImg.preserveAspect = true;
 
-            // Player Name Text (Dark Carved Color)
+            // Player Name Text (Dark Carved Color, Montserrat-Bold, 32px)
             GameObject pNameObj = new GameObject("PlayerNameText");
             pNameObj.transform.SetParent(profileCard.transform, false);
             RectTransform pnRt = pNameObj.AddComponent<RectTransform>();
@@ -678,13 +705,14 @@ namespace SecretOfLostTemple.EditorScripts
             pnRt.anchorMax = new Vector2(0.96f, 0.92f);
             pnRt.sizeDelta = Vector2.zero;
             Text pnText = pNameObj.AddComponent<Text>();
+            if (montserratFont != null) pnText.font = montserratFont;
             pnText.text = "Explorer";
-            pnText.fontSize = 26;
+            pnText.fontSize = 32;
             pnText.fontStyle = FontStyle.Bold;
             pnText.color = new Color(0.16f, 0.10f, 0.06f, 1f);
             pnText.alignment = TextAnchor.MiddleLeft;
 
-            // Player Title Text (Dark Warm Brown)
+            // Player Title Text (Dark Warm Brown, Montserrat-Bold, 22px)
             GameObject pTitleObj = new GameObject("PlayerTitleText");
             pTitleObj.transform.SetParent(profileCard.transform, false);
             RectTransform ptRt = pTitleObj.AddComponent<RectTransform>();
@@ -692,8 +720,9 @@ namespace SecretOfLostTemple.EditorScripts
             ptRt.anchorMax = new Vector2(0.96f, 0.48f);
             ptRt.sizeDelta = Vector2.zero;
             Text ptText = pTitleObj.AddComponent<Text>();
+            if (montserratFont != null) ptText.font = montserratFont;
             ptText.text = "Lore Scholar • Lv. 1";
-            ptText.fontSize = 19;
+            ptText.fontSize = 22;
             ptText.fontStyle = FontStyle.Bold;
             ptText.color = new Color(0.30f, 0.20f, 0.14f, 0.95f);
             ptText.alignment = TextAnchor.MiddleLeft;
@@ -712,7 +741,7 @@ namespace SecretOfLostTemple.EditorScripts
             exitImg.preserveAspect = true;
 
             // --- 6. LEFT PROGRESS BADGES ---
-            // Star Count Card
+            // Star Count Card (Montserrat-Bold, 32px)
             GameObject starCardObj = new GameObject("Card_StarCount");
             starCardObj.transform.SetParent(canvasObj.transform, false);
             RectTransform starRt = starCardObj.AddComponent<RectTransform>();
@@ -732,13 +761,14 @@ namespace SecretOfLostTemple.EditorScripts
             starTxtRt.anchorMax = new Vector2(0.95f, 0.30f);
             starTxtRt.sizeDelta = Vector2.zero;
             Text starValText = starTxtObj.AddComponent<Text>();
+            if (montserratFont != null) starValText.font = montserratFont;
             starValText.text = "24 Stars";
-            starValText.fontSize = 24;
+            starValText.fontSize = 32;
             starValText.fontStyle = FontStyle.Bold;
             starValText.color = new Color(1f, 0.94f, 0.45f, 1f);
             starValText.alignment = TextAnchor.MiddleCenter;
 
-            // Player Rank Card
+            // Player Rank Card (Montserrat-Bold, 30px)
             GameObject rankCardObj = new GameObject("Card_PlayerRank");
             rankCardObj.transform.SetParent(canvasObj.transform, false);
             RectTransform rankRt = rankCardObj.AddComponent<RectTransform>();
@@ -758,13 +788,14 @@ namespace SecretOfLostTemple.EditorScripts
             rankTxtRt.anchorMax = new Vector2(0.95f, 0.30f);
             rankTxtRt.sizeDelta = Vector2.zero;
             Text rankValText = rankTxtObj.AddComponent<Text>();
+            if (montserratFont != null) rankValText.font = montserratFont;
             rankValText.text = "#1 Scholar";
-            rankValText.fontSize = 22;
+            rankValText.fontSize = 30;
             rankValText.fontStyle = FontStyle.Bold;
             rankValText.color = new Color(1f, 0.88f, 0.45f, 1f);
             rankValText.alignment = TextAnchor.MiddleCenter;
 
-            // --- 7. QUEST BUTTON (Center Map Expedition) ---
+            // --- 7. QUEST BUTTON (Center Map Expedition, 3D Golden Carved Text) ---
             GameObject questBtnObj = new GameObject("Button_QuestStart");
             questBtnObj.transform.SetParent(canvasObj.transform, false);
             RectTransform qRt = questBtnObj.AddComponent<RectTransform>();
@@ -777,8 +808,9 @@ namespace SecretOfLostTemple.EditorScripts
             if (questBtnSprite != null) questImg.sprite = questBtnSprite;
             questImg.color = Color.white;
             questImg.preserveAspect = true;
+            AddCarvedGoldenButtonLabel(questBtnObj, "START EXPEDITION", 38, montserratFont, new Vector2(0.05f, 0.03f), new Vector2(0.95f, 0.28f));
 
-            // --- 8. RIGHT SECONDARY CARDS ---
+            // --- 8. RIGHT SECONDARY CARDS (3D Golden Carved Text) ---
             // Sandbox Mode Card
             GameObject sbBtnObj = new GameObject("Button_SandboxMode");
             sbBtnObj.transform.SetParent(canvasObj.transform, false);
@@ -792,6 +824,7 @@ namespace SecretOfLostTemple.EditorScripts
             if (sandboxSprite != null) sbImg.sprite = sandboxSprite;
             sbImg.color = Color.white;
             sbImg.preserveAspect = true;
+            AddCarvedGoldenButtonLabel(sbBtnObj, "FREE PRACTICE", 36, montserratFont, new Vector2(0.05f, 0.03f), new Vector2(0.95f, 0.28f));
 
             // 3D Physics Mode Card
             GameObject physBtnObj = new GameObject("Button_3DPhysicsMode");
@@ -806,8 +839,9 @@ namespace SecretOfLostTemple.EditorScripts
             if (physics3DSprite != null) physImg.sprite = physics3DSprite;
             physImg.color = Color.white;
             physImg.preserveAspect = true;
+            AddCarvedGoldenButtonLabel(physBtnObj, "PHYSICS LAB", 36, montserratFont, new Vector2(0.05f, 0.03f), new Vector2(0.95f, 0.28f));
 
-            // --- 9. STATUS TEXT ---
+            // --- 9. STATUS TEXT (Montserrat-Bold, 28px, 3D Outline & Shadow) ---
             GameObject statusTxtObj = new GameObject("StatusText");
             statusTxtObj.transform.SetParent(canvasObj.transform, false);
             RectTransform stRt = statusTxtObj.AddComponent<RectTransform>();
@@ -815,11 +849,20 @@ namespace SecretOfLostTemple.EditorScripts
             stRt.anchorMax = new Vector2(0.85f, 0.09f);
             stRt.sizeDelta = Vector2.zero;
             Text statusText = statusTxtObj.AddComponent<Text>();
-            statusText.text = "Tap Quest, Sandbox, or 3D Physics Lab to explore!";
-            statusText.fontSize = 22;
+            if (montserratFont != null) statusText.font = montserratFont;
+            statusText.text = "Tap Start Expedition, Free Practice, or Physics Lab to explore!";
+            statusText.fontSize = 28;
             statusText.fontStyle = FontStyle.Bold;
-            statusText.color = new Color(1f, 0.95f, 0.8f, 1f);
+            statusText.color = new Color(1f, 0.949f, 0.659f, 1f); // #FFF2A8 Rich Warm Gold
             statusText.alignment = TextAnchor.MiddleCenter;
+
+            var stOutline = statusTxtObj.AddComponent<Outline>();
+            stOutline.effectColor = new Color(0.165f, 0.086f, 0.031f, 1f); // #2A1608 Dark carved border
+            stOutline.effectDistance = new Vector2(2f, -2f);
+
+            var stShadow = statusTxtObj.AddComponent<Shadow>();
+            stShadow.effectColor = new Color(0.043f, 0.020f, 0.008f, 0.85f); // #0B0502 @ 85% alpha
+            stShadow.effectDistance = new Vector2(3f, -4f);
 
             // 10. Attach HomeMapController
             GameObject ctrlObj = new GameObject("HomeMapController");
@@ -839,6 +882,9 @@ namespace SecretOfLostTemple.EditorScripts
             so.FindProperty("starCountText").objectReferenceValue = starValText;
             so.FindProperty("rankTierText").objectReferenceValue = rankValText;
             so.FindProperty("statusInfoText").objectReferenceValue = statusText;
+            so.FindProperty("backgroundVideoPlayer").objectReferenceValue = bgVp;
+            so.FindProperty("backgroundRawImage").objectReferenceValue = bgImg;
+            so.FindProperty("backgroundVideoClip").objectReferenceValue = birdVideoClip;
             so.ApplyModifiedProperties();
 
             // Set OnClick persistent listeners directly on buttons
@@ -848,6 +894,38 @@ namespace SecretOfLostTemple.EditorScripts
             UnityEditor.Events.UnityEventTools.AddPersistentListener(exitBtn.onClick, mapCtrl.OnLogoutClicked);
 
             EditorSceneManager.SaveScene(scene, scenePath);
+        }
+
+        private static Text AddCarvedGoldenButtonLabel(GameObject buttonObj, string label, int fontSize, Font font, Vector2 anchorMin, Vector2 anchorMax)
+        {
+            GameObject txtObj = new GameObject("LabelText");
+            txtObj.transform.SetParent(buttonObj.transform, false);
+            RectTransform rt = txtObj.AddComponent<RectTransform>();
+            rt.anchorMin = anchorMin;
+            rt.anchorMax = anchorMax;
+            rt.offsetMin = Vector2.zero;
+            rt.offsetMax = Vector2.zero;
+
+            Text txt = txtObj.AddComponent<Text>();
+            if (font != null) txt.font = font;
+            txt.text = label;
+            txt.fontSize = fontSize;
+            txt.fontStyle = FontStyle.Bold;
+            txt.alignment = TextAnchor.MiddleCenter;
+            txt.color = new Color(1f, 0.949f, 0.659f, 1f); // #FFF2A8 Rich Warm Gold
+            txt.raycastTarget = false;
+
+            // Outline: Color #2A1608 (Dark carved border), Effect Distance (2f, -2f)
+            var outline = txtObj.AddComponent<Outline>();
+            outline.effectColor = new Color(0.165f, 0.086f, 0.031f, 1f);
+            outline.effectDistance = new Vector2(2f, -2f);
+
+            // Shadow: Color #0B0502 with 85% alpha (Deep 3D cast shadow), Effect Distance (4f, -5f)
+            var shadow = txtObj.AddComponent<Shadow>();
+            shadow.effectColor = new Color(0.043f, 0.020f, 0.008f, 0.85f);
+            shadow.effectDistance = new Vector2(4f, -5f);
+
+            return txt;
         }
 
         private static void CreateMainARScene(string scenePath)

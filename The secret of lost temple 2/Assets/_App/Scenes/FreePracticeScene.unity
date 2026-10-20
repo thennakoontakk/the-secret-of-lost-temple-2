@@ -26,7 +26,7 @@ RenderSettings:
   m_AmbientIntensity: 1
   m_AmbientMode: 0
   m_SubtractiveShadowColor: {r: 0.42, g: 0.478, b: 0.627, a: 1}
-  m_SkyboxMaterial: {fileID: 10304, guid: 0000000000000000f000000000000000, type: 0}
+  m_SkyboxMaterial: {fileID: 2100000, guid: af724451d342a50448717fae17633ba6, type: 2}
   m_HaloStrength: 0.5
   m_FlareStrength: 1
   m_FlareFadeSpeed: 3
@@ -775,7 +775,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "\U0001F3D4\uFE0F 1. FULCRUM (\u0D86\u0DB0\u0DCF\u0DBB\u0D9A\u0DBA)"
+  m_Text: "\U0001F3D4\uFE0F 1. FULCRUM"
 --- !u!222 &127400642
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -2044,7 +2044,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "\u26A1 4. EFFORT POINT (\u0D86\u0DBA\u0DCF\u0DC3\u0DBA)"
+  m_Text: "\u26A1 4. EFFORT POINT"
 --- !u!222 &295131542
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -2352,7 +2352,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "\U0001FAA8 3. LOAD STONE (\u0DB7\u0DCF\u0DBB\u0DBA)"
+  m_Text: "\U0001FAA8 3. LOAD STONE"
 --- !u!222 &395259486
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -2633,7 +2633,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "\U0001F3D4\uFE0F FULCRUM (\u0D86\u0DB0\u0DCF\u0DBB\u0D9A \u0DBD\u0D9A\u0DCA\u0DC2\u0DCA\u200D\u0DBA\u0DBA)"
+  m_Text: "\U0001F3D4\uFE0F FULCRUM (PIVOT)"
 --- !u!222 &407792952
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -2659,7 +2659,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &418046239
 RectTransform:
   m_ObjectHideFlags: 0
@@ -2712,7 +2712,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: <b>LEVER <size=30><color=#ffdd66>AR</color></size></b>
+  m_Text: 
 --- !u!222 &418046241
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -2911,7 +2911,7 @@ MonoBehaviour:
     m_HorizontalOverflow: 0
     m_VerticalOverflow: 0
     m_LineSpacing: 1
-  m_Text: "\U0001FAB5 2. LEVER BEAM (\u0DAF\u0DAB\u0DCA\u0DA9)"
+  m_Text: "\U0001FAB5 2. LEVER BEAM"
 --- !u!222 &463646273
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -4465,7 +4465,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &777614758
 Transform:
   m_ObjectHideFlags: 0
@@ -4489,7 +4489,7 @@ LineRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 777614757}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -6147,7 +6147,7 @@ Camera:
   m_GameObject: {fileID: 1065237251}
   m_Enabled: 1
   serializedVersion: 2
-  m_ClearFlags: 2
+  m_ClearFlags: 1
   m_BackGroundColor: {r: 0.08, g: 0.12, b: 0.1, a: 1}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
@@ -6437,7 +6437,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1093147819
 Transform:
   m_ObjectHideFlags: 0
@@ -6461,7 +6461,7 @@ LineRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1093147818}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -6910,7 +6910,7 @@ MonoBehaviour:
     m_VerticalOverflow: 0
     m_LineSpacing: 1
   m_Text: "<b>\U0001F504 360\xB0 FORCES & MOTION</b>\n<size=17><color=#ffe066>Vector
-    Arrows & Rotation (\u0DB6\u0DBD \u0DC3\u0DC4 \u0DB7\u0DCA\u200D\u0DBB\u0DB8\u0DAB\u0DBA)</color></size>"
+    Arrows & Rotation</color></size>"
 --- !u!222 &1171927225
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -8105,7 +8105,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 460, y: 95}
+  m_SizeDelta: {x: 450, y: 150}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1420597872
 MonoBehaviour:
@@ -8120,16 +8120,16 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 0.38, g: 0.22, b: 0.1, a: 0.96}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 0}
+  m_Sprite: {fileID: 21300000, guid: f16eb3672cd744b18e816cbeac0327f0, type: 3}
   m_Type: 0
-  m_PreserveAspect: 0
+  m_PreserveAspect: 1
   m_FillCenter: 1
   m_FillMethod: 4
   m_FillAmount: 1
@@ -8839,7 +8839,7 @@ Transform:
   m_GameObject: {fileID: 1561347963}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.28, z: 0}
+  m_LocalPosition: {x: 0, y: 0.42, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -9456,7 +9456,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &1644672485
 Transform:
   m_ObjectHideFlags: 0
@@ -9480,7 +9480,7 @@ LineRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1644672484}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -9826,6 +9826,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1687459953}
   - component: {fileID: 1687459954}
+  - component: {fileID: 1687459955}
   m_Layer: 0
   m_Name: SimpleMachine_Lever
   m_TagString: Untagged
@@ -9871,6 +9872,31 @@ MonoBehaviour:
   successParticles: {fileID: 0}
   emissionPulseSpeed: 2
   emissionColor: {r: 1, g: 0.84, b: 0, a: 1}
+--- !u!114 &1687459955
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1687459952}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6733b31f4abab074983ee6481502459f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  modelRoot: {fileID: 0}
+  beamPivot: {fileID: 0}
+  autoOrbitInViewOnly: 1
+  autoOrbitSpeed: 18
+  dragRotateSpeed: 0.35
+  orbitDamping: 5
+  minScale: 0.4
+  maxScale: 2.5
+  pinchScaleSpeed: 0.005
+  scrollScaleSpeed: 0.15
+  scaleSmoothTime: 0.12
+  maxTiltAngle: 14
+  tiltSensitivity: 0.08
 --- !u!1 &1707299408
 GameObject:
   m_ObjectHideFlags: 0
@@ -10096,7 +10122,7 @@ MonoBehaviour:
     m_VerticalOverflow: 0
     m_LineSpacing: 1
   m_Text: "<b>\U0001F50D PARTS & ANATOMY</b>\n<size=17><color=#80e5ff>Exploded View
-    & Lore (\u0D9A\u0DDC\u0DA7\u0DC3\u0DCA \u0DC3\u0DC4 \u0DC0\u0DD2\u0DC3\u0DCA\u0DAD\u0DBB)</color></size>"
+    & Lore</color></size>"
 --- !u!222 &1719778399
 CanvasRenderer:
   m_ObjectHideFlags: 0
@@ -10495,7 +10521,7 @@ Transform:
   m_GameObject: {fileID: 1763423815}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -0.4, z: 1.2}
+  m_LocalPosition: {x: 0, y: -0.26, z: 1.2}
   m_LocalScale: {x: 2.5, y: 0.1, z: 2.5}
   m_ConstrainProportionsScale: 0
   m_Children: []

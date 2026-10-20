@@ -32,6 +32,12 @@ namespace SecretOfLostTemple.Home
         [SerializeField] private Button questButton;
         [SerializeField] private Button logoutButton;
 
+        [Header("Audio Settings")]
+        [SerializeField] private Button musicToggleButton;
+        [SerializeField] private Image musicToggleIcon;
+        [SerializeField] private Sprite musicOnSprite;
+        [SerializeField] private Sprite musicMutedSprite;
+
         [Header("Secondary Modes (Right Cards)")]
         [SerializeField] private Button sandboxButton;
         [SerializeField] private Button physics3DButton;
@@ -83,6 +89,11 @@ namespace SecretOfLostTemple.Home
         [SerializeField] private AudioClip buttonClickClip;
         [SerializeField] private AudioClip startQuestClip;
 
+        [Header("Background Video")]
+        [SerializeField] private UnityEngine.Video.VideoPlayer backgroundVideoPlayer;
+        [SerializeField] private RawImage backgroundRawImage;
+        [SerializeField] private UnityEngine.Video.VideoClip backgroundVideoClip;
+
         private void Awake()
         {
             // Ensure EventSystem exists
@@ -100,13 +111,17 @@ namespace SecretOfLostTemple.Home
             }
         }
 
+        private void OnEnable()
+        {
+            UpdateMusicButtonUI();
+        }
+
         private void Start()
         {
             InitializePlayerProfile();
             SetupButtonListeners();
             SetupButtonLabels();
-            foreach (var button in new[] { selectPulleyQuestButton, selectInclineQuestButton, selectPulleySandboxButton, selectInclineSandboxButton })
-                ConfigureLockedChapter(button);
+            RefreshChapterCards();
             StartCoroutine(PulseQuestButton());
 
             if (profileModalPanel != null)
@@ -127,6 +142,72 @@ namespace SecretOfLostTemple.Home
             // Returning to the map must stay here. The saved mode describes the
             // previous visit, not a request to launch another quest automatically.
             if (storyBookViewer != null) storyBookViewer.ResumeAfterActivity();
+
+            EnsureQuestModalBackgroundApplied();
+            InitializeBackgroundVideo();
+            EnsureMusicMuteButtonBuilt();
+            UpdateMusicButtonUI();
+        }
+
+        private void InitializeBackgroundVideo()
+        {
+            if (backgroundVideoPlayer == null)
+            {
+                var bg = GameObject.Find("MapBackground");
+                if (bg != null)
+                {
+                    backgroundVideoPlayer = bg.GetComponent<UnityEngine.Video.VideoPlayer>();
+                    if (backgroundRawImage == null) backgroundRawImage = bg.GetComponent<RawImage>();
+                }
+            }
+
+#if UNITY_EDITOR
+            if (backgroundVideoClip == null)
+            {
+                backgroundVideoClip = UnityEditor.AssetDatabase.LoadAssetAtPath<UnityEngine.Video.VideoClip>("Assets/Art/Animations/Tropical_birds_flying_in_jungle_20261020001704.mp4");
+            }
+#endif
+
+            if (backgroundVideoPlayer != null)
+            {
+                backgroundVideoPlayer.isLooping = true;
+                backgroundVideoPlayer.playOnAwake = true;
+                backgroundVideoPlayer.aspectRatio = UnityEngine.Video.VideoAspectRatio.FitOutside;
+                backgroundVideoPlayer.renderMode = UnityEngine.Video.VideoRenderMode.RenderTexture;
+
+                if (backgroundVideoClip != null)
+                {
+                    backgroundVideoPlayer.clip = backgroundVideoClip;
+                }
+
+                if (backgroundVideoPlayer.targetTexture != null && backgroundRawImage != null)
+                {
+                    backgroundRawImage.texture = backgroundVideoPlayer.targetTexture;
+                }
+                else if (backgroundVideoPlayer.targetTexture == null && backgroundRawImage != null)
+                {
+                    RenderTexture rt = new RenderTexture(1920, 1080, 0, RenderTextureFormat.ARGB32);
+                    rt.name = "HomeMap_Runtime_RT";
+                    backgroundVideoPlayer.targetTexture = rt;
+                    backgroundRawImage.texture = rt;
+                }
+
+                var audioSrc = backgroundVideoPlayer.GetComponent<AudioSource>();
+                if (audioSrc != null)
+                {
+                    audioSrc.playOnAwake = true;
+                    audioSrc.loop = true;
+                    audioSrc.volume = 0.35f;
+                    backgroundVideoPlayer.audioOutputMode = UnityEngine.Video.VideoAudioOutputMode.AudioSource;
+                    backgroundVideoPlayer.EnableAudioTrack(0, true);
+                    backgroundVideoPlayer.SetTargetAudioSource(0, audioSrc);
+                }
+
+                if (!backgroundVideoPlayer.isPlaying)
+                {
+                    backgroundVideoPlayer.Play();
+                }
+            }
         }
 
         private void InitializePlayerProfile()
@@ -160,17 +241,17 @@ namespace SecretOfLostTemple.Home
                 tierInt = (int)SecretOfLostTemple.Adaptive.AdaptiveDifficultyEngine.Instance.CurrentTier;
             }
 
-            string actualRankTier = "🎓 Apprentice";
+            string actualRankTier = "🎒 Explorer";
             switch (tierInt)
             {
                 case 1:
-                    actualRankTier = "🎓 Apprentice";
+                    actualRankTier = "🎒 Explorer";
                     break;
                 case 2:
-                    actualRankTier = "⚔️ Scholar";
+                    actualRankTier = "⚡ Expert";
                     break;
                 case 3:
-                    actualRankTier = "👑 Master";
+                    actualRankTier = "🏆 Champion";
                     break;
             }
 
@@ -181,23 +262,125 @@ namespace SecretOfLostTemple.Home
 
         private void SetupButtonLabels()
         {
-            ApplyButtonLabel(questButton, "START EXPEDITION");
-            ApplyButtonLabel(sandboxButton, "FREE PRACTICE");
-            ApplyButtonLabel(physics3DButton, "PHYSICS LAB");
-            ApplyButtonLabel(researchDashboardButton, "RESEARCHER PANEL");
+            Font montserrat = Resources.Load<Font>("MontserratFont");
+
+            ApplyCarvedGoldenButtonLabel(questButton, "START EXPEDITION", 38, montserrat);
+            ApplyCarvedGoldenButtonLabel(sandboxButton, "FREE PRACTICE", 36, montserrat);
+            ApplyCarvedGoldenButtonLabel(physics3DButton, "PHYSICS LAB", 36, montserrat);
+            ApplyCarvedGoldenButtonLabel(researchDashboardButton, "RESEARCHER PANEL", 24, montserrat);
+
+            // Apply to Chapter buttons (e.g. Lever AR)
+            if (selectLeverQuestButton != null)
+                ApplyCarvedGoldenButtonLabel(selectLeverQuestButton, "LEVER AR", 34, montserrat);
+            if (selectLeverSandboxButton != null)
+                ApplyCarvedGoldenButtonLabel(selectLeverSandboxButton, "LEVER AR", 34, montserrat);
+
+            // Top HUD Profile Card
+            if (playerNameText != null)
+            {
+                if (montserrat != null) playerNameText.font = montserrat;
+                playerNameText.fontSize = 32; // 30-34px bold
+                playerNameText.fontStyle = FontStyle.Bold;
+            }
+
+            if (playerTitleText != null)
+            {
+                if (montserrat != null) playerTitleText.font = montserrat;
+                playerTitleText.fontSize = 22; // bold
+                playerTitleText.fontStyle = FontStyle.Bold;
+            }
+
+            // Star & Rank Badges
+            if (starCountText != null)
+            {
+                if (montserrat != null) starCountText.font = montserrat;
+                starCountText.fontSize = 32; // 30-34px bold
+                starCountText.fontStyle = FontStyle.Bold;
+            }
+
+            if (rankTierText != null)
+            {
+                if (montserrat != null) rankTierText.font = montserrat;
+                rankTierText.fontSize = 30; // 30-34px bold
+                rankTierText.fontStyle = FontStyle.Bold;
+            }
+
+            // Status text / instructions (28-32px bold)
+            if (statusInfoText != null)
+            {
+                if (montserrat != null) statusInfoText.font = montserrat;
+                statusInfoText.fontSize = 28;
+                statusInfoText.fontStyle = FontStyle.Bold;
+                statusInfoText.color = new Color(1f, 0.949f, 0.659f, 1f);
+                var stOutline = statusInfoText.GetComponent<Outline>() ?? statusInfoText.gameObject.AddComponent<Outline>();
+                stOutline.effectColor = new Color(0.165f, 0.086f, 0.031f, 1f);
+                stOutline.effectDistance = new Vector2(2f, -2f);
+                var stShadow = statusInfoText.GetComponent<Shadow>() ?? statusInfoText.gameObject.AddComponent<Shadow>();
+                stShadow.effectColor = new Color(0.043f, 0.020f, 0.008f, 0.85f);
+                stShadow.effectDistance = new Vector2(3f, -4f);
+            }
+
+            // Apply Montserrat & 3D Carved effect to Modal Headers
+            ApplyModalHeaderTypography(questModalPanel, montserrat);
+            ApplyModalHeaderTypography(profileModalPanel, montserrat);
+            ApplyModalHeaderTypography(sandboxModalPanel, montserrat);
+            ApplyModalHeaderTypography(dashboardModalPanel, montserrat);
         }
 
-        private void ApplyButtonLabel(Button button, string label)
+        private void ApplyModalHeaderTypography(GameObject modalPanel, Font montserrat)
+        {
+            if (modalPanel == null) return;
+            var texts = modalPanel.GetComponentsInChildren<Text>(true);
+            foreach (var t in texts)
+            {
+                if (t.gameObject.name.IndexOf("Title", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
+                    t.gameObject.name.IndexOf("Header", System.StringComparison.OrdinalIgnoreCase) >= 0)
+                {
+                    ApplyGolden3DCarvedEffect(t, 34, montserrat);
+                }
+            }
+        }
+
+        public static void ApplyGolden3DCarvedEffect(Text text, int fontSize, Font customFont)
+        {
+            if (text == null) return;
+            if (customFont != null) text.font = customFont;
+            text.fontSize = fontSize;
+            text.fontStyle = FontStyle.Bold;
+            text.color = new Color(1f, 0.949f, 0.659f, 1f); // #FFF2A8 Rich Warm Gold
+
+            // Attach Outline: Color #2A1608 (Dark carved border), Effect Distance (2f, -2f)
+            var outline = text.GetComponent<Outline>();
+            if (outline == null) outline = text.gameObject.AddComponent<Outline>();
+            outline.effectColor = new Color(0.165f, 0.086f, 0.031f, 1f);
+            outline.effectDistance = new Vector2(2f, -2f);
+
+            // Attach Shadow: Color #0B0502 with 85% alpha (Deep 3D cast shadow), Effect Distance (4f, -5f)
+            var shadow = text.GetComponent<Shadow>();
+            if (shadow == null) shadow = text.gameObject.AddComponent<Shadow>();
+            shadow.effectColor = new Color(0.043f, 0.020f, 0.008f, 0.85f);
+            shadow.effectDistance = new Vector2(4f, -5f);
+        }
+
+        private void ApplyCarvedGoldenButtonLabel(Button button, string label, int fontSize, Font customFont)
         {
             if (button == null) return;
-            // Graphic-only buttons already contain their carved titles.
             var text = button.GetComponentInChildren<Text>(true);
-            if (text == null) return;
+            if (text == null)
+            {
+                var labelObj = new GameObject("LabelText", typeof(RectTransform), typeof(Text));
+                labelObj.transform.SetParent(button.transform, false);
+                var rt = (RectTransform)labelObj.transform;
+                rt.anchorMin = new Vector2(0.05f, 0.03f);
+                rt.anchorMax = new Vector2(0.95f, 0.28f);
+                rt.offsetMin = Vector2.zero;
+                rt.offsetMax = Vector2.zero;
+                text = labelObj.GetComponent<Text>();
+            }
             text.text = label;
-            text.color = new Color(1f, .94f, .65f);
-            text.fontStyle = FontStyle.Bold;
             text.alignment = TextAnchor.MiddleCenter;
             text.raycastTarget = false;
+            ApplyGolden3DCarvedEffect(text, fontSize, customFont);
         }
 
         private void ShowLockedChapter()
@@ -205,58 +388,162 @@ namespace SecretOfLostTemple.Home
             SetStatus("Complete Chapter 1: The Sacred Lever to unlock this temple chamber!");
         }
 
-        private void ConfigureLockedChapter(Button button)
+        private void EnsureChapterCardsArtworkApplied()
+        {
+            Sprite leverSprite = Resources.Load<Sprite>("card_lever_lvl1");
+            Sprite pulleySprite = Resources.Load<Sprite>("card_pulley_lvl2");
+            Sprite inclineSprite = Resources.Load<Sprite>("card_incline_lvl3");
+
+#if UNITY_EDITOR
+            if (leverSprite == null) leverSprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/UI/card_lever_lvl1.png");
+            if (pulleySprite == null) pulleySprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/UI/card_pulley_lvl2.png");
+            if (inclineSprite == null) inclineSprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/UI/card_incline_lvl3.png");
+#endif
+
+            ApplyCardSpriteAndCleanText(selectLeverQuestButton, leverSprite);
+            ApplyCardSpriteAndCleanText(selectPulleyQuestButton, pulleySprite);
+            ApplyCardSpriteAndCleanText(selectInclineQuestButton, inclineSprite);
+        }
+
+        private void ApplyCardSpriteAndCleanText(Button cardButton, Sprite sprite)
+        {
+            if (cardButton == null) return;
+            if (sprite != null)
+            {
+                var img = cardButton.GetComponent<Image>();
+                if (img != null)
+                {
+                    img.sprite = sprite;
+                    img.color = Color.white;
+                    img.preserveAspect = true;
+                }
+            }
+
+            // Hide old procedural text so the custom level artwork shows cleanly
+            var txt = cardButton.transform.Find("Text")?.GetComponent<Text>();
+            if (txt != null)
+            {
+                txt.text = "";
+                txt.gameObject.SetActive(false);
+            }
+        }
+
+        private void ConfigureLockedChapter(Button button, bool isLocked, string hintMessage, UnityEngine.Events.UnityAction onUnlockedClick = null)
         {
             if (button == null) return;
             button.gameObject.SetActive(true);
-            button.interactable = false;
-            var overlay = button.transform.Find("FutureChapterLock");
-            if (overlay != null) return;
-            var go = new GameObject("FutureChapterLock", typeof(RectTransform), typeof(Image), typeof(Button));
-            go.transform.SetParent(button.transform, false);
-            var rect = (RectTransform)go.transform;
-            rect.anchorMin = Vector2.zero; rect.anchorMax = Vector2.one;
-            rect.offsetMin = rect.offsetMax = Vector2.zero;
-            go.GetComponent<Image>().color = new Color(0, 0, 0, .25f);
-            go.GetComponent<Button>().onClick.AddListener(ShowLockedChapter);
-            // Draw a small padlock without depending on emoji support in the font.
-            AddLockPart(go.transform, new Vector2(0, -20), new Vector2(22, 16));
-            AddLockPart(go.transform, new Vector2(-7, -9), new Vector2(4, 12));
-            AddLockPart(go.transform, new Vector2(7, -9), new Vector2(4, 12));
-            AddLockPart(go.transform, new Vector2(0, -3), new Vector2(18, 4));
-            var label = new GameObject("LockLabel", typeof(RectTransform), typeof(Text));
-            label.transform.SetParent(go.transform, false);
-            var lr = (RectTransform)label.transform;
-            lr.anchorMin = new Vector2(0, 0); lr.anchorMax = new Vector2(1, .3f);
-            lr.offsetMin = lr.offsetMax = Vector2.zero;
-            var text = label.GetComponent<Text>();
-            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-            text.text = "LOCKED - FUTURE CHAPTER"; text.fontSize = 16;
-            text.alignment = TextAnchor.MiddleCenter; text.color = new Color(1, .9f, .6f);
-            text.raycastTarget = false;
-        }
 
-        private static void AddLockPart(Transform parent, Vector2 position, Vector2 size)
-        {
-            var part = new GameObject("Padlock", typeof(RectTransform), typeof(Image));
-            part.transform.SetParent(parent, false);
-            var rect = (RectTransform)part.transform;
-            rect.anchorMin = rect.anchorMax = new Vector2(.9f, .9f);
-            rect.anchoredPosition = position; rect.sizeDelta = size;
-            var image = part.GetComponent<Image>();
-            image.color = new Color(.9f, .75f, .4f); image.raycastTarget = false;
+            // Clean up any old procedural lock boxes
+            var oldProcLock = button.transform.Find("FutureChapterLock");
+            if (oldProcLock != null)
+            {
+                if (Application.isPlaying) Destroy(oldProcLock.gameObject);
+                else DestroyImmediate(oldProcLock.gameObject);
+            }
+
+            // Find or create LockOverlay
+            var overlayTr = button.transform.Find("LockOverlay");
+            GameObject overlayGo;
+            if (overlayTr == null)
+            {
+                overlayGo = new GameObject("LockOverlay", typeof(RectTransform), typeof(Image));
+                overlayGo.transform.SetParent(button.transform, false);
+                var rt = (RectTransform)overlayGo.transform;
+                rt.anchorMin = Vector2.zero;
+                rt.anchorMax = Vector2.one;
+                rt.offsetMin = rt.offsetMax = Vector2.zero;
+            }
+            else
+            {
+                overlayGo = overlayTr.gameObject;
+            }
+
+            // Hide any old child texts or crude padlock children
+            for (int i = 0; i < overlayGo.transform.childCount; i++)
+            {
+                overlayGo.transform.GetChild(i).gameObject.SetActive(false);
+            }
+
+            Sprite lockSprite = Resources.Load<Sprite>("card_lock");
+#if UNITY_EDITOR
+            if (lockSprite == null) lockSprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/UI/card_lock.png");
+#endif
+            var img = overlayGo.GetComponent<Image>() ?? overlayGo.AddComponent<Image>();
+            if (lockSprite != null)
+            {
+                img.sprite = lockSprite;
+                img.color = Color.white;
+                img.preserveAspect = true;
+            }
+            img.raycastTarget = false;
+
+            if (isLocked)
+            {
+                overlayGo.SetActive(true);
+                button.interactable = true;
+                button.onClick.RemoveAllListeners();
+                button.onClick.AddListener(() => SetStatus(hintMessage));
+            }
+            else
+            {
+                overlayGo.SetActive(false);
+                button.interactable = true;
+                button.onClick.RemoveAllListeners();
+                if (onUnlockedClick != null)
+                {
+                    button.onClick.AddListener(onUnlockedClick);
+                }
+            }
         }
 
         private void RefreshChapterCards()
         {
-            foreach (var button in new[] { selectPulleyQuestButton, selectInclineQuestButton, selectPulleySandboxButton, selectInclineSandboxButton })
-                ConfigureLockedChapter(button);
-            foreach (var button in new[] { selectLeverQuestButton, selectLeverSandboxButton })
-                if (button != null) { button.gameObject.SetActive(true); button.interactable = true; }
-            foreach (var overlay in new[] { pulleyLockOverlay, inclineLockOverlay })
-                if (overlay != null) foreach (var graphic in overlay.GetComponentsInChildren<Graphic>(true)) graphic.raycastTarget = false;
-            if (pulleyLockOverlay != null) pulleyLockOverlay.SetActive(true);
-            if (inclineLockOverlay != null) inclineLockOverlay.SetActive(true);
+            EnsureChapterCardsArtworkApplied();
+
+            bool isLeverChallengeDone = PlayerPrefs.GetInt("LostTemple_Lever_Challenge_Completed", 0) == 1;
+            bool isPulleyChallengeDone = PlayerPrefs.GetInt("LostTemple_Pulley_Challenge_Completed", 0) == 1;
+            bool isPulleyUnlocked = isLeverChallengeDone || PlayerPrefs.GetInt("LostTemple_Pulley_Unlocked", 0) == 1;
+            bool isInclineUnlocked = isPulleyChallengeDone || PlayerPrefs.GetInt("LostTemple_Incline_Unlocked", 0) == 1;
+
+            // Lever: Always unlocked
+            if (selectLeverQuestButton != null)
+            {
+                selectLeverQuestButton.gameObject.SetActive(true);
+                selectLeverQuestButton.interactable = true;
+                var leverLock = selectLeverQuestButton.transform.Find("LockOverlay");
+                if (leverLock != null) leverLock.gameObject.SetActive(false);
+                var oldProcLock = selectLeverQuestButton.transform.Find("FutureChapterLock");
+                if (oldProcLock != null) Destroy(oldProcLock.gameObject);
+                selectLeverQuestButton.onClick.RemoveAllListeners();
+                selectLeverQuestButton.onClick.AddListener(() => OnQuestMachineSelected("Lever"));
+            }
+
+            if (selectLeverSandboxButton != null)
+            {
+                selectLeverSandboxButton.gameObject.SetActive(true);
+                selectLeverSandboxButton.interactable = true;
+            }
+
+            // Pulley:
+            ConfigureLockedChapter(selectPulleyQuestButton, !isPulleyUnlocked,
+                "Complete Chapter 1: The Sacred Lever to unlock this temple chamber!",
+                () => OnQuestMachineSelected("Pulley"));
+
+            ConfigureLockedChapter(selectPulleySandboxButton, !isPulleyUnlocked,
+                "Complete Chapter 1: The Sacred Lever to unlock this temple chamber!",
+                () => SelectSandboxMachine("Pulley"));
+
+            // Incline:
+            ConfigureLockedChapter(selectInclineQuestButton, !isInclineUnlocked,
+                "Complete Chapter 2: The Sacred Pulley to unlock this temple chamber!",
+                () => OnQuestMachineSelected("InclinedPlane"));
+
+            ConfigureLockedChapter(selectInclineSandboxButton, !isInclineUnlocked,
+                "Complete Chapter 2: The Sacred Pulley to unlock this temple chamber!",
+                () => SelectSandboxMachine("InclinedPlane"));
+
+            if (pulleyLockOverlay != null) pulleyLockOverlay.SetActive(!isPulleyUnlocked);
+            if (inclineLockOverlay != null) inclineLockOverlay.SetActive(!isInclineUnlocked);
         }
 
         private void SetupButtonListeners()
@@ -398,9 +685,141 @@ namespace SecretOfLostTemple.Home
             }
         }
 
+        private void EnsureQuestModalBackgroundApplied()
+        {
+            if (questModalPanel == null) return;
+            var cardCont = questModalPanel.transform.Find("CardContainer");
+            if (cardCont != null)
+            {
+                var rtCont = cardCont.GetComponent<RectTransform>();
+                if (rtCont != null)
+                {
+                    // Enlarge the modal banner to cover the prominent central gameplay area (1460x780)
+                    rtCont.sizeDelta = new Vector2(1460f, 780f);
+                    rtCont.anchoredPosition = new Vector2(0f, 15f);
+                }
+
+                var img = cardCont.GetComponent<Image>();
+                if (img != null && (img.sprite == null || img.sprite.name != "adventure_quest_modal_bg"))
+                {
+                    Sprite s = Resources.Load<Sprite>("adventure_quest_modal_bg");
+#if UNITY_EDITOR
+                    if (s == null) s = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/UI/adventure_quest_modal_bg.png");
+#endif
+                    if (s != null)
+                    {
+                        img.sprite = s;
+                        img.color = Color.white;
+                        img.preserveAspect = true;
+                    }
+                }
+
+                // Replace Title & Subtitle with Ornate Golden Select Level Logo asset
+                var titleTr = cardCont.Find("Title");
+                if (titleTr != null)
+                {
+                    // Destroy any old Text, Shadow, or Outline components so Graphic conflict is avoided
+                    var oldText = titleTr.GetComponent<Text>();
+                    if (oldText != null)
+                    {
+                        if (Application.isPlaying) Destroy(oldText);
+                        else DestroyImmediate(oldText);
+                    }
+                    var oldShadow = titleTr.GetComponent<Shadow>();
+                    if (oldShadow != null)
+                    {
+                        if (Application.isPlaying) Destroy(oldShadow);
+                        else DestroyImmediate(oldShadow);
+                    }
+                    var oldOutline = titleTr.GetComponent<Outline>();
+                    if (oldOutline != null)
+                    {
+                        if (Application.isPlaying) Destroy(oldOutline);
+                        else DestroyImmediate(oldOutline);
+                    }
+
+                    // Turn into Logo Image header
+                    var imgLogo = titleTr.GetComponent<Image>();
+                    if (imgLogo == null) imgLogo = titleTr.gameObject.AddComponent<Image>();
+
+                    Sprite logoSprite = Resources.Load<Sprite>("ornate_golden_select_level_logo");
+#if UNITY_EDITOR
+                    if (logoSprite == null) logoSprite = UnityEditor.AssetDatabase.LoadAssetAtPath<Sprite>("Assets/Art/UI/ornate_golden_select_level_logo.png");
+#endif
+                    if (logoSprite != null && imgLogo != null)
+                    {
+                        imgLogo.sprite = logoSprite;
+                        imgLogo.color = Color.white;
+                        imgLogo.preserveAspect = true;
+                        imgLogo.enabled = true;
+                    }
+
+                    var rtTitle = titleTr.GetComponent<RectTransform>();
+                    if (rtTitle != null)
+                    {
+                        rtTitle.anchoredPosition = new Vector2(0f, -50f);
+                        rtTitle.sizeDelta = new Vector2(720f, 130f);
+                    }
+                }
+
+                var subTr = cardCont.Find("Subtitle");
+                if (subTr != null)
+                {
+                    subTr.gameObject.SetActive(false);
+                }
+
+                // Enlarge Level Cards: Lever, Pulley, Incline
+                var leverTr = cardCont.Find("Card_Lever");
+                if (leverTr != null)
+                {
+                    var rtLever = leverTr.GetComponent<RectTransform>();
+                    if (rtLever != null)
+                    {
+                        rtLever.anchoredPosition = new Vector2(-420f, -30f);
+                        rtLever.sizeDelta = new Vector2(390f, 510f);
+                    }
+                }
+
+                var pulleyTr = cardCont.Find("Card_Pulley");
+                if (pulleyTr != null)
+                {
+                    var rtPulley = pulleyTr.GetComponent<RectTransform>();
+                    if (rtPulley != null)
+                    {
+                        rtPulley.anchoredPosition = new Vector2(0f, -30f);
+                        rtPulley.sizeDelta = new Vector2(390f, 510f);
+                    }
+                }
+
+                var inclineTr = cardCont.Find("Card_Incline");
+                if (inclineTr != null)
+                {
+                    var rtIncline = inclineTr.GetComponent<RectTransform>();
+                    if (rtIncline != null)
+                    {
+                        rtIncline.anchoredPosition = new Vector2(420f, -30f);
+                        rtIncline.sizeDelta = new Vector2(390f, 510f);
+                    }
+                }
+
+                // Position Close Button cleanly on top-right of enlarged scroll banner
+                var closeBtnTr = cardCont.Find("Btn_Close");
+                if (closeBtnTr != null)
+                {
+                    var rtClose = closeBtnTr.GetComponent<RectTransform>();
+                    if (rtClose != null)
+                    {
+                        rtClose.anchoredPosition = new Vector2(-45f, -40f);
+                        rtClose.sizeDelta = new Vector2(65f, 65f);
+                    }
+                }
+            }
+        }
+
         public void OpenQuestModal()
         {
             PlaySound(buttonClickClip);
+            EnsureQuestModalBackgroundApplied();
             RefreshChapterCards();
 
             if (questModalPanel != null)
@@ -544,7 +963,7 @@ namespace SecretOfLostTemple.Home
                 {
                     tierInt = (int)SecretOfLostTemple.Adaptive.AdaptiveDifficultyEngine.Instance.CurrentTier;
                 }
-                string tierName = tierInt == 3 ? "👑 Master (Tier 3)" : (tierInt == 2 ? "⚔️ Scholar (Tier 2)" : "🎓 Apprentice (Tier 1)");
+                string tierName = tierInt == 3 ? "🏆 Champion (Tier 3)" : (tierInt == 2 ? "⚡ Expert (Tier 2)" : "🎒 Explorer (Tier 1)");
                 int stars = ResearchProgress.GetInt("LostTemple_Total_Stars", 0);
 
                 var m = ResearchData.Store.ComputeMetrics();
@@ -677,5 +1096,96 @@ namespace SecretOfLostTemple.Home
                 audioSource.PlayOneShot(clip);
             }
         }
-    }
+    
+        private void EnsureMusicMuteButtonBuilt()
+        {
+            if (musicOnSprite == null)
+            {
+                musicOnSprite = Resources.Load<Sprite>("btn_music_on");
+            }
+            if (musicMutedSprite == null)
+            {
+                musicMutedSprite = Resources.Load<Sprite>("btn_music_off");
+            }
+
+            if (musicToggleButton == null)
+            {
+                GameObject existing = GameObject.Find("Button_MusicToggle");
+                if (existing != null)
+                {
+                    musicToggleButton = existing.GetComponent<Button>();
+                    musicToggleIcon = existing.GetComponent<Image>();
+                }
+            }
+
+            if (musicToggleButton == null && logoutButton != null)
+            {
+                Transform topHUD = logoutButton.transform.parent;
+                GameObject btnObj = new GameObject("Button_MusicToggle", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
+                btnObj.transform.SetParent(topHUD, false);
+
+                RectTransform rt = btnObj.GetComponent<RectTransform>();
+                rt.anchorMin = new Vector2(0.84f, 0.5f);
+                rt.anchorMax = new Vector2(0.84f, 0.5f);
+                rt.pivot = new Vector2(1f, 0.5f);
+                rt.anchoredPosition = new Vector2(-18f, 0f);
+
+                float targetSize = 110f;
+                if (topHUD is RectTransform parentRT && parentRT.rect.height > 40f)
+                {
+                    targetSize = Mathf.Clamp(parentRT.rect.height * 0.85f, 75f, 130f);
+                }
+                rt.sizeDelta = new Vector2(targetSize, targetSize);
+
+                musicToggleIcon = btnObj.GetComponent<Image>();
+                musicToggleIcon.preserveAspect = true;
+                musicToggleIcon.color = Color.white;
+
+                musicToggleButton = btnObj.GetComponent<Button>();
+                var colors = musicToggleButton.colors;
+                colors.highlightedColor = new Color(1f, 1f, 0.85f, 1f);
+                colors.pressedColor = new Color(0.8f, 0.8f, 0.8f, 1f);
+                musicToggleButton.colors = colors;
+            }
+
+            if (musicToggleButton != null)
+            {
+                musicToggleButton.onClick.RemoveAllListeners();
+                musicToggleButton.onClick.AddListener(OnMusicToggleClicked);
+            }
+        }
+
+        private void OnMusicToggleClicked()
+        {
+            if (SecretOfLostTemple.Core.AudioManager.Instance != null)
+            {
+                SecretOfLostTemple.Core.AudioManager.Instance.ToggleBGMMute();
+            }
+            PlaySound(buttonClickClip);
+            UpdateMusicButtonUI();
+        }
+
+        private void UpdateMusicButtonUI()
+        {
+            if (musicToggleIcon == null && musicToggleButton != null)
+            {
+                musicToggleIcon = musicToggleButton.GetComponent<Image>();
+            }
+
+            if (musicToggleIcon != null)
+            {
+                bool isMuted = false;
+                if (SecretOfLostTemple.Core.AudioManager.Instance != null)
+                {
+                    isMuted = SecretOfLostTemple.Core.AudioManager.Instance.IsBGMMuted;
+                }
+                else
+                {
+                    isMuted = PlayerPrefs.GetInt("LostTemple_BGM_Muted", 0) == 1;
+                }
+
+                musicToggleIcon.sprite = isMuted ? musicMutedSprite : musicOnSprite;
+            }
+        }
+}
 }

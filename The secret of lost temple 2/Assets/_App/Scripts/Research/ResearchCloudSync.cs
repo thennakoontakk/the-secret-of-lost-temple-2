@@ -69,13 +69,13 @@ namespace SecretOfLostTemple.Research
 
             if (Time.unscaledTime >= nextPollTime && !isPolling)
             {
-                nextPollTime = Time.unscaledTime + 2.0f;
+                nextPollTime = Time.unscaledTime + 8.0f;
                 StartCoroutine(PollRemoteCommandRoutine());
             }
 
             if (Time.unscaledTime >= nextPushTime && !isPushing)
             {
-                nextPushTime = Time.unscaledTime + 3.0f;
+                nextPushTime = Time.unscaledTime + 10.0f;
                 StartCoroutine(PushLiveTelemetryRoutine(false));
             }
         }
@@ -123,10 +123,14 @@ namespace SecretOfLostTemple.Research
             {
                 req.certificateHandler = new BypassCertificateHandler();
                 req.disposeCertificateHandlerOnDispose = true;
-                req.timeout = 5;
+                req.timeout = 15;
                 yield return req.SendWebRequest();
 
-                if (req.result == UnityWebRequest.Result.Success)
+                if (req.responseCode == 429)
+                {
+                    nextPollTime = Time.unscaledTime + 30f;
+                }
+                else if (req.result == UnityWebRequest.Result.Success)
                 {
                     string json = req.downloadHandler.text;
                     string cmdId = ExtractFirestoreString(json, "commandId");
@@ -290,8 +294,14 @@ namespace SecretOfLostTemple.Research
                 devReq.certificateHandler = new BypassCertificateHandler();
                 devReq.disposeCertificateHandlerOnDispose = true;
                 devReq.SetRequestHeader("Content-Type", "application/json");
-                devReq.timeout = 5;
+                devReq.timeout = 15;
                 yield return devReq.SendWebRequest();
+                if (devReq.responseCode == 429)
+                {
+                    nextPushTime = Time.unscaledTime + 30f;
+                    isPushing = false;
+                    yield break;
+                }
             }
 
             // 2. Push active session to research_sessions/{id} if modified or forced
@@ -318,7 +328,7 @@ namespace SecretOfLostTemple.Research
                         sesReq.certificateHandler = new BypassCertificateHandler();
                         sesReq.disposeCertificateHandlerOnDispose = true;
                         sesReq.SetRequestHeader("Content-Type", "application/json");
-                        sesReq.timeout = 5;
+                        sesReq.timeout = 15;
                         yield return sesReq.SendWebRequest();
                     }
                 }
@@ -351,7 +361,7 @@ namespace SecretOfLostTemple.Research
                     sesReq.certificateHandler = new BypassCertificateHandler();
                     sesReq.disposeCertificateHandlerOnDispose = true;
                     sesReq.SetRequestHeader("Content-Type", "application/json");
-                    sesReq.timeout = 5;
+                    sesReq.timeout = 15;
                     yield return sesReq.SendWebRequest();
                 }
             }

@@ -7,6 +7,7 @@ using UnityEngine;
 using Input = StudyInput;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
+using UnityEngine.EventSystems;
 
 namespace SecretOfLostTemple.AR
 {
@@ -83,6 +84,13 @@ namespace SecretOfLostTemple.AR
         [SerializeField] private TextMesh loadVectorText;
         [SerializeField] private TextMesh fulcrumVectorText;
 
+        [Header("Exploded Character Dialogue UI")]
+        private GameObject explodedDialoguePanel;
+        private Image explodedCharAvatarImage;
+        private Text explodedSpeakerNameText;
+        private Text explodedDialogueBodyText;
+        private Button explodedCloseButton;
+
         [Header("Part Detail Knowledge Modal")]
         [SerializeField] private GameObject partDetailModalPanel;
         [SerializeField] private Text partDetailTitleText;
@@ -132,6 +140,10 @@ namespace SecretOfLostTemple.AR
         [SerializeField] private Text quizFeedbackText;
         [SerializeField] private Button quizNextButton;
         [SerializeField] private Button quizCloseButton;
+        private Text quizTimerText;
+        private Image quizTimerBarImage;
+        private Coroutine quizTimerCoroutine;
+        private int tierQuizCursor = 0;
         [SerializeField] private Button btnReviewMode;
 
         [Header("Pathirana: Spaced Retention & Research Exporter")]
@@ -164,10 +176,20 @@ namespace SecretOfLostTemple.AR
         private bool isAutoRotating = true;
         private float currentBeamAngle = 0f;
         private float targetBeamAngle = 0f;
+        private Coroutine boulderRollCoroutine;
         private bool isChallengeActive = false;
         public bool IsChallengeActive => isChallengeActive;
         private string activeCharacter = "Maya";
         private int lastVoiceState = -1;
+        // --- Story Dialogue & Guided Mission Sequence State ---
+        private GameObject storyDialoguePanel;
+        private Image storyCharAvatarImage;
+        private Text storySpeakerNameText;
+        private Text storyDialogueBodyText;
+        private Button storyNextBtn;
+        private Text storyNextBtnText;
+        private int currentStoryDialogueIndex = 0;
+        private bool isGuidedStoryFlowActive = false;
 
         // Exploded View smooth transform targets
         private bool isExplodedView = false;
@@ -203,10 +225,19 @@ namespace SecretOfLostTemple.AR
             }
             InitializeCharacterCompanion();
             SetupButtonListeners();
+            if (leverRoot != null && leverRoot.GetComponent<ARMechanismViewer>() == null)
+            {
+                var viewer = leverRoot.gameObject.AddComponent<ARMechanismViewer>();
+            }
             CaptureInitialObjectPositions();
 
+            // Disable legacy line renderers that previously rendered as a flat white quad on the altar pedestal
+            if (effortArrowLine != null) { effortArrowLine.enabled = false; effortArrowLine.gameObject.SetActive(false); }
+            if (loadArrowLine != null) { loadArrowLine.enabled = false; loadArrowLine.gameObject.SetActive(false); }
+            if (fulcrumReactionArrowLine != null) { fulcrumReactionArrowLine.enabled = false; fulcrumReactionArrowLine.gameObject.SetActive(false); }
+
             // Requirement 1 & 2: Hide "How It Works" tablet and Companion Avatar by default for a clean AR screen
-            if (howItWorksPanel != null) howItWorksPanel.SetActive(false);
+            if (howItWorksPanel != null) howItWorksPanel.SetActive(true);
             if (characterCompanionImage != null) characterCompanionImage.gameObject.SetActive(false);
             if (liftStatusBannerText != null && liftStatusBannerText.transform.parent != null)
             {
@@ -241,7 +272,7 @@ namespace SecretOfLostTemple.AR
             InitializeInteractiveStoryBranchUI();
 
             // Requirement 1, 2 & 3: Ensure How It Works, Companion Avatar, and Challenge Modal are hidden until explicitly triggered
-            if (howItWorksPanel != null) howItWorksPanel.SetActive(false);
+            if (howItWorksPanel != null) howItWorksPanel.SetActive(true);
             if (characterCompanionImage != null) characterCompanionImage.gameObject.SetActive(false);
             if (liftStatusBannerText != null && liftStatusBannerText.transform.parent != null)
             {
@@ -263,13 +294,20 @@ namespace SecretOfLostTemple.AR
             SetInteractionMode(InteractionMode.Interactive);
 
             // Keep screen clean: hide How It Works, Companion, and Challenge Modal (Challenge opens ONLY when tapping TRY CHALLENGE)
-            if (howItWorksPanel != null) howItWorksPanel.SetActive(false);
+            if (howItWorksPanel != null) howItWorksPanel.SetActive(true);
             if (characterCompanionImage != null) characterCompanionImage.gameObject.SetActive(false);
             if (liftStatusBannerText != null && liftStatusBannerText.transform.parent != null)
             {
                 liftStatusBannerText.transform.parent.gameObject.SetActive(false);
             }
             if (challengeModalPanel != null) challengeModalPanel.SetActive(false);
+
+            string activeScene = SceneManager.GetActiveScene().name;
+            string appMode = PlayerPrefs.GetString("LostTemple_App_Mode", "Quest");
+            if (activeScene != "FreePracticeScene" && appMode != "Sandbox")
+            {
+                StartGuidedStoryDialogueSequence();
+            }
         }
 
         private void ApplyAppModeVisibility()
@@ -286,9 +324,15 @@ namespace SecretOfLostTemple.AR
                 if (templeEnv != null)
                 {
                     templeEnv.SetActive(true);
-                    templeEnv.transform.position = new Vector3(0f, 0.28f, 0f);
+                    templeEnv.transform.position = new Vector3(0f, 0.42f, 0f);
                     templeEnv.transform.rotation = Quaternion.identity;
                     templeEnv.transform.localScale = Vector3.one;
+
+                    var pedestal = templeEnv.transform.Find("Temple_Altar_Pedestal");
+                    if (pedestal != null)
+                    {
+                        pedestal.localPosition = new Vector3(0f, -0.26f, 1.20f);
+                    }
                 }
 
                 if (leverRoot != null)
@@ -451,10 +495,11 @@ namespace SecretOfLostTemple.AR
         private void AutoBindAllReferences()
         {
             var canvasTr = transform;
-            var uiRoot = canvasTr.Find("LeverAR_UIRoot");
+            var uiRoot = canvasTr.Find("LeverAR_UIRoot") ?? canvasTr;
             if (uiRoot != null)
             {
                 EnsureChallengeModalBuilt(uiRoot);
+                EnsureQuizModalBuilt(uiRoot);
                 if (howItWorksPanel == null) howItWorksPanel = uiRoot.Find("Panel_HowItWorks")?.gameObject;
                 if (toggleHowItWorksBtn == null) toggleHowItWorksBtn = uiRoot.Find("TopBar/Btn_HowItWorks")?.GetComponent<Button>();
                 EnsureHowItWorksToggleButtonBuilt(uiRoot);
@@ -464,6 +509,33 @@ namespace SecretOfLostTemple.AR
                 if (modeToggleText == null) modeToggleText = uiRoot.Find("TopBar/Btn_ModeToggle/Text")?.GetComponent<Text>();
                 if (modeToggleBg == null) modeToggleBg = uiRoot.Find("TopBar/Btn_ModeToggle")?.GetComponent<Image>();
 
+                // Top Carved Banner: Apply custom lever_ar_title sprite asset and hide redundant plain text
+                var bannerTr = uiRoot.Find("TopBar/Banner_LeverAR");
+                if (bannerTr != null)
+                {
+                    var bannerImg = bannerTr.GetComponent<Image>();
+                    if (bannerImg != null)
+                    {
+                        var sprite = Resources.Load<Sprite>("lever_ar_title");
+                        if (sprite != null)
+                        {
+                            bannerImg.sprite = sprite;
+                            bannerImg.color = Color.white;
+                            bannerImg.preserveAspect = true;
+                        }
+                    }
+                    var rt = bannerTr.GetComponent<RectTransform>();
+                    if (rt != null)
+                    {
+                        rt.sizeDelta = new Vector2(450f, 150f);
+                    }
+                    var txt = bannerTr.Find("Text");
+                    if (txt != null)
+                    {
+                        txt.gameObject.SetActive(false);
+                    }
+                }
+
                 if (viewOnlyBottomBar == null) viewOnlyBottomBar = uiRoot.Find("ViewOnlyBottomBar")?.gameObject;
                 if (btnForcesAndMotion == null) btnForcesAndMotion = uiRoot.Find("ViewOnlyBottomBar/Btn_ForcesAndMotion")?.GetComponent<Button>();
                 if (btnExplodedParts == null) btnExplodedParts = uiRoot.Find("ViewOnlyBottomBar/Btn_ExplodedParts")?.GetComponent<Button>();
@@ -471,10 +543,20 @@ namespace SecretOfLostTemple.AR
                 if (imgExplodedHighlight == null) imgExplodedHighlight = uiRoot.Find("ViewOnlyBottomBar/Btn_ExplodedParts")?.GetComponent<Image>();
 
                 if (explodedPartsPillsContainer == null) explodedPartsPillsContainer = uiRoot.Find("Pills_ExplodedParts")?.gameObject;
+                if (explodedPartsPillsContainer != null) explodedPartsPillsContainer.SetActive(false);
+                EnsureExploded3DColliders();
                 if (pillFulcrumBtn == null) pillFulcrumBtn = uiRoot.Find("Pills_ExplodedParts/Pill_Fulcrum")?.GetComponent<Button>();
                 if (pillBeamBtn == null) pillBeamBtn = uiRoot.Find("Pills_ExplodedParts/Pill_Beam")?.GetComponent<Button>();
                 if (pillLoadStoneBtn == null) pillLoadStoneBtn = uiRoot.Find("Pills_ExplodedParts/Pill_LoadStone")?.GetComponent<Button>();
                 if (pillEffortBtn == null) pillEffortBtn = uiRoot.Find("Pills_ExplodedParts/Pill_Effort")?.GetComponent<Button>();
+
+                // Ensure pure English text in View-Only UI components
+                if (btnForcesAndMotion != null) { var t = btnForcesAndMotion.GetComponentInChildren<Text>(); if (t != null) t.text = "<b>🔄 360° FORCES & MOTION</b>\n<size=17><color=#ffe066>Vector Arrows & Rotation</color></size>"; }
+                if (btnExplodedParts != null) { var t = btnExplodedParts.GetComponentInChildren<Text>(); if (t != null) t.text = "<b>🔍 PARTS & ANATOMY</b>\n<size=17><color=#80e5ff>Exploded View & Lore</color></size>"; }
+                if (pillFulcrumBtn != null) { var t = pillFulcrumBtn.GetComponentInChildren<Text>(); if (t != null) t.text = "🏔️ 1. FULCRUM"; }
+                if (pillBeamBtn != null) { var t = pillBeamBtn.GetComponentInChildren<Text>(); if (t != null) t.text = "🪵 2. LEVER BEAM"; }
+                if (pillLoadStoneBtn != null) { var t = pillLoadStoneBtn.GetComponentInChildren<Text>(); if (t != null) t.text = "🪨 3. LOAD STONE"; }
+                if (pillEffortBtn != null) { var t = pillEffortBtn.GetComponentInChildren<Text>(); if (t != null) t.text = "⚡ 4. EFFORT POINT"; }
 
                 if (bottomConsole == null) bottomConsole = uiRoot.Find("BottomConsole")?.gameObject;
                 if (forceDecreaseBtn == null) forceDecreaseBtn = uiRoot.Find("BottomConsole/Box_Force/Btn_Dec")?.GetComponent<Button>();
@@ -787,38 +869,52 @@ namespace SecretOfLostTemple.AR
 
         private void Update()
         {
-            // Requirement 1: If user taps anywhere outside howItWorksPanel while it is open, close it
-            if (howItWorksPanel != null && howItWorksPanel.activeSelf && Input.GetMouseButtonDown(0))
+            // Timed Micro-Quiz Trigger (Every ~10s of active AR exploration) - RUNS FIRST!
+            if (microQuizEnabled && !isGuidedStoryFlowActive)
             {
-                var panelRt = howItWorksPanel.GetComponent<RectTransform>();
-                var btnRt = toggleHowItWorksBtn != null ? toggleHowItWorksBtn.GetComponent<RectTransform>() : null;
-                Vector2 mousePos = Input.mousePosition;
-                bool insidePanel = panelRt != null && RectTransformUtility.RectangleContainsScreenPoint(panelRt, mousePos, null);
-                bool insideToggle = btnRt != null && RectTransformUtility.RectangleContainsScreenPoint(btnRt, mousePos, null);
-                if (!insidePanel && !insideToggle)
+                bool modalOpen = (quizModalPanel != null && quizModalPanel.activeSelf) ||
+                                 (challengeModalPanel != null && challengeModalPanel.activeSelf) ||
+                                 (partDetailModalPanel != null && partDetailModalPanel.activeSelf) ||
+                                 (smartHintModalPanel != null && smartHintModalPanel.activeSelf) ||
+                                 (retentionModalPanel != null && retentionModalPanel.activeSelf) ||
+                                 (howItWorksPanel != null && howItWorksPanel.activeSelf) ||
+                                 (storyDialoguePanel != null && storyDialoguePanel.activeSelf);
+
+                if (!modalOpen)
                 {
-                    howItWorksPanel.SetActive(false);
+                    microQuizTimer += Time.deltaTime;
+                    if (microQuizTimer >= MICRO_QUIZ_INTERVAL)
+                    {
+                        microQuizTimer = 0f;
+                        TriggerTimedMicroQuiz();
+                    }
                 }
             }
 
-            // Track user activity for Abeywickrama's Smart Hint & Engagement Tracker
-            if (StudyPolicy.Measured && !StudyPolicy.Tracking) return;
-            if (researchForeground && quizModalPanel != null && quizModalPanel.activeSelf && !researchAnswerSubmitted) researchQuestionSeconds += Time.unscaledDeltaTime;
-            if (pendingFulcrumLog >= 0 && Time.unscaledTime - pendingFulcrumLog > .4f) {
-                ResearchData.Record("fulcrum_committed", fulcrumOffset.ToString(System.Globalization.CultureInfo.InvariantCulture)); pendingFulcrumLog = -1;
-                ResearchCloudSync.Instance?.TriggerImmediateSync($"Fulcrum moved to {fulcrumOffset:+0.00;-0.00;0.00}m");
-            }
-            if (StudyPolicy.Passive) {
-                demonstrationTime += Time.deltaTime;
-                fulcrumOffset = 0f;
-                currentEffortForceN = 80f + 50f * Mathf.Sin(demonstrationTime * .7f);
-                targetBeamAngle = currentEffortForceN > 105f ? -12f : currentEffortForceN < 95f ? 6f : 0f;
-                UpdateForceUI();
-                if (liftStatusBannerText != null) liftStatusBannerText.text = "Standard demonstration: equal arms, load 100 N. Effort " + currentEffortForceN.ToString("F0") + " N. Above 100 N the load rises (ideal lever).";
-            }
+            // Requirement 1: If user taps anywhere outside howItWorksPanel while it is open, close it
+            // howItWorksPanel stays visible as requested by user
+
             if (Input.anyKeyDown || Input.touchCount > 0)
             {
                 lastInteractionTimestamp = Time.time;
+            }
+
+            // Track user activity for Abeywickrama's Smart Hint & Engagement Tracker
+            if (!StudyPolicy.Measured || StudyPolicy.Tracking)
+            {
+                if (researchForeground && quizModalPanel != null && quizModalPanel.activeSelf && !researchAnswerSubmitted) researchQuestionSeconds += Time.unscaledDeltaTime;
+                if (pendingFulcrumLog >= 0 && Time.unscaledTime - pendingFulcrumLog > .4f) {
+                    ResearchData.Record("fulcrum_committed", fulcrumOffset.ToString(System.Globalization.CultureInfo.InvariantCulture)); pendingFulcrumLog = -1;
+                    ResearchCloudSync.Instance?.TriggerImmediateSync($"Fulcrum moved to {fulcrumOffset:+0.00;-0.00;0.00}m");
+                }
+                if (StudyPolicy.Passive) {
+                    demonstrationTime += Time.deltaTime;
+                    fulcrumOffset = 0f;
+                    currentEffortForceN = 80f + 50f * Mathf.Sin(demonstrationTime * .7f);
+                    targetBeamAngle = currentEffortForceN > 105f ? -16f : currentEffortForceN < 95f ? 20f : 0f;
+                    UpdateForceUI();
+                    if (liftStatusBannerText != null) liftStatusBannerText.text = "Standard demonstration: equal arms, load 100 N. Effort " + currentEffortForceN.ToString("F0") + " N. Above 100 N the load rises (ideal lever).";
+                }
             }
 
             // Pulse Smart Hint button scale when learner hesitates (>15s idle)
@@ -869,22 +965,30 @@ namespace SecretOfLostTemple.AR
             if (fulcrumRoot != null)
             {
                 Vector3 targetPos = isExplodedView ?
-                    new Vector3(fulcrumOffset, fulcrumExplodedLocalPos.y, fulcrumExplodedLocalPos.z) :
+                    new Vector3(fulcrumOffset, -0.28f, fulcrumExplodedLocalPos.z) :
                     new Vector3(fulcrumOffset, fulcrumAssembledLocalPos.y, fulcrumAssembledLocalPos.z);
                 fulcrumRoot.localPosition = Vector3.Lerp(fulcrumRoot.localPosition, targetPos, speed);
             }
 
             if (beamPivot != null)
             {
-                Vector3 targetPos = isExplodedView ? beamExplodedLocalPos : beamAssembledLocalPos;
+                Vector3 targetPos = isExplodedView ? new Vector3(0f, 0.46f, 0f) : beamAssembledLocalPos;
                 if (!isExplodedView) targetPos += new Vector3(fulcrumOffset, 0, 0) - beamPivot.localRotation * new Vector3(fulcrumOffset, 0, 0);
                 beamPivot.localPosition = Vector3.Lerp(beamPivot.localPosition, targetPos, speed);
+                if (isExplodedView)
+                {
+                    beamPivot.localRotation = Quaternion.Slerp(beamPivot.localRotation, Quaternion.identity, speed);
+                }
             }
 
-            if (boulderRoot != null)
+            if (boulderRoot != null && boulderRollCoroutine == null)
             {
-                Vector3 targetPos = isExplodedView ? boulderExplodedLocalPos : boulderAssembledLocalPos;
+                Vector3 targetPos = isExplodedView ? new Vector3(-1.10f, 0.70f, 0f) : boulderAssembledLocalPos;
                 boulderRoot.localPosition = Vector3.Lerp(boulderRoot.localPosition, targetPos, speed);
+                if (!isExplodedView)
+                {
+                    boulderRoot.localRotation = Quaternion.Slerp(boulderRoot.localRotation, Quaternion.identity, speed);
+                }
             }
 
             if (effortPoint != null)
@@ -911,12 +1015,23 @@ namespace SecretOfLostTemple.AR
             UpdateBadge(effortAnnotationBadge, effortPoint, up * .4f * scale, cam);
             UpdateBadge(fulcrumAnnotationBadge, fulcrumRoot, -up * .3f * scale, cam);
             if (!show) return;
+
+            // Effort Force Arrow (Vivid Gold) pointing DOWN to effort handle
+            float effortLen = Mathf.Clamp(0.18f + (currentEffortForceN / 160f) * 0.22f, 0.18f, 0.40f) * scale;
             UpdateForceArrow(ref effortVectorObject, ref effortVectorText, "Vector_EffortForce", effortPoint,
-                -up, new Color(1f, .85f, .2f), "EFFORT " + currentEffortForceN.ToString("F0") + " N", scale, cam);
+                -up, new Color(1f, 0.85f, 0.0f), $"EFFORT {currentEffortForceN:F0} N", effortLen, scale, cam, up * (0.05f * scale));
+
+            // Load Weight Arrow (Vivid Red) pointing DOWN to boulder top
+            float loadLen = 0.30f * scale;
             UpdateForceArrow(ref loadVectorObject, ref loadVectorText, "Vector_LoadWeight", boulderRoot,
-                -up, new Color(1f, .35f, .35f), "LOAD 100 N", scale, cam);
+                -up, new Color(1f, 0.15f, 0.15f), "LOAD 100 N", loadLen, scale, cam, up * (0.28f * scale));
+
+            // Fulcrum Support Reaction Arrow (Vivid Green) pointing UP under the pivot
+            float fulcrumForce = 100f + currentEffortForceN;
+            float fulcrumLen = Mathf.Clamp(0.20f + (fulcrumForce / 260f) * 0.20f, 0.20f, 0.40f) * scale;
             UpdateForceArrow(ref fulcrumVectorObject, ref fulcrumVectorText, "Vector_FulcrumReaction", fulcrumRoot,
-                up, new Color(.4f, 1f, .6f), "SUPPORT " + (100f + currentEffortForceN).ToString("F0") + " N", scale, cam);
+                up, new Color(0.0f, 0.95f, 0.45f), $"SUPPORT {fulcrumForce:F0} N", fulcrumLen, scale, cam, up * (0.55f * scale));
+
             // Legacy lines are replaced by arrows with visible heads.
             if (effortArrowLine != null) effortArrowLine.enabled = false;
             if (loadArrowLine != null) loadArrowLine.enabled = false;
@@ -949,7 +1064,7 @@ namespace SecretOfLostTemple.AR
         }
 
         private void UpdateForceArrow(ref Transform root, ref TextMesh label, string name, Transform anchor,
-            Vector3 direction, Color color, string caption, float scale, Camera cam)
+            Vector3 direction, Color color, string caption, float length, float scale, Camera cam, Vector3 anchorOffset)
         {
             if (anchor == null) return;
             if (root == null) {
@@ -957,34 +1072,80 @@ namespace SecretOfLostTemple.AR
                 root.SetParent(forceVectorsRoot.transform, false);
             }
             root.gameObject.SetActive(true);
-            root.position = anchor.position;
+            Vector3 tip = anchor.position + anchorOffset;
+            root.position = tip;
+
             var line = root.GetComponent<LineRenderer>();
             if (line == null) {
                 line = root.gameObject.AddComponent<LineRenderer>();
-                line.sharedMaterial = new Material(Shader.Find("Sprites/Default"));
+                Shader s = Shader.Find("Universal Render Pipeline/Unlit") 
+                           ?? Shader.Find("Sprites/Default") 
+                           ?? Shader.Find("Unlit/Color")
+                           ?? Shader.Find("UI/Default");
+                if (s != null) line.sharedMaterial = new Material(s);
             }
-            line.useWorldSpace = true; line.positionCount = 5;
-            float unit = cam != null ? WorldUnitsPerPixel(cam, anchor.position) : .001f;
-            float length = Mathf.Max(.20f * scale, unit * 24f);
-            Vector3 tip = anchor.position;
+            line.useWorldSpace = true;
+            line.positionCount = 5;
+            float unit = cam != null ? WorldUnitsPerPixel(cam, tip) : 0.001f;
             Vector3 tail = tip - direction * length;
             Vector3 side = cam != null ? cam.transform.right : leverRoot.right;
-            line.startWidth = line.endWidth = Mathf.Max(.006f * scale, unit * 1.6f);
+
+            line.startWidth = line.endWidth = Mathf.Max(0.014f * scale, unit * 8f);
             line.startColor = line.endColor = color;
-            line.SetPosition(0, tail); line.SetPosition(1, tip);
-            line.SetPosition(2, tip - direction * length * .22f + side * length * .13f);
-            line.SetPosition(3, tip); line.SetPosition(4, tip - direction * length * .22f - side * length * .13f);
+            line.sortingOrder = 40;
+
+            float headLen = length * 0.25f;
+            float headSpread = length * 0.14f;
+
+            line.SetPosition(0, tail);
+            line.SetPosition(1, tip);
+            line.SetPosition(2, tip - direction * headLen + side * headSpread);
+            line.SetPosition(3, tip);
+            line.SetPosition(4, tip - direction * headLen - side * headSpread);
+
             if (label == null) {
-                label = new GameObject("ForceLabel").AddComponent<TextMesh>();
-                label.transform.SetParent(root, false);
-                label.fontSize = 48; label.characterSize = 1f;
+                var labelGo = new GameObject("ForceLabel");
+                labelGo.transform.SetParent(root, false);
+                label = labelGo.AddComponent<TextMesh>();
+                label.fontSize = 72;
+                label.characterSize = 1f;
                 label.fontStyle = FontStyle.Bold;
                 label.anchor = TextAnchor.MiddleCenter;
+                label.alignment = TextAlignment.Center;
+                var mr = labelGo.GetComponent<MeshRenderer>();
+                if (mr != null) mr.sortingOrder = 52;
             }
-            label.text = caption; label.color = color;
-            label.transform.position = tail - direction * unit * 12f;
+
+            Transform shadowT = root.Find("ForceLabelShadow");
+            TextMesh shadow = shadowT != null ? shadowT.GetComponent<TextMesh>() : null;
+            if (shadow == null) {
+                var shadowGo = new GameObject("ForceLabelShadow");
+                shadowGo.transform.SetParent(root, false);
+                shadow = shadowGo.AddComponent<TextMesh>();
+                shadow.fontSize = 72;
+                shadow.characterSize = 1f;
+                shadow.fontStyle = FontStyle.Bold;
+                shadow.anchor = TextAnchor.MiddleCenter;
+                shadow.alignment = TextAlignment.Center;
+                shadow.color = new Color(0.05f, 0.05f, 0.05f, 0.9f);
+                var mrShadow = shadowGo.GetComponent<MeshRenderer>();
+                if (mrShadow != null) mrShadow.sortingOrder = 51;
+            }
+
+            Vector3 textPos = tail - direction * (0.05f * scale);
+            label.text = caption;
+            label.color = color;
+            label.transform.position = textPos;
             if (cam != null) label.transform.rotation = cam.transform.rotation;
-            SetWorldScale(label.transform, Vector3.one * unit * 8.0f);
+            SetWorldScale(label.transform, Vector3.one * (unit * 7.5f));
+
+            if (shadow != null) {
+                shadow.text = caption;
+                Vector3 shadowOffset = (cam != null ? (cam.transform.right - cam.transform.up) : (leverRoot.right - leverRoot.up)) * (unit * 1.6f);
+                shadow.transform.position = textPos + shadowOffset;
+                if (cam != null) shadow.transform.rotation = cam.transform.rotation;
+                SetWorldScale(shadow.transform, Vector3.one * (unit * 7.5f));
+            }
         }
 
         private void HandleDirect3DPartClicks()
@@ -992,25 +1153,51 @@ namespace SecretOfLostTemple.AR
             if (StudyPolicy.Measured && !StudyPolicy.InputAllowed) return;
             if (currentMode != InteractionMode.ViewOnly || currentViewOnlySubMode != ViewOnlySubMode.ExplodedParts) return;
 
-            if (Input.GetMouseButtonDown(0))
+            // If the character dialogue panel is open, do not raycast 3D objects behind it
+            if (explodedDialoguePanel != null && explodedDialoguePanel.activeSelf) return;
+
+            bool pointerDown = Input.GetMouseButtonDown(0);
+            Vector2 screenPos = Input.mousePosition;
+
+            if (Input.touchCount > 0)
             {
-                Ray ray = Camera.main != null ? Camera.main.ScreenPointToRay(Input.mousePosition) : default;
-                if (ray.direction != Vector3.zero && Physics.Raycast(ray, out RaycastHit hit))
+                Touch t = Input.GetTouch(0);
+                if (t.phase == TouchPhase.Began)
+                {
+                    pointerDown = true;
+                    screenPos = t.position;
+                }
+            }
+
+            if (pointerDown)
+            {
+                if (EventSystem.current != null)
+                {
+                    if (EventSystem.current.IsPointerOverGameObject()) return;
+                    if (Input.touchCount > 0 && EventSystem.current.IsPointerOverGameObject(Input.GetTouch(0).fingerId)) return;
+                }
+
+                Camera cam = Camera.main;
+                if (cam == null) cam = FindFirstObjectByType<Camera>();
+                if (cam == null) return;
+
+                Ray ray = cam.ScreenPointToRay(screenPos);
+                if (Physics.Raycast(ray, out RaycastHit hit, 100f))
                 {
                     Transform hitTr = hit.transform;
-                    if (hitTr == fulcrumRoot || hitTr.IsChildOf(fulcrumRoot))
-                    {
-                        ShowPartDetails("fulcrum");
-                    }
-                    else if (hitTr == boulderRoot || hitTr.IsChildOf(boulderRoot))
+                    if (boulderRoot != null && (hitTr == boulderRoot || hitTr.IsChildOf(boulderRoot)))
                     {
                         ShowPartDetails("load");
                     }
-                    else if (hitTr == effortPoint || hitTr.IsChildOf(effortPoint))
+                    else if (fulcrumRoot != null && (hitTr == fulcrumRoot || hitTr.IsChildOf(fulcrumRoot)))
+                    {
+                        ShowPartDetails("fulcrum");
+                    }
+                    else if (effortPoint != null && (hitTr == effortPoint || hitTr.IsChildOf(effortPoint)))
                     {
                         ShowPartDetails("effort");
                     }
-                    else if (hitTr == beamPivot || hitTr.IsChildOf(beamPivot))
+                    else if (beamPivot != null && (hitTr == beamPivot || hitTr.IsChildOf(beamPivot)))
                     {
                         ShowPartDetails("beam");
                     }
@@ -1020,7 +1207,14 @@ namespace SecretOfLostTemple.AR
 
         public void SetInteractionMode(InteractionMode mode)
         {
-            mode = StudyPolicy.Resolve(mode);
+            string activeScene = SceneManager.GetActiveScene().name;
+            string appMode = PlayerPrefs.GetString("LostTemple_App_Mode", "Quest");
+            bool isSandbox = (activeScene == "FreePracticeScene" || appMode == "Sandbox");
+
+            if (!isSandbox)
+            {
+                mode = StudyPolicy.Resolve(mode);
+            }
             var previous = currentMode;
             currentMode = mode;
             UpdateUI();
@@ -1058,7 +1252,7 @@ namespace SecretOfLostTemple.AR
             {
                 isExplodedView = true;
                 isAutoRotating = false;
-                if (explodedPartsPillsContainer != null) explodedPartsPillsContainer.SetActive(true);
+                if (explodedPartsPillsContainer != null) explodedPartsPillsContainer.SetActive(false);
 
                 if (imgForcesHighlight != null) imgForcesHighlight.color = new Color(0.4f, 0.35f, 0.3f, 0.7f);
                 if (imgExplodedHighlight != null) imgExplodedHighlight.color = new Color(0.2f, 0.9f, 1f, 1f);
@@ -1070,50 +1264,285 @@ namespace SecretOfLostTemple.AR
             }
         }
 
+        private void EnsureExploded3DColliders()
+        {
+            if (boulderRoot != null)
+            {
+                var col = boulderRoot.GetComponent<Collider>();
+                if (col == null)
+                {
+                    var sc = boulderRoot.gameObject.AddComponent<SphereCollider>();
+                    sc.radius = 0.45f;
+                }
+            }
+
+            if (fulcrumRoot != null)
+            {
+                var col = fulcrumRoot.GetComponent<Collider>();
+                if (col == null)
+                {
+                    var bc = fulcrumRoot.gameObject.AddComponent<BoxCollider>();
+                    bc.center = new Vector3(0f, 0.25f, 0f);
+                    bc.size = new Vector3(0.65f, 0.65f, 0.65f);
+                }
+            }
+
+            if (beamPivot != null)
+            {
+                var col = beamPivot.GetComponent<Collider>();
+                if (col == null)
+                {
+                    var bc = beamPivot.gameObject.AddComponent<BoxCollider>();
+                    bc.center = new Vector3(0f, 0f, 0f);
+                    bc.size = new Vector3(3.2f, 0.25f, 0.45f);
+                }
+            }
+        }
+
+        private void EnsureExplodedCharacterBubbleBuilt(Transform uiRoot)
+        {
+            if (uiRoot == null) return;
+            if (explodedDialoguePanel != null) return;
+
+            var existing = uiRoot.Find("Panel_ExplodedCharacterDialogue");
+            if (existing != null)
+            {
+                explodedDialoguePanel = existing.gameObject;
+                explodedCharAvatarImage = explodedDialoguePanel.transform.Find("Avatar_Character")?.GetComponent<Image>();
+                explodedSpeakerNameText = explodedDialoguePanel.transform.Find("DialogueBubble/HeaderPlate/SpeakerText")?.GetComponent<Text>();
+                explodedDialogueBodyText = explodedDialoguePanel.transform.Find("DialogueBubble/BodyText")?.GetComponent<Text>();
+                explodedCloseButton = explodedDialoguePanel.transform.Find("DialogueBubble/Btn_Close")?.GetComponent<Button>();
+                return;
+            }
+
+            Font font = Resources.Load<Font>("Montserrat-Bold");
+            if (font == null) font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+
+            // 1. Root Panel (Transparent dim backdrop that intercepts clicks)
+            explodedDialoguePanel = new GameObject("Panel_ExplodedCharacterDialogue", typeof(RectTransform), typeof(Image), typeof(Button));
+            explodedDialoguePanel.transform.SetParent(uiRoot, false);
+            var panelRt = (RectTransform)explodedDialoguePanel.transform;
+            panelRt.anchorMin = Vector2.zero;
+            panelRt.anchorMax = Vector2.one;
+            panelRt.offsetMin = Vector2.zero;
+            panelRt.offsetMax = Vector2.zero;
+
+            var bgImg = explodedDialoguePanel.GetComponent<Image>();
+            bgImg.color = new Color(0.02f, 0.03f, 0.05f, 0.45f);
+            var bgBtn = explodedDialoguePanel.GetComponent<Button>();
+            bgBtn.onClick.AddListener(CloseExplodedCharacterDialogue);
+
+            // 2. Character Avatar on the left side
+            var avatarGo = new GameObject("Avatar_Character", typeof(RectTransform), typeof(Image));
+            avatarGo.transform.SetParent(explodedDialoguePanel.transform, false);
+            var avatarRt = (RectTransform)avatarGo.transform;
+            avatarRt.anchorMin = new Vector2(0f, 0f);
+            avatarRt.anchorMax = new Vector2(0f, 0f);
+            avatarRt.pivot = new Vector2(0f, 0f);
+            avatarRt.anchoredPosition = new Vector2(30f, 0f);
+            avatarRt.sizeDelta = new Vector2(460f, 680f);
+
+            explodedCharAvatarImage = avatarGo.GetComponent<Image>();
+            explodedCharAvatarImage.preserveAspect = true;
+            explodedCharAvatarImage.raycastTarget = false;
+
+            // 3. Dialogue Bubble
+            var bubbleGo = new GameObject("DialogueBubble", typeof(RectTransform), typeof(Image));
+            bubbleGo.transform.SetParent(explodedDialoguePanel.transform, false);
+            var bubbleRt = (RectTransform)bubbleGo.transform;
+            bubbleRt.anchorMin = new Vector2(0f, 0f);
+            bubbleRt.anchorMax = new Vector2(1f, 0f);
+            bubbleRt.pivot = new Vector2(0.5f, 0f);
+            bubbleRt.offsetMin = new Vector2(460f, 35f);
+            bubbleRt.offsetMax = new Vector2(-40f, 380f);
+
+            var bubbleImg = bubbleGo.GetComponent<Image>();
+            var bubbleSprite = Resources.Load<Sprite>("dialog_bubble_frame");
+            if (bubbleSprite != null)
+            {
+                bubbleImg.sprite = bubbleSprite;
+                bubbleImg.type = Image.Type.Sliced;
+                bubbleImg.color = Color.white;
+            }
+            else
+            {
+                bubbleImg.color = new Color(0.12f, 0.09f, 0.05f, 0.95f);
+            }
+
+            var bubbleOutline = bubbleGo.AddComponent<Outline>();
+            bubbleOutline.effectColor = new Color(0.95f, 0.78f, 0.28f, 0.9f);
+            bubbleOutline.effectDistance = new Vector2(3f, -3f);
+
+            // 4. Header / Speaker Tag Plate
+            var headerGo = new GameObject("HeaderPlate", typeof(RectTransform), typeof(Image));
+            headerGo.transform.SetParent(bubbleGo.transform, false);
+            var headerRt = (RectTransform)headerGo.transform;
+            headerRt.anchorMin = new Vector2(0f, 1f);
+            headerRt.anchorMax = new Vector2(0f, 1f);
+            headerRt.pivot = new Vector2(0f, 1f);
+            headerRt.anchoredPosition = new Vector2(25f, -14f);
+            headerRt.sizeDelta = new Vector2(420f, 48f);
+
+            var headerImg = headerGo.GetComponent<Image>();
+            headerImg.color = new Color(0.85f, 0.62f, 0.16f, 0.95f);
+            var headerOutline = headerGo.AddComponent<Outline>();
+            headerOutline.effectColor = new Color(0.3f, 0.15f, 0.02f, 0.8f);
+            headerOutline.effectDistance = new Vector2(1.5f, -1.5f);
+
+            var nameTxtGo = new GameObject("SpeakerText", typeof(RectTransform), typeof(Text));
+            nameTxtGo.transform.SetParent(headerGo.transform, false);
+            var nameTxtRt = (RectTransform)nameTxtGo.transform;
+            nameTxtRt.anchorMin = Vector2.zero;
+            nameTxtRt.anchorMax = Vector2.one;
+            nameTxtRt.offsetMin = new Vector2(15f, 2f);
+            nameTxtRt.offsetMax = new Vector2(-15f, -2f);
+
+            explodedSpeakerNameText = nameTxtGo.GetComponent<Text>();
+            explodedSpeakerNameText.font = font;
+            explodedSpeakerNameText.fontSize = 20;
+            explodedSpeakerNameText.fontStyle = FontStyle.Bold;
+            explodedSpeakerNameText.alignment = TextAnchor.MiddleLeft;
+            explodedSpeakerNameText.color = new Color(0.12f, 0.07f, 0.01f, 1f);
+
+            // 5. Dialogue Body Text
+            var bodyGo = new GameObject("BodyText", typeof(RectTransform), typeof(Text));
+            bodyGo.transform.SetParent(bubbleGo.transform, false);
+            var bodyRt = (RectTransform)bodyGo.transform;
+            bodyRt.anchorMin = Vector2.zero;
+            bodyRt.anchorMax = Vector2.one;
+            bodyRt.offsetMin = new Vector2(35f, 75f);
+            bodyRt.offsetMax = new Vector2(-35f, -65f);
+
+            explodedDialogueBodyText = bodyGo.GetComponent<Text>();
+            explodedDialogueBodyText.font = font;
+            explodedDialogueBodyText.fontSize = 23;
+            explodedDialogueBodyText.fontStyle = FontStyle.Normal;
+            explodedDialogueBodyText.alignment = TextAnchor.UpperLeft;
+            explodedDialogueBodyText.lineSpacing = 1.25f;
+            explodedDialogueBodyText.supportRichText = true;
+            explodedDialogueBodyText.color = new Color(1f, 0.97f, 0.90f, 1f);
+
+            // 6. "GOT IT! 👍" Button
+            var closeBtnGo = new GameObject("Btn_Close", typeof(RectTransform), typeof(Image), typeof(Button));
+            closeBtnGo.transform.SetParent(bubbleGo.transform, false);
+            var closeRt = (RectTransform)closeBtnGo.transform;
+            closeRt.anchorMin = new Vector2(1f, 0f);
+            closeRt.anchorMax = new Vector2(1f, 0f);
+            closeRt.pivot = new Vector2(1f, 0f);
+            closeRt.anchoredPosition = new Vector2(-25f, 16f);
+            closeRt.sizeDelta = new Vector2(210f, 52f);
+
+            var closeBtnImg = closeBtnGo.GetComponent<Image>();
+            closeBtnImg.color = new Color(0.88f, 0.65f, 0.18f, 1f);
+            var closeBtnOutline = closeBtnGo.AddComponent<Outline>();
+            closeBtnOutline.effectColor = new Color(0.35f, 0.18f, 0.02f, 0.9f);
+            closeBtnOutline.effectDistance = new Vector2(2f, -2f);
+
+            explodedCloseButton = closeBtnGo.GetComponent<Button>();
+            explodedCloseButton.onClick.AddListener(CloseExplodedCharacterDialogue);
+
+            var closeTxtGo = new GameObject("Text", typeof(RectTransform), typeof(Text));
+            closeTxtGo.transform.SetParent(closeBtnGo.transform, false);
+            var closeTxtRt = (RectTransform)closeTxtGo.transform;
+            closeTxtRt.anchorMin = Vector2.zero;
+            closeTxtRt.anchorMax = Vector2.one;
+            closeTxtRt.offsetMin = closeTxtRt.offsetMax = Vector2.zero;
+
+            var closeTxt = closeTxtGo.GetComponent<Text>();
+            closeTxt.font = font;
+            closeTxt.fontSize = 20;
+            closeTxt.fontStyle = FontStyle.Bold;
+            closeTxt.alignment = TextAnchor.MiddleCenter;
+            closeTxt.color = new Color(0.12f, 0.07f, 0.01f, 1f);
+            closeTxt.text = "GOT IT! 👍";
+
+            explodedDialoguePanel.SetActive(false);
+        }
+
+        public void CloseExplodedCharacterDialogue()
+        {
+            PlaySound(clickClip);
+            if (explodedDialoguePanel != null)
+            {
+                explodedDialoguePanel.SetActive(false);
+            }
+        }
+
         public void ShowPartDetails(string partKey)
         {
             PlaySound(partInspectClip != null ? partInspectClip : clickClip);
 
-            if (partDetailModalPanel == null) return;
-            partDetailModalPanel.SetActive(true);
+            if (partDetailModalPanel != null) partDetailModalPanel.SetActive(false);
 
+            Transform canvasTr = null;
+            var arMainCanvas = GameObject.Find("AR Main Canvas");
+            if (arMainCanvas != null) canvasTr = arMainCanvas.transform;
+            else
+            {
+                var anyCanvas = FindFirstObjectByType<Canvas>();
+                if (anyCanvas != null) canvasTr = anyCanvas.transform;
+            }
+
+            EnsureExplodedCharacterBubbleBuilt(canvasTr);
+            if (explodedDialoguePanel == null) return;
+
+            string charKey = ResearchProgress.GetString("SelectedCharacter", "Maya");
+            if (string.IsNullOrEmpty(charKey)) charKey = PlayerPrefs.GetString("LostTemple_Selected_Character", "Maya");
+            if (string.IsNullOrEmpty(charKey)) charKey = "Maya";
+
+            if (mayaFullSprite == null) mayaFullSprite = Resources.Load<Sprite>("char_maya_full");
+            if (senukFullSprite == null) senukFullSprite = Resources.Load<Sprite>("char_senuk_full");
+
+            if (explodedCharAvatarImage != null)
+            {
+                explodedCharAvatarImage.sprite = (charKey == "Senuk" && senukFullSprite != null) ? senukFullSprite : mayaFullSprite;
+            }
+
+            string speakerTitle = (charKey == "Senuk") ? "👤 Senuk (Temple Explorer)" : "👤 Maya (Explorer Guide)";
+            if (explodedSpeakerNameText != null)
+            {
+                explodedSpeakerNameText.text = speakerTitle;
+            }
+
+            string explanation = "";
             switch (partKey.ToLower())
             {
+                case "load":
+                case "boulder":
+                    explanation = "<size=28><color=#ffd700><b>🪨 THE LOAD STONE (100 N)</b></color></size>\n\n" +
+                                  "This heavy rock is the <b>Load</b>! In a lever, the Load is the heavy weight you want to lift. Gravity pulls it down with 100 Newtons of force, so we use leverage to raise it up!";
+                    HighlightConcept("load");
+                    break;
+
                 case "fulcrum":
-                    if (partDetailTitleText != null) partDetailTitleText.text = "🏔️ FULCRUM (ආධාරක ලක්ෂ්‍යය)";
-                    if (partDetailCategoryText != null) partDetailCategoryText.text = "Class 1 Lever Central Pivot Point";
-                    if (partDetailBodyText != null) partDetailBodyText.text = "The fixed point on which the lever beam balances and turns. It bears the entire weight of both the load and the applied effort forces.";
-                    if (partDetailFormulaText != null) partDetailFormulaText.text = "<b>Mechanical Advantage:</b> MA = Effort Arm ÷ Load Arm\n<i>Moving fulcrum closer to load multiplies lifting strength!</i>";
-                    if (partDetailLoreText != null) partDetailLoreText.text = "<b>Temple Architecture Lore:</b> Ancient stone masons carved triangular granite fulcrum wedges to pry massive megalithic gate lintels into place.";
+                    explanation = "<size=28><color=#ffd700><b>🔺 THE FULCRUM (PIVOT)</b></color></size>\n\n" +
+                                  "This triangular stone is the <b>Fulcrum</b>! It is the stationary support point that balances the entire beam. Moving the fulcrum closer to the heavy rock multiplies your lifting strength!";
+                    HighlightConcept("fulcrum");
                     break;
 
                 case "beam":
-                    if (partDetailTitleText != null) partDetailTitleText.text = "🪵 LEVER BEAM (ලිවර දණ්ඩ)";
-                    if (partDetailCategoryText != null) partDetailCategoryText.text = "Rigid Rotational Force Transmitter";
-                    if (partDetailBodyText != null) partDetailBodyText.text = "A rigid bar that transmits rotational torque (moment of force) from the effort side to the load side across the fulcrum pivot.";
-                    if (partDetailFormulaText != null) partDetailFormulaText.text = "<b>Torque Principle:</b> τ = Force × Distance (F × d)\n<i>Equal torque balances the lever: (F₁ × d₁) = (F₂ × d₂)</i>";
-                    if (partDetailLoreText != null) partDetailLoreText.text = "<b>Temple Architecture Lore:</b> Beams were shaped from mountain cedar and banded with bronze to withstand hundreds of thousands of Newtons of bending stress.";
-                    break;
-
-                case "load":
-                    if (partDetailTitleText != null) partDetailTitleText.text = "🪨 LOAD STONE (භාරය - 100 N)";
-                    if (partDetailCategoryText != null) partDetailCategoryText.text = "Gravitational Resistance / Output Mass";
-                    if (partDetailBodyText != null) partDetailBodyText.text = "The output resistance force to be lifted or moved. In this temple chamber, it is a 100 N carved stone seal blocking the secret sanctuary doorway.";
-                    if (partDetailFormulaText != null) partDetailFormulaText.text = "<b>Load Torque:</b> τ_load = 100 N × Load Arm Distance\n<i>Required Effort = Load Force ÷ Mechanical Advantage</i>";
-                    if (partDetailLoreText != null) partDetailLoreText.text = "<b>Temple Architecture Lore:</b> These multi-ton stone doors sealed ancient reliquaries. No human could lift them by bare hands without the leverage of simple machines.";
+                    explanation = "<size=28><color=#ffd700><b>🪵 THE LEVER BEAM</b></color></size>\n\n" +
+                                  "This long wooden bar is the <b>Lever Beam</b>! It balances across the fulcrum. When you push down on one side, the beam transmits that turning force to lift the stone on the other side!";
+                    HighlightConcept("beam");
                     break;
 
                 case "effort":
-                    if (partDetailTitleText != null) partDetailTitleText.text = "⚡ EFFORT POINT (ආයාස ලක්ෂ්‍යය)";
-                    if (partDetailCategoryText != null) partDetailCategoryText.text = "Input Force Application Handle";
-                    if (partDetailBodyText != null) partDetailBodyText.text = "The location where the explorer applies downward muscle or weight force to operate the mechanism.";
-                    if (partDetailFormulaText != null) partDetailFormulaText.text = "<b>Effort Torque:</b> τ_effort = Applied Force × Effort Arm Distance\n<i>Longer effort arm = less muscle force needed!</i>";
-                    if (partDetailLoreText != null) partDetailLoreText.text = "<b>Temple Architecture Lore:</b> By extending the effort arm, a single explorer like Maya or Senuk can easily lift stone blocks three times their own body weight!";
+                    explanation = "<size=28><color=#ffd700><b>⚡ THE EFFORT POINT</b></color></size>\n\n" +
+                                  "This is the <b>Effort Point</b> where you push down! The farther this handle is from the fulcrum, the less muscle force you need to lift the heavy stone!";
+                    HighlightConcept("effort");
                     break;
             }
 
-            CognitiveTelemetryLogger.Instance?.LogInteraction("inspect_part", null, $"{{\"part\":\"{partKey}\"}}");
-            ResearchCloudSync.Instance?.TriggerImmediateSync($"Inspected part: {partKey}");
+            if (explodedDialogueBodyText != null)
+            {
+                explodedDialogueBodyText.text = explanation;
+            }
+
+            explodedDialoguePanel.SetActive(true);
+            explodedDialoguePanel.transform.SetAsLastSibling();
+
+            CognitiveTelemetryLogger.Instance?.LogInteraction("inspect_exploded_3d_part", null, $"{{\"part\":\"{partKey}\",\"character\":\"{charKey}\"}}");
+            ResearchCloudSync.Instance?.TriggerImmediateSync($"Exploded 3D Inspect: {partKey}");
         }
 
         public void ClosePartDetailsModal()
@@ -1170,7 +1599,7 @@ namespace SecretOfLostTemple.AR
             // 2. Control Bottom Console vs View-Only Sub-Bar Visibility
             if (bottomConsole != null)
             {
-                bottomConsole.SetActive(isInteractive); // HIDE IN VIEW-ONLY, SHOW IN INTERACTIVE!
+                bottomConsole.SetActive(isInteractive && !isGuidedStoryFlowActive); // HIDE IN VIEW-ONLY OR GUIDED STORY!
             }
 
             if (viewOnlyBottomBar != null)
@@ -1197,7 +1626,10 @@ namespace SecretOfLostTemple.AR
 
         public void AdjustForce(float deltaN)
         {
-            if (StudyPolicy.Measured && !StudyPolicy.InputAllowed) return;
+            string activeScene = SceneManager.GetActiveScene().name;
+            string appMode = PlayerPrefs.GetString("LostTemple_App_Mode", "Quest");
+            bool isSandbox = (activeScene == "FreePracticeScene" || appMode == "Sandbox" || activeScene == "Physics3DLabScene");
+            if (StudyPolicy.Measured && !StudyPolicy.InputAllowed && !isSandbox) return;
             hasUserInteractedWithPhysics = true;
             PlaySound(forceChangeClip != null ? forceChangeClip : clickClip);
             currentEffortForceN = Mathf.Clamp(currentEffortForceN + deltaN, 0f, 160f);
@@ -1212,7 +1644,10 @@ namespace SecretOfLostTemple.AR
 
         public void MoveFulcrumStep(float delta)
         {
-            if (StudyPolicy.Measured && !StudyPolicy.InputAllowed) return;
+            string activeScene = SceneManager.GetActiveScene().name;
+            string appMode = PlayerPrefs.GetString("LostTemple_App_Mode", "Quest");
+            bool isSandbox = (activeScene == "FreePracticeScene" || appMode == "Sandbox" || activeScene == "Physics3DLabScene");
+            if (StudyPolicy.Measured && !StudyPolicy.InputAllowed && !isSandbox) return;
             hasUserInteractedWithPhysics = true;
             PlaySound(clickClip);
             fulcrumOffset = Mathf.Clamp(fulcrumOffset + delta, -0.45f, 0.45f);
@@ -1227,7 +1662,10 @@ namespace SecretOfLostTemple.AR
 
         private void OnFulcrumSliderChanged(float val)
         {
-            if (StudyPolicy.Measured && !StudyPolicy.InputAllowed) return;
+            string activeScene = SceneManager.GetActiveScene().name;
+            string appMode = PlayerPrefs.GetString("LostTemple_App_Mode", "Quest");
+            bool isSandbox = (activeScene == "FreePracticeScene" || appMode == "Sandbox" || activeScene == "Physics3DLabScene");
+            if (StudyPolicy.Measured && !StudyPolicy.InputAllowed && !isSandbox) return;
             hasUserInteractedWithPhysics = true;
             fulcrumOffset = Mathf.Clamp(val, -0.45f, 0.45f);
             fulcrumChangeCount++;
@@ -1260,11 +1698,15 @@ namespace SecretOfLostTemple.AR
 
             string charName = string.IsNullOrEmpty(activeCharacter) ? "EXPLORER" : activeCharacter.ToUpper();
 
+            // Calculate natural resting down angle (boulder touching ground/pedestal) and lifted up angle
+            float restingAngle = Mathf.Clamp(Mathf.Asin(Mathf.Clamp(0.33f / loadArm, 0.1f, 0.55f)) * Mathf.Rad2Deg, 14f, 25f);
+            float liftedAngle = -Mathf.Clamp(Mathf.Asin(Mathf.Clamp(0.28f / effortArm, 0.1f, 0.45f)) * Mathf.Rad2Deg, 10f, 18f);
+
             if (currentMode == InteractionMode.Interactive)
             {
                 if (netTorque > 5f)
                 {
-                    targetBeamAngle = -12f;
+                    targetBeamAngle = liftedAngle;
                     string msg = $"<color=#00ff88><b>🎉 {charName}: \"100 N BOULDER LIFTED!\"</b></color>\n<size=18>Required: {Mathf.CeilToInt(requiredForceN)} N | Applied: {Mathf.RoundToInt(currentEffortForceN)} N | MA: {mechanicalAdvantage:F1}x</size>";
                     if (liftStatusBannerText != null) liftStatusBannerText.text = msg;
 
@@ -1311,7 +1753,7 @@ namespace SecretOfLostTemple.AR
                 }
                 else if (netTorque < -5f)
                 {
-                    targetBeamAngle = 6f;
+                    targetBeamAngle = restingAngle;
                     string msg = $"<color=#ffaa44><b>⚠️ {charName}: \"TOO HEAVY TO LIFT!\"</b></color>\n<size=18>Need at least <b>{Mathf.CeilToInt(requiredForceN)} N</b> with this Fulcrum position!</size>";
                     if (liftStatusBannerText != null) liftStatusBannerText.text = msg;
 
@@ -1484,18 +1926,28 @@ namespace SecretOfLostTemple.AR
 
         public void OnRotateClicked()
         {
-            if (StudyPolicy.Measured && !StudyPolicy.InputAllowed) return;
+            string activeScene = SceneManager.GetActiveScene().name;
+            string appMode = PlayerPrefs.GetString("LostTemple_App_Mode", "Quest");
+            bool isSandbox = (activeScene == "FreePracticeScene" || appMode == "Sandbox" || activeScene == "Physics3DLabScene");
+            if (StudyPolicy.Measured && !StudyPolicy.InputAllowed && !isSandbox) return;
             if (leverRoot != null) leverRoot.GetComponent<ARMechanismViewer>()?.RotateBy(30f);
         }
 
         public void ResetMechanism()
         {
-            if (StudyPolicy.Measured && !StudyPolicy.InputAllowed) return;
+            string activeScene = SceneManager.GetActiveScene().name;
+            string appMode = PlayerPrefs.GetString("LostTemple_App_Mode", "Quest");
+            bool isSandbox = (activeScene == "FreePracticeScene" || appMode == "Sandbox" || activeScene == "Physics3DLabScene");
+            if (StudyPolicy.Measured && !StudyPolicy.InputAllowed && !isSandbox) return;
             PlaySound(clickClip);
+            if (boulderRollCoroutine != null)
+            {
+                StopCoroutine(boulderRollCoroutine);
+                boulderRollCoroutine = null;
+            }
+
             currentEffortForceN = 60f;
             fulcrumOffset = 0f;
-            currentBeamAngle = 0f;
-            targetBeamAngle = 0f;
             isAutoRotating = (currentMode == InteractionMode.ViewOnly && currentViewOnlySubMode == ViewOnlySubMode.ForcesAndMotion);
             isExplodedView = (currentMode == InteractionMode.ViewOnly && currentViewOnlySubMode == ViewOnlySubMode.ExplodedParts);
 
@@ -1509,6 +1961,7 @@ namespace SecretOfLostTemple.AR
             if (boulderRoot != null)
             {
                 boulderRoot.localPosition = boulderAssembledLocalPos;
+                boulderRoot.localRotation = Quaternion.identity;
                 var boulderMesh = boulderRoot.Find("Model_Instance_Boulder");
                 if (boulderMesh != null) boulderMesh.localPosition = new Vector3(0f, 0.18f, 0f);
             }
@@ -1532,6 +1985,14 @@ namespace SecretOfLostTemple.AR
 
             UpdateForceUI();
             CalculatePhysicsAndAnimate();
+
+            // Set natural resting angle immediately
+            currentBeamAngle = targetBeamAngle;
+            if (beamPivot != null && !isExplodedView)
+            {
+                beamPivot.localRotation = Quaternion.Euler(0f, 0f, currentBeamAngle);
+            }
+
             CognitiveTelemetryLogger.Instance?.LogInteraction("reset_mechanism", null, "{\"reset\":true}");
         }
 
@@ -1546,11 +2007,17 @@ namespace SecretOfLostTemple.AR
 
         private void EnsureHowItWorksToggleButtonBuilt(Transform uiRoot)
         {
-            if (uiRoot == null || toggleHowItWorksBtn != null) return;
+            if (uiRoot == null) return;
             var topBar = uiRoot.Find("TopBar");
-            if (topBar == null) return;
-
-            var existing = topBar.Find("Btn_HowItWorks");
+            if (topBar != null)
+            {
+                var existingBtn = topBar.Find("Btn_HowItWorks");
+                if (existingBtn != null) existingBtn.gameObject.SetActive(false);
+            }
+            if (toggleHowItWorksBtn != null) toggleHowItWorksBtn.gameObject.SetActive(false);
+            if (howItWorksPanel != null) howItWorksPanel.SetActive(true);
+            return;
+            var existing = topBar != null ? topBar.Find("Btn_HowItWorks") : null;
             if (existing != null)
             {
                 toggleHowItWorksBtn = existing.GetComponent<Button>();
@@ -1690,6 +2157,12 @@ namespace SecretOfLostTemple.AR
             PlayerPrefs.SetInt("LostTemple_Lever_Challenge_Completed", 1);
             PlayerPrefs.Save();
 
+            // Award +5 Stars for completing the temple gate challenge!
+            int currentStars = ResearchProgress.GetInt("LostTemple_Total_Stars", 0);
+            currentStars += 5;
+            ResearchProgress.SetInt("LostTemple_Total_Stars", currentStars);
+            PlayerPrefs.Save();
+
             float solveSeconds = Mathf.Max(2f, Time.time - challengeStarted);
             if (challengeAttempts == 0)
             {
@@ -1708,7 +2181,7 @@ namespace SecretOfLostTemple.AR
 
             if (challengeFeedbackText != null)
             {
-                challengeFeedbackText.text = $"<color=#00ff88><b>🎉 CHALLENGE COMPLETE ({tierLabel})!</b> MA: <b>{ma:F1}x</b> | Lifted {targetLoadN:F0}N with {Mathf.RoundToInt(currentEffortForceN)}N! Tap <b>CONTINUE STORY ➡</b> to advance!</color>";
+                challengeFeedbackText.text = $"<color=#00ff88><b>🎉 CHALLENGE COMPLETE ({tierLabel})! ⭐ +5 STARS EARNED! (Total: {currentStars} ⭐)</b>\nMA: <b>{ma:F1}x</b> | Lifted {targetLoadN:F0}N with {Mathf.RoundToInt(currentEffortForceN)}N! Tap <b>CONTINUE STORY ➡</b> to advance!</color>";
             }
             if (celebrationParticles != null)
             {
@@ -1746,7 +2219,8 @@ namespace SecretOfLostTemple.AR
             // Boulder roll & lift animation
             if (boulderRoot != null)
             {
-                StartCoroutine(AnimateBoulderRoll());
+                if (boulderRollCoroutine != null) StopCoroutine(boulderRollCoroutine);
+                boulderRollCoroutine = StartCoroutine(AnimateBoulderRoll());
             }
 
             string victoryMsg = $"<color=#00ff88><b>🎉 {targetLoadN:F0} N BOULDER LIFTED!</b></color>\n<size=18><b>LEVER TASK COMPLETE! Tap 'CONTINUE STORY ➡' to finish your StoryBook!</b></size>";
@@ -1906,6 +2380,311 @@ namespace SecretOfLostTemple.AR
             }
         }
 
+        private void EnsureQuizModalBuilt(Transform uiRoot)
+        {
+            if (uiRoot == null) return;
+
+            if (quizModalPanel == null)
+            {
+                var existing = uiRoot.Find("Panel_ARQuizModal");
+                if (existing != null) quizModalPanel = existing.gameObject;
+            }
+
+            // If an old undersized modal card exists, recreate it with large readable proportions
+            if (quizModalPanel != null)
+            {
+                var card = quizModalPanel.transform.Find("ModalCard");
+                if (card != null && ((RectTransform)card).sizeDelta.x < 1100f)
+                {
+                    Destroy(quizModalPanel);
+                    quizModalPanel = null;
+                }
+            }
+
+            if (quizModalPanel == null)
+            {
+                Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+
+                quizModalPanel = new GameObject("Panel_ARQuizModal", typeof(RectTransform));
+                quizModalPanel.transform.SetParent(uiRoot, false);
+                var panelRt = (RectTransform)quizModalPanel.transform;
+                panelRt.anchorMin = Vector2.zero;
+                panelRt.anchorMax = Vector2.one;
+                panelRt.offsetMin = panelRt.offsetMax = Vector2.zero;
+
+                // Dim Background
+                var dimGo = new GameObject("BackdropDim", typeof(RectTransform), typeof(Image));
+                dimGo.transform.SetParent(quizModalPanel.transform, false);
+                var dimRt = (RectTransform)dimGo.transform;
+                dimRt.anchorMin = Vector2.zero;
+                dimRt.anchorMax = Vector2.one;
+                dimRt.offsetMin = dimRt.offsetMax = Vector2.zero;
+                var dimImg = dimGo.GetComponent<Image>();
+                dimImg.color = new Color(0f, 0f, 0f, 0.78f);
+
+                // Modal Card - Sized for mobile landscape readability
+                var cardGo = new GameObject("ModalCard", typeof(RectTransform), typeof(Image), typeof(Outline));
+                cardGo.transform.SetParent(quizModalPanel.transform, false);
+                var cardRt = (RectTransform)cardGo.transform;
+                cardRt.anchorMin = new Vector2(0.5f, 0.5f);
+                cardRt.anchorMax = new Vector2(0.5f, 0.5f);
+                cardRt.pivot = new Vector2(0.5f, 0.5f);
+                cardRt.anchoredPosition = Vector2.zero;
+                cardRt.sizeDelta = new Vector2(1380f, 750f);
+
+                var cardImg = cardGo.GetComponent<Image>();
+                cardImg.color = new Color(0.08f, 0.12f, 0.18f, 0.98f);
+                var cardOutline = cardGo.GetComponent<Outline>();
+                cardOutline.effectColor = new Color(0.95f, 0.75f, 0.20f, 0.95f);
+                cardOutline.effectDistance = new Vector2(3f, -3f);
+
+                // Title (Big, bold, gold)
+                var titleGo = new GameObject("TitleText", typeof(RectTransform), typeof(Text));
+                titleGo.transform.SetParent(cardGo.transform, false);
+                var titleRt = (RectTransform)titleGo.transform;
+                titleRt.anchorMin = new Vector2(0f, 1f);
+                titleRt.anchorMax = new Vector2(1f, 1f);
+                titleRt.pivot = new Vector2(0.5f, 1f);
+                titleRt.anchoredPosition = new Vector2(0f, -24f);
+                titleRt.sizeDelta = new Vector2(-120f, 48f);
+                quizTitleText = titleGo.GetComponent<Text>();
+                quizTitleText.font = font;
+                quizTitleText.fontSize = 32;
+                quizTitleText.fontStyle = FontStyle.Bold;
+                quizTitleText.alignment = TextAnchor.MiddleCenter;
+                quizTitleText.color = new Color(1f, 0.88f, 0.3f);
+
+                // Category (Clear cyan)
+                var catGo = new GameObject("CategoryText", typeof(RectTransform), typeof(Text));
+                catGo.transform.SetParent(cardGo.transform, false);
+                var catRt = (RectTransform)catGo.transform;
+                catRt.anchorMin = new Vector2(0f, 1f);
+                catRt.anchorMax = new Vector2(1f, 1f);
+                catRt.pivot = new Vector2(0.5f, 1f);
+                catRt.anchoredPosition = new Vector2(-60f, -72f);
+                catRt.sizeDelta = new Vector2(-240f, 34f);
+                quizCategoryText = catGo.GetComponent<Text>();
+                quizCategoryText.font = font;
+                quizCategoryText.fontSize = 22;
+                quizCategoryText.alignment = TextAnchor.MiddleLeft;
+                quizCategoryText.color = new Color(0.6f, 0.85f, 1f);
+
+                // Countdown Timer Text
+                var timerGo = new GameObject("TimerText", typeof(RectTransform), typeof(Text));
+                timerGo.transform.SetParent(cardGo.transform, false);
+                var timerRt = (RectTransform)timerGo.transform;
+                timerRt.anchorMin = new Vector2(1f, 1f);
+                timerRt.anchorMax = new Vector2(1f, 1f);
+                timerRt.pivot = new Vector2(1f, 1f);
+                timerRt.anchoredPosition = new Vector2(-60f, -70f);
+                timerRt.sizeDelta = new Vector2(220f, 34f);
+                quizTimerText = timerGo.GetComponent<Text>();
+                quizTimerText.font = font;
+                quizTimerText.fontSize = 24;
+                quizTimerText.fontStyle = FontStyle.Bold;
+                quizTimerText.alignment = TextAnchor.MiddleRight;
+                quizTimerText.color = new Color(1f, 0.85f, 0.2f);
+                quizTimerText.text = "⏱️ 30s";
+
+                // Countdown Timer Progress Bar
+                var barBgGo = new GameObject("TimerBarBg", typeof(RectTransform), typeof(Image));
+                barBgGo.transform.SetParent(cardGo.transform, false);
+                var barBgRt = (RectTransform)barBgGo.transform;
+                barBgRt.anchorMin = new Vector2(0.5f, 1f);
+                barBgRt.anchorMax = new Vector2(0.5f, 1f);
+                barBgRt.pivot = new Vector2(0.5f, 1f);
+                barBgRt.anchoredPosition = new Vector2(0f, -106f);
+                barBgRt.sizeDelta = new Vector2(1260f, 8f);
+                var barBgImg = barBgGo.GetComponent<Image>();
+                barBgImg.color = new Color(0.12f, 0.16f, 0.22f, 0.9f);
+
+                var barFillGo = new GameObject("TimerBarFill", typeof(RectTransform), typeof(Image));
+                barFillGo.transform.SetParent(barBgGo.transform, false);
+                var barFillRt = (RectTransform)barFillGo.transform;
+                barFillRt.anchorMin = Vector2.zero;
+                barFillRt.anchorMax = Vector2.one;
+                barFillRt.offsetMin = barFillRt.offsetMax = Vector2.zero;
+                quizTimerBarImage = barFillGo.GetComponent<Image>();
+                quizTimerBarImage.type = Image.Type.Filled;
+                quizTimerBarImage.fillMethod = Image.FillMethod.Horizontal;
+                quizTimerBarImage.fillOrigin = (int)Image.OriginHorizontal.Left;
+                quizTimerBarImage.fillAmount = 1f;
+                quizTimerBarImage.color = new Color(0.95f, 0.75f, 0.20f, 1f);
+
+                // Question - Cleanly inset with 60px padding on left/right so it never spills out!
+                var qGo = new GameObject("QuestionText", typeof(RectTransform), typeof(Text));
+                qGo.transform.SetParent(cardGo.transform, false);
+                var qRt = (RectTransform)qGo.transform;
+                qRt.anchorMin = new Vector2(0f, 1f);
+                qRt.anchorMax = new Vector2(1f, 1f);
+                qRt.pivot = new Vector2(0.5f, 1f);
+                qRt.anchoredPosition = new Vector2(0f, -120f);
+                qRt.sizeDelta = new Vector2(-120f, 105f);
+                quizQuestionText = qGo.GetComponent<Text>();
+                quizQuestionText.font = font;
+                quizQuestionText.fontSize = 28;
+                quizQuestionText.fontStyle = FontStyle.Bold;
+                quizQuestionText.alignment = TextAnchor.UpperLeft;
+                quizQuestionText.horizontalOverflow = HorizontalWrapMode.Wrap;
+                quizQuestionText.verticalOverflow = VerticalWrapMode.Truncate;
+                quizQuestionText.lineSpacing = 1.25f;
+                quizQuestionText.color = Color.white;
+
+                // 4 Options (Big buttons with 24pt bold text)
+                quizOptionButtons = new Button[4];
+                quizOptionTexts = new Text[4];
+                for (int i = 0; i < 4; i++)
+                {
+                    int optIdx = i;
+                    var optGo = new GameObject($"Btn_Option_{i + 1}", typeof(RectTransform), typeof(Image), typeof(Button));
+                    optGo.transform.SetParent(cardGo.transform, false);
+                    var optRt = (RectTransform)optGo.transform;
+                    optRt.anchorMin = new Vector2(0.5f, 1f);
+                    optRt.anchorMax = new Vector2(0.5f, 1f);
+                    optRt.pivot = new Vector2(0.5f, 1f);
+                    optRt.anchoredPosition = new Vector2(0f, -240f - (i * 74f));
+                    optRt.sizeDelta = new Vector2(1260f, 62f);
+
+                    var optImg = optGo.GetComponent<Image>();
+                    optImg.color = new Color(0.16f, 0.22f, 0.32f, 0.95f);
+                    quizOptionButtons[i] = optGo.GetComponent<Button>();
+
+                    var optTxtGo = new GameObject("Text", typeof(RectTransform), typeof(Text));
+                    optTxtGo.transform.SetParent(optGo.transform, false);
+                    var optTxtRt = (RectTransform)optTxtGo.transform;
+                    optTxtRt.anchorMin = Vector2.zero;
+                    optTxtRt.anchorMax = Vector2.one;
+                    optTxtRt.offsetMin = new Vector2(24f, 0f);
+                    optTxtRt.offsetMax = new Vector2(-24f, 0f);
+                    quizOptionTexts[i] = optTxtGo.GetComponent<Text>();
+                    quizOptionTexts[i].font = font;
+                    quizOptionTexts[i].fontSize = 24;
+                    quizOptionTexts[i].fontStyle = FontStyle.Bold;
+                    quizOptionTexts[i].alignment = TextAnchor.MiddleLeft;
+                    quizOptionTexts[i].horizontalOverflow = HorizontalWrapMode.Wrap;
+                    quizOptionTexts[i].color = Color.white;
+
+                    quizOptionButtons[i].onClick.AddListener(() => SelectQuizAnswer(optIdx));
+                }
+
+                // Panel Feedback
+                var fbGo = new GameObject("Panel_Feedback", typeof(RectTransform), typeof(Image));
+                fbGo.transform.SetParent(cardGo.transform, false);
+                var fbRt = (RectTransform)fbGo.transform;
+                fbRt.anchorMin = new Vector2(0.5f, 0f);
+                fbRt.anchorMax = new Vector2(0.5f, 0f);
+                fbRt.pivot = new Vector2(0.5f, 0f);
+                fbRt.anchoredPosition = new Vector2(0f, 85f);
+                fbRt.sizeDelta = new Vector2(1260f, 120f);
+                var fbImg = fbGo.GetComponent<Image>();
+                fbImg.color = new Color(0.08f, 0.25f, 0.14f, 0.98f);
+                quizFeedbackPanel = fbGo;
+
+                var fbTxtGo = new GameObject("FeedbackText", typeof(RectTransform), typeof(Text));
+                fbTxtGo.transform.SetParent(fbGo.transform, false);
+                var fbTxtRt = (RectTransform)fbTxtGo.transform;
+                fbTxtRt.anchorMin = Vector2.zero;
+                fbTxtRt.anchorMax = Vector2.one;
+                fbTxtRt.offsetMin = new Vector2(24f, 10f);
+                fbTxtRt.offsetMax = new Vector2(-24f, -10f);
+                quizFeedbackText = fbTxtGo.GetComponent<Text>();
+                quizFeedbackText.font = font;
+                quizFeedbackText.fontSize = 22;
+                quizFeedbackText.alignment = TextAnchor.MiddleCenter;
+                quizFeedbackText.horizontalOverflow = HorizontalWrapMode.Wrap;
+                quizFeedbackText.lineSpacing = 1.25f;
+                quizFeedbackText.color = Color.white;
+                fbGo.SetActive(false);
+
+                // Btn Next / Continue
+                var nextGo = new GameObject("Btn_NextQuestion", typeof(RectTransform), typeof(Image), typeof(Button));
+                nextGo.transform.SetParent(cardGo.transform, false);
+                var nextRt = (RectTransform)nextGo.transform;
+                nextRt.anchorMin = new Vector2(1f, 0f);
+                nextRt.anchorMax = new Vector2(1f, 0f);
+                nextRt.pivot = new Vector2(1f, 0f);
+                nextRt.anchoredPosition = new Vector2(-40f, 18f);
+                nextRt.sizeDelta = new Vector2(380f, 55f);
+                var nextImg = nextGo.GetComponent<Image>();
+                nextImg.color = new Color(0.18f, 0.65f, 0.35f, 1f);
+                quizNextButton = nextGo.GetComponent<Button>();
+                quizNextButton.onClick.AddListener(OnQuizContinueClicked);
+
+                var nextTxtGo = new GameObject("Text", typeof(RectTransform), typeof(Text));
+                nextTxtGo.transform.SetParent(nextGo.transform, false);
+                var nextTxtRt = (RectTransform)nextTxtGo.transform;
+                nextTxtRt.anchorMin = Vector2.zero;
+                nextTxtRt.anchorMax = Vector2.one;
+                nextTxtRt.offsetMin = nextTxtRt.offsetMax = Vector2.zero;
+                var nextTxt = nextTxtGo.GetComponent<Text>();
+                nextTxt.font = font;
+                nextTxt.fontSize = 22;
+                nextTxt.fontStyle = FontStyle.Bold;
+                nextTxt.alignment = TextAnchor.MiddleCenter;
+                nextTxt.color = Color.white;
+                nextTxt.text = "CONTINUE EXPLORING ▶";
+
+                // Btn Close ("✕")
+                var closeGo = new GameObject("Btn_Close", typeof(RectTransform), typeof(Image), typeof(Button));
+                closeGo.transform.SetParent(cardGo.transform, false);
+                var closeRt = (RectTransform)closeGo.transform;
+                closeRt.anchorMin = new Vector2(1f, 1f);
+                closeRt.anchorMax = new Vector2(1f, 1f);
+                closeRt.pivot = new Vector2(1f, 1f);
+                closeRt.anchoredPosition = new Vector2(-16f, -16f);
+                closeRt.sizeDelta = new Vector2(56f, 56f);
+                var closeImg = closeGo.GetComponent<Image>();
+                closeImg.color = new Color(0.40f, 0.15f, 0.15f, 0.95f);
+                quizCloseButton = closeGo.GetComponent<Button>();
+                quizCloseButton.onClick.AddListener(CloseARQuiz);
+
+                var closeTxtGo = new GameObject("Text", typeof(RectTransform), typeof(Text));
+                closeTxtGo.transform.SetParent(closeGo.transform, false);
+                var closeTxtRt = (RectTransform)closeTxtGo.transform;
+                closeTxtRt.anchorMin = Vector2.zero;
+                closeTxtRt.anchorMax = Vector2.one;
+                closeTxtRt.offsetMin = closeTxtRt.offsetMax = Vector2.zero;
+                var closeTxt = closeTxtGo.GetComponent<Text>();
+                closeTxt.font = font;
+                closeTxt.fontSize = 28;
+                closeTxt.fontStyle = FontStyle.Bold;
+                closeTxt.alignment = TextAnchor.MiddleCenter;
+                closeTxt.color = Color.white;
+                closeTxt.text = "✕";
+
+                quizModalPanel.SetActive(false);
+            }
+            else
+            {
+                if (quizTitleText == null) quizTitleText = quizModalPanel.transform.Find("ModalCard/TitleText")?.GetComponent<Text>();
+                if (quizCategoryText == null) quizCategoryText = quizModalPanel.transform.Find("ModalCard/CategoryText")?.GetComponent<Text>();
+                if (quizQuestionText == null) quizQuestionText = quizModalPanel.transform.Find("ModalCard/QuestionText")?.GetComponent<Text>();
+                if (quizFeedbackPanel == null) quizFeedbackPanel = quizModalPanel.transform.Find("ModalCard/Panel_Feedback")?.gameObject;
+                if (quizFeedbackPanel != null && quizFeedbackText == null) quizFeedbackText = quizFeedbackPanel.transform.Find("FeedbackText")?.GetComponent<Text>();
+                if (quizNextButton == null)
+                {
+                    quizNextButton = quizModalPanel.transform.Find("ModalCard/Btn_NextQuestion")?.GetComponent<Button>()
+                                  ?? quizModalPanel.transform.Find("ModalCard/Btn_Next")?.GetComponent<Button>();
+                }
+                if (quizCloseButton == null) quizCloseButton = quizModalPanel.transform.Find("ModalCard/Btn_Close")?.GetComponent<Button>();
+
+                if (quizOptionButtons == null || quizOptionButtons.Length < 4)
+                {
+                    quizOptionButtons = new Button[4];
+                    quizOptionTexts = new Text[4];
+                    for (int i = 0; i < 4; i++)
+                    {
+                        var optTr = quizModalPanel.transform.Find($"ModalCard/Btn_Option_{i + 1}");
+                        if (optTr != null)
+                        {
+                            quizOptionButtons[i] = optTr.GetComponent<Button>();
+                            quizOptionTexts[i] = optTr.Find("Text")?.GetComponent<Text>();
+                        }
+                    }
+                }
+            }
+        }
+
         private void GetChallengeParametersForTier(out int tier, out float targetLoadN, out float maxAllowedEffortN, out string tierLabel)
         {
             bool useAdaptive = !StudyPolicy.Measured || (ResearchData.Store.Current != null && ResearchData.Store.Current.adaptive);
@@ -1915,19 +2694,19 @@ namespace SecretOfLostTemple.AR
             {
                 targetLoadN = 100f;
                 maxAllowedEffortN = 60f;
-                tierLabel = "Tier 1 (Apprentice)";
+                tierLabel = "Tier 1 (Explorer)";
             }
             else if (tier == 2)
             {
                 targetLoadN = 100f;
                 maxAllowedEffortN = 40f;
-                tierLabel = "Tier 2 (Scholar)";
+                tierLabel = "Tier 2 (Expert)";
             }
             else
             {
                 targetLoadN = 120f;
                 maxAllowedEffortN = 40f;
-                tierLabel = "Tier 3 (Master)";
+                tierLabel = "Tier 3 (Champion)";
             }
         }
 
@@ -2068,11 +2847,12 @@ namespace SecretOfLostTemple.AR
             while (elapsed < duration)
             {
                 elapsed += Time.deltaTime;
-                float t = elapsed / duration;
+                float t = Mathf.Clamp01(elapsed / duration);
                 boulderRoot.localPosition = startPos + new Vector3(-0.4f * t, 0.35f * Mathf.Sin(t * Mathf.PI), 0f);
                 boulderRoot.localRotation = startRot * Quaternion.Euler(0f, 0f, 180f * t);
                 yield return null;
             }
+            boulderRollCoroutine = null;
         }
 
         // ==========================================
@@ -2082,6 +2862,7 @@ namespace SecretOfLostTemple.AR
         [Serializable]
         private struct InSituQuizQuestion
         {
+            public int tier; // 1 = Explorer, 2 = Expert, 3 = Champion
             public string category;
             public string question;
             public string[] options;
@@ -2092,8 +2873,68 @@ namespace SecretOfLostTemple.AR
 
         private InSituQuizQuestion[] quizQuestions = new InSituQuizQuestion[]
         {
+            // === TIER 1: EXPLORER (Anatomy & Direct Identification - 30s Timer) ===
             new InSituQuizQuestion {
-                category = "Mechanical Advantage & Force Calculation",
+                tier = 1,
+                category = "Class 1 Lever Anatomy",
+                question = "In this temple Class 1 Lever, which crucial component represents the Load being lifted by the beam?",
+                options = new string[] { "A) Heavy Stone Boulder (Load)", "B) Fulcrum Pivot Point", "C) Effort Handle", "D) Rope Pulley" },
+                correctIndex = 0,
+                explanation = "In a Class 1 Lever, the heavy stone boulder is the Load resisting the lever's movement and being lifted.",
+                targetPart = "load"
+            },
+            new InSituQuizQuestion {
+                tier = 1,
+                category = "Class 1 Lever Definition",
+                question = "Why is this temple machine classified as a First-Class (Class 1) Lever?",
+                options = new string[] { "A) The Fulcrum is located BETWEEN the Load and the Effort", "B) The Load is located between the Fulcrum and Effort", "C) The Effort is located between the Fulcrum and Load", "D) It has no pivot point" },
+                correctIndex = 0,
+                explanation = "In a Class 1 Lever, the fulcrum sits in the middle between the load and the applied effort force.",
+                targetPart = "fulcrum"
+            },
+            new InSituQuizQuestion {
+                tier = 1,
+                category = "Lever Effort Point",
+                question = "Where does the explorer apply muscle strength (Effort) to tilt the lever beam?",
+                options = new string[] { "A) At the long Effort Handle on the right", "B) Directly on top of the boulder", "C) Underneath the triangular fulcrum", "D) In the exact center of the stone" },
+                correctIndex = 0,
+                explanation = "Effort is the input force applied by the explorer on the handle to rotate the beam around the fulcrum.",
+                targetPart = "effort"
+            },
+
+            // === TIER 2: EXPERT (Leverage Mechanics & Principles - 20s Timer) ===
+            new InSituQuizQuestion {
+                tier = 2,
+                category = "Fulcrum Position & Leverage",
+                question = "Where should the explorer slide the triangular fulcrum to lift the megalithic door with LEAST effort?",
+                options = new string[] { "A) Closer to the heavy Stone (Load)", "B) Exactly in the middle", "C) Closer to the handle (Effort)", "D) At the very end of the beam" },
+                correctIndex = 0,
+                explanation = "Placing the fulcrum closer to the Load lengthens the Effort Arm, multiplying your lifting strength!",
+                targetPart = "fulcrum"
+            },
+            new InSituQuizQuestion {
+                tier = 2,
+                category = "Fulcrum Distance & Effort",
+                question = "If the fulcrum is moved closer to your hand (Effort), what happens to the effort required to lift the stone?",
+                options = new string[] { "A) You need MORE effort force (Harder)", "B) You need LESS effort force (Easier)", "C) The force stays identical", "D) The stone lifts by itself" },
+                correctIndex = 0,
+                explanation = "Moving the fulcrum closer to effort shortens the effort arm and lengthens the load arm, requiring much higher effort!",
+                targetPart = "fulcrum"
+            },
+            new InSituQuizQuestion {
+                tier = 2,
+                category = "Mechanical Advantage Concept",
+                question = "What does a Mechanical Advantage (MA) greater than 1 mean for the explorer?",
+                options = new string[] { "A) Less input effort is needed than the load's weight", "B) More input effort is needed than the load's weight", "C) The machine cannot move", "D) The load becomes heavier" },
+                correctIndex = 0,
+                explanation = "A Mechanical Advantage greater than 1 multiplies input force, allowing you to lift heavy loads with less effort!",
+                targetPart = "effort"
+            },
+
+            // === TIER 3: CHAMPION (Calculations & Torque Equilibrium - 12s Timer) ===
+            new InSituQuizQuestion {
+                tier = 3,
+                category = "Mechanical Advantage Calculation",
                 question = "The stone door weighs 120 N. If the Effort Arm is 3x longer than the Load Arm (MA = 3), what force is needed to lift it?",
                 options = new string[] { "A) 40 N  (120 N ÷ 3)", "B) 120 N  (Equal force)", "C) 360 N  (120 N × 3)", "D) 10 N" },
                 correctIndex = 0,
@@ -2101,30 +2942,36 @@ namespace SecretOfLostTemple.AR
                 targetPart = "effort"
             },
             new InSituQuizQuestion {
-                category = "Fulcrum Position & Leverage",
-                question = "Where should the explorer slide the triangular fulcrum to hoist the megalithic door with LEAST effort?",
-                options = new string[] { "A) Closer to the heavy Stone (Load)", "B) Exactly in the middle", "C) Closer to the handle (Effort)", "D) At the very end of the beam" },
+                tier = 3,
+                category = "Torque & Balance Condition",
+                question = "When does the lever beam achieve perfect rotational equilibrium (balance)?",
+                options = new string[] { "A) When Clockwise Torque equals Counter-Clockwise Torque", "B) When only the Effort force is applied", "C) When the Fulcrum is removed", "D) When the stone falls off" },
                 correctIndex = 0,
-                explanation = "Placing the fulcrum closer to the Load lengthens the Effort Arm, multiplying lifting strength!",
-                targetPart = "fulcrum"
+                explanation = "Rotational equilibrium occurs when Clockwise Torque = Counter-Clockwise Torque (Effort × Effort Arm = Load × Load Arm).",
+                targetPart = "beam"
             },
             new InSituQuizQuestion {
+                tier = 3,
                 category = "Torque Equilibrium Principle",
                 question = "What happens to the required muscle force as you push further away from the fulcrum pivot point?",
                 options = new string[] { "A) Required Force Decreases (Easier)", "B) Required Force Increases (Harder)", "C) Force stays exactly the same", "D) Lever loses balance" },
                 correctIndex = 0,
                 explanation = "Torque = Force × Distance (τ = F × d). A longer distance produces greater rotational torque with less effort.",
                 targetPart = "beam"
-            },
-            new InSituQuizQuestion {
-                category = "Class 1 Lever Anatomy",
-                question = "In this temple Class 1 Lever, which crucial component represents the Load being lifted by the beam?",
-                options = new string[] { "A) Heavy Stone Boulder (Load)", "B) Fulcrum Pivot Point", "C) Effort Handle", "D) Rope Pulley" },
-                correctIndex = 0,
-                explanation = "In a Class 1 Lever, the heavy stone boulder is the Load resisting the lever's movement and being lifted.",
-                targetPart = "load"
             }
         };
+
+        private int GetNextQuizIndexForTier(int tier)
+        {
+            var matching = new System.Collections.Generic.List<int>();
+            for (int i = 0; i < quizQuestions.Length; i++)
+            {
+                if (quizQuestions[i].tier == tier) matching.Add(i);
+            }
+            if (matching.Count == 0) return 0;
+            tierQuizCursor = (tierQuizCursor + 1) % matching.Count;
+            return matching[tierQuizCursor];
+        }
 
         private int currentQuizIndex = 0;
         private int currentQuizScore = 0;
@@ -2141,24 +2988,62 @@ namespace SecretOfLostTemple.AR
         private float lastInteractionTimestamp = 0f;
         private string lastFailedConceptPart = "fulcrum";
 
-        public void OpenARQuiz()
+        // In-situ Timed Micro-Quiz System (Triggered every ~10s of active exploration)
+        private float microQuizTimer = 0f;
+        private const float MICRO_QUIZ_INTERVAL = 10f;
+        private bool microQuizEnabled = true;
+        private Coroutine autoCloseQuizCoroutine = null;
+
+        public void TriggerTimedMicroQuiz()
         {
-            if (StudyPolicy.Measured && (!ResearchData.Store.Current.embeddedAssessment || ResearchData.Store.PendingTest != null)) return;
-            researchQuizRun = System.Guid.NewGuid().ToString("N");
-            ResearchData.Record("formative_start", researchQuizRun);
-            PlaySound(clickClip);
-            if (quizModalPanel == null) AutoBindAllReferences();
+            var canvasTr = transform;
+            var uiRoot = canvasTr.Find("LeverAR_UIRoot") ?? canvasTr;
+            EnsureQuizModalBuilt(uiRoot);
+
             if (quizModalPanel == null) return;
+            Debug.Log("[MicroQuiz] Triggering quiz popup now!");
+
+            researchQuizRun = System.Guid.NewGuid().ToString("N");
+            ResearchData.Record("micro_quiz_popup", "Q" + (currentQuizIndex + 1));
 
             quizModalPanel.SetActive(true);
-            currentQuizIndex = 0;
-            currentQuizScore = 0;
+            quizModalPanel.transform.SetAsLastSibling();
             quizStartTime = Time.time;
 
             if (quizNextButton != null)
             {
                 quizNextButton.onClick.RemoveAllListeners();
-                quizNextButton.onClick.AddListener(NextQuizQuestion);
+                quizNextButton.onClick.AddListener(OnQuizContinueClicked);
+            }
+            if (quizCloseButton != null)
+            {
+                quizCloseButton.onClick.RemoveAllListeners();
+                quizCloseButton.onClick.AddListener(CloseARQuiz);
+            }
+
+            DisplayCurrentQuizQuestion();
+        }
+
+        public void OpenARQuiz()
+        {
+            if (StudyPolicy.Measured && (!ResearchData.Store.Current.embeddedAssessment || ResearchData.Store.PendingTest != null)) return;
+            var canvasTr = transform;
+            var uiRoot = canvasTr.Find("LeverAR_UIRoot") ?? canvasTr;
+            EnsureQuizModalBuilt(uiRoot);
+            if (quizModalPanel == null) return;
+
+            researchQuizRun = System.Guid.NewGuid().ToString("N");
+            ResearchData.Record("formative_start", researchQuizRun);
+            PlaySound(clickClip);
+
+            quizModalPanel.SetActive(true);
+            quizModalPanel.transform.SetAsLastSibling();
+            quizStartTime = Time.time;
+
+            if (quizNextButton != null)
+            {
+                quizNextButton.onClick.RemoveAllListeners();
+                quizNextButton.onClick.AddListener(OnQuizContinueClicked);
             }
             if (quizCloseButton != null)
             {
@@ -2172,23 +3057,43 @@ namespace SecretOfLostTemple.AR
         public void CloseARQuiz()
         {
             PlaySound(clickClip);
+            if (autoCloseQuizCoroutine != null)
+            {
+                StopCoroutine(autoCloseQuizCoroutine);
+                autoCloseQuizCoroutine = null;
+            }
             if (quizModalPanel != null) quizModalPanel.SetActive(false);
+            currentQuizIndex = (currentQuizIndex + 1) % quizQuestions.Length;
+            microQuizTimer = 0f;
+        }
+
+        public void OnQuizContinueClicked()
+        {
+            PlaySound(clickClip);
+            if (autoCloseQuizCoroutine != null)
+            {
+                StopCoroutine(autoCloseQuizCoroutine);
+                autoCloseQuizCoroutine = null;
+            }
+            currentQuizIndex = (currentQuizIndex + 1) % quizQuestions.Length;
+            if (quizModalPanel != null) quizModalPanel.SetActive(false);
+            microQuizTimer = 0f;
+        }
+
+        private IEnumerator AutoResumeExplorationAfterDelay(float delaySeconds)
+        {
+            yield return new WaitForSeconds(delaySeconds);
+            OnQuizContinueClicked();
         }
 
         private void DisplayCurrentQuizQuestion()
         {
-            if (currentQuizIndex < quizQuestions.Length && (!StudyPolicy.Measured || ResearchData.Store.Current.adaptive)) {
-                int tier = ResearchProgress.GetInt("AdaptiveDifficultyTier", 1);
-                if (tier == 1) quizQuestions[currentQuizIndex] = new InSituQuizQuestion {
-                    category = "Guided lever parts", question = currentQuizIndex % 2 == 0 ? "Which part is the lever's turning point?" : "Which part is the object being lifted?",
-                    options = new[] { "The fulcrum", "The load", "The effort", "The beam" }, correctIndex = currentQuizIndex % 2,
-                    explanation = "The fulcrum is the pivot. The load is what we lift. Effort is the applied force.", targetPart = currentQuizIndex % 2 == 0 ? "fulcrum" : "load" };
-                else quizQuestions[currentQuizIndex] = new InSituQuizQuestion {
-                    category = tier == 2 ? "Lever relationships" : "Lever calculation",
-                    question = tier == 2 ? "Where should the fulcrum move to reduce effort?" : "An ideal lever has a 3 m effort arm and 1 m load arm. What effort balances a 90 N load?",
-                    options = tier == 2 ? new[] { "Toward the effort", "Toward the load", "Remove the pivot", "Off the beam" } : new[] { "90 N", "270 N", "30 N", "10 N" },
-                    correctIndex = tier == 2 ? 1 : 2, explanation = tier == 2 ? "A longer effort arm and shorter load arm reduce the required force." : "Balance torques: effort x 3 = 90 x 1, so effort = 30 N.", targetPart = "effort" };
+            if (autoCloseQuizCoroutine != null)
+            {
+                StopCoroutine(autoCloseQuizCoroutine);
+                autoCloseQuizCoroutine = null;
             }
+
             quizStartTime = Time.time;
             researchAnswerSubmitted = false;
             researchAttempt = 0;
@@ -2196,115 +3101,229 @@ namespace SecretOfLostTemple.AR
             if (quizFeedbackPanel != null) quizFeedbackPanel.SetActive(false);
             if (quizNextButton != null) quizNextButton.gameObject.SetActive(false);
             if (btnReviewMode != null) btnReviewMode.gameObject.SetActive(false);
+            if (btnRetentionReport != null) btnRetentionReport.gameObject.SetActive(false);
 
-            if (currentQuizIndex < quizQuestions.Length)
+            if (quizTimerCoroutine != null)
             {
-                var q = quizQuestions[currentQuizIndex];
-                if (quizTitleText != null) quizTitleText.text = $"📝 IN-SITU AR ASSESSMENT ({currentQuizIndex + 1}/{quizQuestions.Length})";
-                if (quizCategoryText != null) quizCategoryText.text = $"<b>Topic:</b> {q.category}";
-                if (quizQuestionText != null) quizQuestionText.text = q.question;
-
-                if (quizOptionButtons != null && quizOptionTexts != null)
-                {
-                    for (int i = 0; i < quizOptionButtons.Length; i++)
-                    {
-                        if (i < q.options.Length && quizOptionButtons[i] != null)
-                        {
-                            quizOptionButtons[i].gameObject.SetActive(true);
-                            quizOptionButtons[i].interactable = true;
-
-                            // Reset to crisp default theme color
-                            var btnImg = quizOptionButtons[i].GetComponent<Image>();
-                            if (btnImg != null) btnImg.color = new Color(0.18f, 0.14f, 0.10f, 0.95f);
-
-                            if (quizOptionTexts[i] != null)
-                            {
-                                quizOptionTexts[i].text = q.options[i];
-                                quizOptionTexts[i].color = Color.white;
-                            }
-
-                            quizOptionButtons[i].transform.localScale = Vector3.one;
-
-                            // Bind dynamic click listener
-                            int optIndex = i;
-                            quizOptionButtons[i].onClick.RemoveAllListeners();
-                            quizOptionButtons[i].onClick.AddListener(() => SelectQuizAnswer(optIndex));
-                        }
-                        else if (quizOptionButtons[i] != null)
-                        {
-                            quizOptionButtons[i].gameObject.SetActive(false);
-                        }
-                    }
-                }
+                StopCoroutine(quizTimerCoroutine);
+                quizTimerCoroutine = null;
             }
-            else
-            {
-                // Quiz completed - Show summary with Star Badges
-                if (quizTitleText != null) quizTitleText.text = "🎉 ASSESSMENT COMPLETED!";
-                if (quizCategoryText != null) quizCategoryText.text = "<b>Overall Performance Evaluation</b>";
-                float percentage = (float)currentQuizScore / quizQuestions.Length * 100f;
-                string starBadge = percentage >= 100f ? "⭐⭐⭐ <b>MASTER EXPLORER!</b>" : (percentage >= 75f ? "⭐⭐☆ <b>SKILLED PHYSICIST!</b>" : "⭐☆☆ <b>APPRENTICE EXPLORER</b>");
-                
-                if (quizQuestionText != null)
-                {
-                    quizQuestionText.text = $"<size=22>{starBadge}</size>\n\n" +
-                        $"<b>Final Score: {currentQuizScore} / {quizQuestions.Length} ({percentage:F0}%)</b>\n\n" +
-                        ResearchData.FormalStatus + "\n\n" +
-                        ResearchData.Summary();
-                }
 
-                if (quizOptionButtons != null)
+            var engine = SecretOfLostTemple.Adaptive.AdaptiveDifficultyEngine.Instance;
+            int activeTier = engine != null ? (int)engine.CurrentTier : ResearchProgress.GetInt("AdaptiveDifficultyTier", 1);
+            activeTier = Mathf.Clamp(activeTier, 1, 3);
+            string tierBadge = activeTier == 1 ? "EXPLORER" : (activeTier == 2 ? "EXPERT" : "CHAMPION");
+
+            currentQuizIndex = GetNextQuizIndexForTier(activeTier);
+            var q = quizQuestions[currentQuizIndex];
+
+            float timerDuration = activeTier == 1 ? 30f : (activeTier == 2 ? 20f : 12f);
+            quizTimerCoroutine = StartCoroutine(QuizCountdownTimerRoutine(timerDuration));
+
+            if (quizTitleText != null)
+            {
+                quizTitleText.text = $"⚡ {tierBadge} AR QUIZ ({tierBadge} TIER) ⚡";
+                quizTitleText.fontSize = 32;
+            }
+            if (quizCategoryText != null)
+            {
+                quizCategoryText.text = $"<b>Topic:</b> {q.category}";
+                quizCategoryText.fontSize = 22;
+            }
+            if (quizQuestionText != null)
+            {
+                quizQuestionText.text = q.question;
+                quizQuestionText.fontSize = 28;
+                quizQuestionText.lineSpacing = 1.25f;
+            }
+
+            if (quizOptionButtons != null && quizOptionTexts != null)
+            {
+                for (int i = 0; i < quizOptionButtons.Length; i++)
                 {
-                    for (int i = 0; i < quizOptionButtons.Length; i++)
+                    if (i < q.options.Length && quizOptionButtons[i] != null)
                     {
-                        if (quizOptionButtons[i] != null) quizOptionButtons[i].gameObject.SetActive(false);
+                        quizOptionButtons[i].gameObject.SetActive(true);
+                        quizOptionButtons[i].interactable = true;
+
+                        // Reset to crisp default theme color
+                        var btnImg = quizOptionButtons[i].GetComponent<Image>();
+                        if (btnImg != null) btnImg.color = new Color(0.16f, 0.22f, 0.32f, 0.95f);
+
+                        if (quizOptionTexts[i] != null)
+                        {
+                            quizOptionTexts[i].text = q.options[i];
+                            quizOptionTexts[i].color = Color.white;
+                            quizOptionTexts[i].fontSize = 24;
+                            quizOptionTexts[i].fontStyle = FontStyle.Bold;
+                        }
+
+                        quizOptionButtons[i].transform.localScale = Vector3.one;
+
+                        // Bind dynamic click listener
+                        int optIndex = i;
+                        quizOptionButtons[i].onClick.RemoveAllListeners();
+                        quizOptionButtons[i].onClick.AddListener(() => SelectQuizAnswer(optIndex));
+                    }
+                    else if (quizOptionButtons[i] != null)
+                    {
+                        quizOptionButtons[i].gameObject.SetActive(false);
                     }
                 }
-
-                if (btnReviewMode != null) btnReviewMode.gameObject.SetActive(true);
-                if (btnRetentionReport != null) btnRetentionReport.gameObject.SetActive(true);
             }
         }
 
         public void SelectQuizAnswer(int optionIndex)
         {
-
             if (currentQuizIndex >= quizQuestions.Length || researchAnswerSubmitted) return;
             var q = quizQuestions[currentQuizIndex];
             if (optionIndex < 0 || optionIndex >= q.options.Length) return;
+
             researchAttempt++;
-            bool correct = optionIndex == q.correctIndex;
+            bool correct = (optionIndex == q.correctIndex);
             float elapsed = researchQuestionSeconds;
             string attemptId = researchQuizRun + ":" + currentQuizIndex + ":" + researchAttempt;
             int tier = ResearchProgress.GetInt("AdaptiveDifficultyTier", 1);
-            try { ResearchData.Store.RecordAttempt("lever_formative_" + currentQuizIndex, attemptId, researchAttempt, optionIndex, correct, elapsed, tier, JsonUtility.ToJson(q) + ";review=" + StudyPolicy.Review); }
-            catch (System.Exception e) { researchAttempt--; if (quizFeedbackPanel != null) quizFeedbackPanel.SetActive(true); if (quizFeedbackText != null) quizFeedbackText.text = "Answer NOT saved. Please stop and ask the researcher: " + e.Message; return; }
-            bool adaptStory = !StudyPolicy.Measured || ResearchData.Store.Current.adaptive;
-            if (quizFeedbackPanel != null) quizFeedbackPanel.SetActive(true);
-            if (!correct && researchAttempt < 2) {
-                lastFailedConceptPart = q.targetPart;
-                if (quizFeedbackText != null) quizFeedbackText.text = "<color=#ffdd55>Try once more.</color> " + ConceptHint(q.targetPart);
-                ResearchData.Record("hint", q.targetPart + ":level1:wrong_answer:" + attemptId);
-                if (adaptStory) ResearchData.Record("story_transition", "gate->support;trigger=" + attemptId + ";rule=lever-pilot-1");
-                HighlightConcept(q.targetPart);
-                quizStartTime = Time.time;
-                researchQuestionSeconds = 0;
-                return;
+
+            try
+            {
+                ResearchData.Store.RecordAttempt("lever_formative_" + currentQuizIndex, attemptId, researchAttempt, optionIndex, correct, elapsed, tier, JsonUtility.ToJson(q) + ";review=" + StudyPolicy.Review);
             }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning("[ARQuiz] Attempt log note: " + e.Message);
+            }
+
+            if (quizTimerCoroutine != null)
+            {
+                StopCoroutine(quizTimerCoroutine);
+                quizTimerCoroutine = null;
+            }
+
             researchAnswerSubmitted = true;
-            if (correct) currentQuizScore++;
-            if (quizFeedbackText != null) quizFeedbackText.text = (correct ? "Well done! " : "Let's learn this together. ") + q.explanation +
-                (!adaptStory ? "\nMaya: Continue along the temple path." : correct && researchAttempt == 1 ? "\nMaya: You opened the next gate independently." : "\nMaya: Use this explanation, then rejoin the temple path.");
-            if (quizOptionButtons != null) foreach (var button in quizOptionButtons) if (button != null) button.interactable = false;
-            if (quizNextButton != null) quizNextButton.gameObject.SetActive(true);
-            if (adaptStory) {
-                ResearchData.Record("story_transition", (correct && researchAttempt == 1 ? "gate->independent" : "support->rejoin") + ";trigger=" + attemptId + ";rule=lever-pilot-1");
-                ResearchProgress.SetString("StoryNode", correct && researchAttempt == 1 ? "node_3" : "node_2");
+            if (correct)
+            {
+                currentQuizScore++;
+                int currentStars = ResearchProgress.GetInt("LostTemple_Total_Stars", 0);
+                currentStars += 1;
+                ResearchProgress.SetInt("LostTemple_Total_Stars", currentStars);
+                PlayerPrefs.Save();
             }
+
+            // 1. Immediate Visual Feedback on Option Buttons (Right / Wrong on the spot!)
+            if (quizOptionButtons != null)
+            {
+                for (int i = 0; i < quizOptionButtons.Length; i++)
+                {
+                    if (quizOptionButtons[i] == null) continue;
+                    quizOptionButtons[i].interactable = false; // Lock answers immediately
+
+                    var btnImg = quizOptionButtons[i].GetComponent<Image>();
+                    if (btnImg == null) continue;
+
+                    if (i == optionIndex)
+                    {
+                        // Selected option: Vibrant Green if correct, Vibrant Red if wrong
+                        btnImg.color = correct ? new Color(0.18f, 0.75f, 0.35f, 1f) : new Color(0.85f, 0.22f, 0.20f, 1f);
+                        StartCoroutine(PulseButton(quizOptionButtons[i].transform));
+                    }
+                    else if (i == q.correctIndex)
+                    {
+                        // Always highlight the correct answer in Green so the child learns immediately!
+                        btnImg.color = new Color(0.18f, 0.75f, 0.35f, 1f);
+                    }
+                    else
+                    {
+                        // Dim non-selected options
+                        btnImg.color = new Color(0.10f, 0.14f, 0.20f, 0.50f);
+                    }
+                }
+            }
+
+            // 2. Immediate Audio Feedback
+            if (correct)
+            {
+                AudioClip winClip = successClip != null ? successClip : ((activeCharacter == "Senuk" && senukBalancedClip != null) ? senukBalancedClip : mayaBalancedClip);
+                PlaySound(winClip != null ? winClip : clickClip);
+            }
+            else
+            {
+                AudioClip loseClip = (activeCharacter == "Senuk" && senukTooHeavyClip != null) ? senukTooHeavyClip : mayaTooHeavyClip;
+                PlaySound(loseClip != null ? loseClip : clickClip);
+            }
+
+            // 3. Highlight 3D Physical Concept in the AR World
+            if (!string.IsNullOrEmpty(q.targetPart))
+            {
+                HighlightConcept(q.targetPart);
+            }
+
+            // 4. Feedback Banner with Instant Right/Wrong Verdict & Scientific Explanation
+            if (quizFeedbackPanel != null)
+            {
+                quizFeedbackPanel.SetActive(true);
+                var fbImg = quizFeedbackPanel.GetComponent<Image>();
+                if (fbImg != null)
+                {
+                    fbImg.color = correct ? new Color(0.08f, 0.30f, 0.15f, 0.98f) : new Color(0.35f, 0.10f, 0.10f, 0.98f);
+                }
+                var fbRt = quizFeedbackPanel.GetComponent<RectTransform>();
+                if (fbRt != null)
+                {
+                    fbRt.sizeDelta = new Vector2(1260f, 120f);
+                    fbRt.anchoredPosition = new Vector2(0f, 85f);
+                }
+            }
+
+            if (quizFeedbackText != null)
+            {
+                if (correct)
+                {
+                    int totalStars = ResearchProgress.GetInt("LostTemple_Total_Stars", 0);
+                    quizFeedbackText.text = $"<size=24><color=#2ecc71><b>✅ CORRECT! GREAT JOB! ⭐ +1 STAR EARNED! (Total: {totalStars} ⭐)</b></color></size>\n{q.explanation}";
+                }
+                else
+                {
+                    string correctOptText = (q.correctIndex >= 0 && q.correctIndex < q.options.Length) ? q.options[q.correctIndex] : "";
+                    quizFeedbackText.text = $"<size=24><color=#ff6b6b><b>❌ NOT QUITE! (Correct answer in green)</b></color></size>\n<b>Correct:</b> <color=#55ff88>{correctOptText}</color>\n{q.explanation}";
+                }
+            }
+
+            // 5. Next/Continue Button
+            if (quizNextButton != null)
+            {
+                quizNextButton.gameObject.SetActive(true);
+                var nextTxt = quizNextButton.GetComponentInChildren<Text>();
+                if (nextTxt != null)
+                {
+                    nextTxt.text = "CONTINUE EXPLORING ▶";
+                    nextTxt.fontSize = 22;
+                    nextTxt.fontStyle = FontStyle.Bold;
+                }
+                var nextRt = quizNextButton.GetComponent<RectTransform>();
+                if (nextRt != null)
+                {
+                    nextRt.sizeDelta = new Vector2(380f, 55f);
+                }
+                var nextImg = quizNextButton.GetComponent<Image>();
+                if (nextImg != null)
+                {
+                    nextImg.color = new Color(0.18f, 0.65f, 0.35f, 1f);
+                }
+
+                quizNextButton.onClick.RemoveAllListeners();
+                quizNextButton.onClick.AddListener(OnQuizContinueClicked);
+            }
+
+            // 6. Auto-resume exploration after 4.5 seconds so child seamlessly returns to 3D lever hands-free
+            if (autoCloseQuizCoroutine != null) StopCoroutine(autoCloseQuizCoroutine);
+            autoCloseQuizCoroutine = StartCoroutine(AutoResumeExplorationAfterDelay(4.5f));
+
             if (!StudyPolicy.Measured || ResearchData.Store.Current.adaptive)
-                SecretOfLostTemple.Adaptive.AdaptiveDifficultyEngine.Instance?.RecordTaskResult(correct && researchAttempt == 1, elapsed);
+                SecretOfLostTemple.Adaptive.AdaptiveDifficultyEngine.Instance?.RecordTaskResult(correct, elapsed);
+
             UpdateAdaptiveTierHUD();
-            ResearchCloudSync.Instance?.TriggerImmediateSync($"Quiz Q{currentQuizIndex + 1} answered ({(correct ? "Correct" : "Incorrect")})");
+            ResearchCloudSync.Instance?.TriggerImmediateSync($"MicroQuiz Q{currentQuizIndex + 1} answered ({(correct ? "Correct" : "Incorrect")})");
         }
 
 
@@ -2410,10 +3429,7 @@ namespace SecretOfLostTemple.AR
 
         public void NextQuizQuestion()
         {
-            if (!researchAnswerSubmitted) return;
-            PlaySound(clickClip);
-            currentQuizIndex++;
-            DisplayCurrentQuizQuestion();
+            OnQuizContinueClicked();
         }
 
         public void ToggleReviewMode()
@@ -2469,13 +3485,13 @@ namespace SecretOfLostTemple.AR
                 switch (tier)
                 {
                     case 1:
-                        adaptiveTierBadgeText.text = "🎓 <b>APPRENTICE (Tier 1)</b>";
+                        adaptiveTierBadgeText.text = "🎒 <b>EXPLORER</b>";
                         break;
                     case 2:
-                        adaptiveTierBadgeText.text = "⚔️ <b>SCHOLAR (Tier 2)</b>";
+                        adaptiveTierBadgeText.text = "⚡ <b>EXPERT</b>";
                         break;
                     case 3:
-                        adaptiveTierBadgeText.text = "👑 <b>MASTER (Tier 3)</b>";
+                        adaptiveTierBadgeText.text = "🏆 <b>CHAMPION</b>";
                         break;
                 }
             }
@@ -2483,6 +3499,8 @@ namespace SecretOfLostTemple.AR
 
         private void InitializeInteractiveStoryBranchUI()
         {
+            if (storyChoiceWidget != null) storyChoiceWidget.SetActive(false);
+            return;
             // When launched from the StoryBook Page 9 activity, story narrative is read in the StoryBook Viewer — keep the AR viewport clean!
             if (SecretOfLostTemple.Story.StoryBookViewerController.StoryActivityActive)
             {
@@ -2579,7 +3597,8 @@ namespace SecretOfLostTemple.AR
 
         private void RefreshStoryBranchBar()
         {
-            if (storyChoiceWidget == null) return;
+            if (storyChoiceWidget != null) storyChoiceWidget.SetActive(false);
+            return;
             var sb = SecretOfLostTemple.Adaptive.StoryBranchManager.Instance;
             var node = sb != null ? sb.GetCurrentNode() : null;
             if (node == null)
@@ -2751,6 +3770,77 @@ namespace SecretOfLostTemple.AR
             SceneManager.LoadScene("HomeMapScene");
         }
 
+        private IEnumerator QuizCountdownTimerRoutine(float totalSeconds)
+        {
+            float elapsed = 0f;
+            while (elapsed < totalSeconds && !researchAnswerSubmitted)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float remaining = Mathf.Max(0f, totalSeconds - elapsed);
+                float frac = remaining / totalSeconds;
+                if (quizTimerBarImage != null)
+                {
+                    quizTimerBarImage.fillAmount = frac;
+                    quizTimerBarImage.color = frac > 0.35f ? new Color(0.95f, 0.75f, 0.20f, 1f) : new Color(0.95f, 0.25f, 0.20f, 1f);
+                }
+                if (quizTimerText != null)
+                {
+                    quizTimerText.text = $"⏱️ {Mathf.CeilToInt(remaining)}s";
+                }
+                yield return null;
+            }
+
+            if (!researchAnswerSubmitted)
+            {
+                OnQuizTimeExpired();
+            }
+        }
+
+        private void OnQuizTimeExpired()
+        {
+            if (researchAnswerSubmitted) return;
+            researchAnswerSubmitted = true;
+            if (quizOptionButtons != null)
+            {
+                for (int i = 0; i < quizOptionButtons.Length; i++)
+                {
+                    if (quizOptionButtons[i] == null) continue;
+                    quizOptionButtons[i].interactable = false;
+                    var q = quizQuestions[currentQuizIndex];
+                    if (i == q.correctIndex)
+                    {
+                        var btnImg = quizOptionButtons[i].GetComponent<Image>();
+                        if (btnImg != null) btnImg.color = new Color(0.18f, 0.75f, 0.35f, 1f);
+                    }
+                }
+            }
+
+            AudioClip loseClip = (activeCharacter == "Senuk" && senukTooHeavyClip != null) ? senukTooHeavyClip : mayaTooHeavyClip;
+            PlaySound(loseClip != null ? loseClip : clickClip);
+
+            var currQ = quizQuestions[currentQuizIndex];
+            if (quizFeedbackPanel != null)
+            {
+                quizFeedbackPanel.SetActive(true);
+                var fbImg = quizFeedbackPanel.GetComponent<Image>();
+                if (fbImg != null) fbImg.color = new Color(0.38f, 0.12f, 0.12f, 0.98f);
+            }
+            if (quizFeedbackText != null)
+            {
+                string correctOptText = (currQ.correctIndex >= 0 && currQ.correctIndex < currQ.options.Length) ? currQ.options[currQ.correctIndex] : "";
+                quizFeedbackText.text = $"<size=24><color=#ff6b6b><b>⏱️ TIME'S UP! (Correct answer in green)</b></color></size>\n<b>Correct:</b> <color=#55ff88>{correctOptText}</color>\n{currQ.explanation}";
+            }
+
+            if (quizNextButton != null)
+            {
+                quizNextButton.gameObject.SetActive(true);
+                var nextTxt = quizNextButton.GetComponentInChildren<Text>();
+                if (nextTxt != null) nextTxt.text = "<b>CONTINUE ➡</b>";
+            }
+
+            autoCloseQuizCoroutine = StartCoroutine(AutoResumeExplorationAfterDelay(4.0f));
+        }
+
         public void OnBackClicked()
         {
             PlaySound(clickClip);
@@ -2766,6 +3856,359 @@ namespace SecretOfLostTemple.AR
                 SecretOfLostTemple.Story.StoryBookViewerController.ReturnToStory(challengeDone);
             }
             else SceneManager.LoadScene("HomeMapScene");
+        }
+
+        // ==========================================
+        // GUIDED STORY DIALOGUE FLOW (PAGE 9 AR QUEST)
+        // ==========================================
+
+        private struct GuidedStoryStep
+        {
+            public string title;
+            public string sinhalaText;
+            public string highlightPart;
+            public string buttonText;
+        }
+
+        private readonly GuidedStoryStep[] storyDialogueSteps = new GuidedStoryStep[]
+        {
+            new GuidedStoryStep
+            {
+                title = "Step 1/4: Ancient Temple Gate",
+                sinhalaText = "We have reached the ancient temple gate! Look, a massive boulder is blocking our path. To open the gate, we need to use this ancient Lever mechanism!",
+                highlightPart = "load",
+                buttonText = "NEXT ▶"
+            },
+            new GuidedStoryStep
+            {
+                title = "Step 2/4: Three Parts of a Lever",
+                sinhalaText = "A lever consists of 3 key parts:\n1. 🪨 <b>Load</b> - The heavy stone boulder to be lifted.\n2. 🔺 <b>Fulcrum</b> - The central pivot point balancing the beam.\n3. ⚡ <b>Effort</b> - The downward force applied.",
+                highlightPart = "fulcrum",
+                buttonText = "NEXT ▶"
+            },
+            new GuidedStoryStep
+            {
+                title = "Step 3/4: The Physics Secret",
+                sinhalaText = "Here is the key secret:\n🔺 The closer the <b>Fulcrum</b> is to the <b>Load</b>, the less <b>Effort Force</b> you need to lift the stone!\n(A shorter Load Arm gives greater Mechanical Advantage!)",
+                highlightPart = "effort",
+                buttonText = "NEXT ▶"
+            },
+            new GuidedStoryStep
+            {
+                title = "Step 4/4: Temple Challenge",
+                sinhalaText = "Now it's your turn!\nSlide the fulcrum closer to the boulder, apply the required force, and lift the stone to unseal the entrance!",
+                highlightPart = "load",
+                buttonText = "START CHALLENGE! 🚀"
+            }
+        };
+
+        public void StartGuidedStoryDialogueSequence()
+        {
+            isGuidedStoryFlowActive = true;
+            if (bottomConsole != null) bottomConsole.SetActive(false);
+
+            activeCharacter = ResearchProgress.GetString("SelectedCharacter", "Maya");
+
+            Transform canvasTr = null;
+            var arMainCanvas = GameObject.Find("AR Main Canvas");
+            if (arMainCanvas != null) canvasTr = arMainCanvas.transform;
+            if (canvasTr == null && bottomConsole != null) canvasTr = bottomConsole.transform.parent;
+            if (canvasTr == null) canvasTr = GameObject.Find("Canvas")?.transform;
+            if (canvasTr == null) return;
+
+            EnsureStoryDialoguePanelBuilt(canvasTr);
+            if (storyDialoguePanel == null) return;
+
+            storyDialoguePanel.SetActive(true);
+            storyDialoguePanel.transform.SetAsLastSibling();
+            currentStoryDialogueIndex = 0;
+            DisplayCurrentStoryDialogue();
+        }
+
+        private void EnsureStoryDialoguePanelBuilt(Transform uiRoot)
+        {
+            if (uiRoot == null) return;
+
+            if (mayaFullSprite == null) mayaFullSprite = Resources.Load<Sprite>("char_maya_full");
+            if (senukFullSprite == null) senukFullSprite = Resources.Load<Sprite>("char_senuk_full");
+
+            if (storyDialoguePanel == null)
+            {
+                var existing = uiRoot.Find("Panel_StoryDialogue");
+                if (existing != null) storyDialoguePanel = existing.gameObject;
+            }
+
+            if (storyDialoguePanel != null)
+            {
+                if (storyCharAvatarImage == null) storyCharAvatarImage = storyDialoguePanel.transform.Find("Avatar_Character")?.GetComponent<Image>();
+                if (storySpeakerNameText == null) storySpeakerNameText = storyDialoguePanel.transform.Find("DialogueBubble/HeaderPlate/SpeakerText")?.GetComponent<Text>();
+                if (storyDialogueBodyText == null) storyDialogueBodyText = storyDialoguePanel.transform.Find("DialogueBubble/BodyText")?.GetComponent<Text>();
+                if (storyNextBtn == null) storyNextBtn = storyDialoguePanel.transform.Find("DialogueBubble/Btn_StoryNext")?.GetComponent<Button>();
+                if (storyNextBtnText == null && storyNextBtn != null) storyNextBtnText = storyNextBtn.GetComponentInChildren<Text>();
+                return;
+            }
+
+            Font sinhalaFont = Resources.Load<Font>("SinhalaFont");
+            if (sinhalaFont == null) sinhalaFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+
+            // 1. Root Story Dialogue Panel (Semi-transparent backdrop)
+            storyDialoguePanel = new GameObject("Panel_StoryDialogue", typeof(RectTransform), typeof(Image));
+            storyDialoguePanel.transform.SetParent(uiRoot, false);
+            var panelRt = (RectTransform)storyDialoguePanel.transform;
+            panelRt.anchorMin = Vector2.zero;
+            panelRt.anchorMax = Vector2.one;
+            panelRt.offsetMin = Vector2.zero;
+            panelRt.offsetMax = Vector2.zero;
+
+            var bgImg = storyDialoguePanel.GetComponent<Image>();
+            bgImg.color = new Color(0.04f, 0.05f, 0.06f, 0.40f);
+
+            // 2. Character Avatar on left side
+            var avatarGo = new GameObject("Avatar_Character", typeof(RectTransform), typeof(Image));
+            avatarGo.transform.SetParent(storyDialoguePanel.transform, false);
+            var avatarRt = (RectTransform)avatarGo.transform;
+            avatarRt.anchorMin = new Vector2(0f, 0f);
+            avatarRt.anchorMax = new Vector2(0f, 0f);
+            avatarRt.pivot = new Vector2(0.5f, 0f);
+            avatarRt.anchoredPosition = new Vector2(250f, 10f);
+            avatarRt.sizeDelta = new Vector2(440f, 660f);
+
+            storyCharAvatarImage = avatarGo.GetComponent<Image>();
+            storyCharAvatarImage.preserveAspect = true;
+            storyCharAvatarImage.sprite = (activeCharacter == "Senuk" && senukFullSprite != null) ? senukFullSprite : mayaFullSprite;
+
+            // 3. Dialogue Bubble Container
+            var bubbleGo = new GameObject("DialogueBubble", typeof(RectTransform), typeof(Image));
+            bubbleGo.transform.SetParent(storyDialoguePanel.transform, false);
+            var bubbleRt = (RectTransform)bubbleGo.transform;
+            bubbleRt.anchorMin = new Vector2(0f, 0f);
+            bubbleRt.anchorMax = new Vector2(1f, 0f);
+            bubbleRt.pivot = new Vector2(0.5f, 0f);
+            bubbleRt.offsetMin = new Vector2(450f, 30f);
+            bubbleRt.offsetMax = new Vector2(-50f, 380f);
+
+            var bubbleImg = bubbleGo.GetComponent<Image>();
+            var bubbleSprite = Resources.Load<Sprite>("dialog_bubble_frame");
+            if (bubbleSprite != null)
+            {
+                bubbleImg.sprite = bubbleSprite;
+                bubbleImg.type = Image.Type.Sliced;
+                bubbleImg.color = Color.white;
+            }
+            else
+            {
+                bubbleImg.color = new Color(0.12f, 0.09f, 0.05f, 0.94f);
+            }
+
+            var bubbleOutline = bubbleGo.AddComponent<Outline>();
+            bubbleOutline.effectColor = new Color(0.95f, 0.78f, 0.28f, 0.9f);
+            bubbleOutline.effectDistance = new Vector2(3f, -3f);
+
+            // 4. Header / Speaker Tag Plate
+            var headerGo = new GameObject("HeaderPlate", typeof(RectTransform), typeof(Image));
+            headerGo.transform.SetParent(bubbleGo.transform, false);
+            var headerRt = (RectTransform)headerGo.transform;
+            headerRt.anchorMin = new Vector2(0f, 1f);
+            headerRt.anchorMax = new Vector2(0f, 1f);
+            headerRt.pivot = new Vector2(0f, 1f);
+            headerRt.anchoredPosition = new Vector2(28f, -14f);
+            headerRt.sizeDelta = new Vector2(400f, 46f);
+
+            var headerImg = headerGo.GetComponent<Image>();
+            headerImg.color = new Color(0.85f, 0.62f, 0.16f, 0.95f);
+            var headerOutline = headerGo.AddComponent<Outline>();
+            headerOutline.effectColor = new Color(0.3f, 0.15f, 0.02f, 0.8f);
+            headerOutline.effectDistance = new Vector2(1.5f, -1.5f);
+
+            var nameTxtGo = new GameObject("SpeakerText", typeof(RectTransform), typeof(Text));
+            nameTxtGo.transform.SetParent(headerGo.transform, false);
+            var nameTxtRt = (RectTransform)nameTxtGo.transform;
+            nameTxtRt.anchorMin = Vector2.zero;
+            nameTxtRt.anchorMax = Vector2.one;
+            nameTxtRt.offsetMin = new Vector2(14f, 2f);
+            nameTxtRt.offsetMax = new Vector2(-14f, -2f);
+
+            storySpeakerNameText = nameTxtGo.GetComponent<Text>();
+            storySpeakerNameText.font = sinhalaFont;
+            storySpeakerNameText.fontSize = 20;
+            storySpeakerNameText.fontStyle = FontStyle.Bold;
+            storySpeakerNameText.alignment = TextAnchor.MiddleLeft;
+            storySpeakerNameText.color = new Color(0.12f, 0.07f, 0.01f, 1f);
+
+            // 5. Dialogue Body Text
+            var bodyGo = new GameObject("BodyText", typeof(RectTransform), typeof(Text));
+            bodyGo.transform.SetParent(bubbleGo.transform, false);
+            var bodyRt = (RectTransform)bodyGo.transform;
+            bodyRt.anchorMin = Vector2.zero;
+            bodyRt.anchorMax = Vector2.one;
+            bodyRt.offsetMin = new Vector2(36f, 85f);
+            bodyRt.offsetMax = new Vector2(-36f, -68f);
+
+            storyDialogueBodyText = bodyGo.GetComponent<Text>();
+            storyDialogueBodyText.font = sinhalaFont;
+            storyDialogueBodyText.fontSize = 26;
+            storyDialogueBodyText.fontStyle = FontStyle.Normal;
+            storyDialogueBodyText.alignment = TextAnchor.UpperLeft;
+            storyDialogueBodyText.lineSpacing = 1.25f;
+            storyDialogueBodyText.supportRichText = true;
+            storyDialogueBodyText.color = new Color(1f, 0.96f, 0.88f, 1f);
+
+            // 6. Next Button
+            var nextBtnGo = new GameObject("Btn_StoryNext", typeof(RectTransform), typeof(Image), typeof(Button));
+            nextBtnGo.transform.SetParent(bubbleGo.transform, false);
+            var nextRt = (RectTransform)nextBtnGo.transform;
+            nextRt.anchorMin = new Vector2(1f, 0f);
+            nextRt.anchorMax = new Vector2(1f, 0f);
+            nextRt.pivot = new Vector2(1f, 0f);
+            nextRt.anchoredPosition = new Vector2(-30f, 18f);
+            nextRt.sizeDelta = new Vector2(250f, 58f);
+
+            var nextImg = nextBtnGo.GetComponent<Image>();
+            var nextSprite = Resources.Load<Sprite>("btn_dialog_next");
+            if (nextSprite != null)
+            {
+                nextImg.sprite = nextSprite;
+                nextImg.type = Image.Type.Sliced;
+                nextImg.color = Color.white;
+            }
+            else
+            {
+                nextImg.color = new Color(0.92f, 0.70f, 0.15f, 1f);
+            }
+            var nextOutline = nextBtnGo.AddComponent<Outline>();
+            nextOutline.effectColor = new Color(0.25f, 0.12f, 0.02f, 0.9f);
+            nextOutline.effectDistance = new Vector2(2f, -2f);
+
+            storyNextBtn = nextBtnGo.GetComponent<Button>();
+            storyNextBtn.onClick.AddListener(OnStoryNextDialogueClicked);
+
+            var nextTxtGo = new GameObject("Text", typeof(RectTransform), typeof(Text));
+            nextTxtGo.transform.SetParent(nextBtnGo.transform, false);
+            var nextTxtRt = (RectTransform)nextTxtGo.transform;
+            nextTxtRt.anchorMin = Vector2.zero;
+            nextTxtRt.anchorMax = Vector2.one;
+            nextTxtRt.offsetMin = nextTxtRt.offsetMax = Vector2.zero;
+
+            storyNextBtnText = nextTxtGo.GetComponent<Text>();
+            storyNextBtnText.font = sinhalaFont;
+            storyNextBtnText.fontSize = 22;
+            storyNextBtnText.fontStyle = FontStyle.Bold;
+            storyNextBtnText.alignment = TextAnchor.MiddleCenter;
+            storyNextBtnText.color = new Color(0.12f, 0.07f, 0.02f, 1f);
+            storyNextBtnText.text = "NEXT ▶";
+
+            // 7. Skip Button
+            var skipBtnGo = new GameObject("Btn_StorySkip", typeof(RectTransform), typeof(Button));
+            skipBtnGo.transform.SetParent(bubbleGo.transform, false);
+            var skipRt = (RectTransform)skipBtnGo.transform;
+            skipRt.anchorMin = new Vector2(1f, 1f);
+            skipRt.anchorMax = new Vector2(1f, 1f);
+            skipRt.pivot = new Vector2(1f, 1f);
+            skipRt.anchoredPosition = new Vector2(-25f, -14f);
+            skipRt.sizeDelta = new Vector2(150f, 40f);
+
+            var skipBtn = skipBtnGo.GetComponent<Button>();
+            skipBtn.onClick.AddListener(FinishGuidedStoryDialogueAndUnlockControls);
+
+            var skipTxtGo = new GameObject("Text", typeof(RectTransform), typeof(Text));
+            skipTxtGo.transform.SetParent(skipBtnGo.transform, false);
+            var skipTxtRt = (RectTransform)skipTxtGo.transform;
+            skipTxtRt.anchorMin = Vector2.zero;
+            skipTxtRt.anchorMax = Vector2.one;
+            skipTxtRt.offsetMin = skipTxtRt.offsetMax = Vector2.zero;
+
+            var skipTxt = skipTxtGo.GetComponent<Text>();
+            skipTxt.font = sinhalaFont;
+            skipTxt.fontSize = 17;
+            skipTxt.fontStyle = FontStyle.Normal;
+            skipTxt.alignment = TextAnchor.MiddleRight;
+            skipTxt.color = new Color(0.85f, 0.82f, 0.72f, 0.85f);
+            skipTxt.text = "SKIP ⏭";
+        }
+
+        private void DisplayCurrentStoryDialogue()
+        {
+            if (currentStoryDialogueIndex < 0 || currentStoryDialogueIndex >= storyDialogueSteps.Length)
+            {
+                FinishGuidedStoryDialogueAndUnlockControls();
+                return;
+            }
+
+            var step = storyDialogueSteps[currentStoryDialogueIndex];
+
+            if (mayaFullSprite == null) mayaFullSprite = Resources.Load<Sprite>("char_maya_full");
+            if (senukFullSprite == null) senukFullSprite = Resources.Load<Sprite>("char_senuk_full");
+
+            if (storyCharAvatarImage != null)
+            {
+                storyCharAvatarImage.sprite = (activeCharacter == "Senuk" && senukFullSprite != null) ? senukFullSprite : mayaFullSprite;
+            }
+
+            string charName = (activeCharacter == "Senuk") ? "Senuk" : "Maya";
+            if (storySpeakerNameText != null)
+            {
+                storySpeakerNameText.text = $"👤 {charName} — {step.title}";
+            }
+
+            if (storyDialogueBodyText != null)
+            {
+                storyDialogueBodyText.text = step.sinhalaText;
+            }
+
+            if (storyNextBtnText != null)
+            {
+                storyNextBtnText.text = step.buttonText;
+            }
+
+            if (!string.IsNullOrEmpty(step.highlightPart))
+            {
+                HighlightConcept(step.highlightPart);
+            }
+
+            var bubble = storyDialoguePanel != null ? storyDialoguePanel.transform.Find("DialogueBubble") : null;
+            if (bubble != null)
+            {
+                StopCoroutine("AnimateSpeechBubble");
+                StartCoroutine(AnimateSpeechBubble(bubble));
+            }
+        }
+
+        public void OnStoryNextDialogueClicked()
+        {
+            PlaySound(clickClip);
+            currentStoryDialogueIndex++;
+            if (currentStoryDialogueIndex < storyDialogueSteps.Length)
+            {
+                DisplayCurrentStoryDialogue();
+            }
+            else
+            {
+                FinishGuidedStoryDialogueAndUnlockControls();
+            }
+        }
+
+        public void FinishGuidedStoryDialogueAndUnlockControls()
+        {
+            PlaySound(clickClip);
+            isGuidedStoryFlowActive = false;
+            microQuizTimer = 0f;
+            microQuizEnabled = true;
+
+            if (storyDialoguePanel != null)
+            {
+                storyDialoguePanel.SetActive(false);
+            }
+
+            if (bottomConsole != null)
+            {
+                bottomConsole.SetActive(true);
+            }
+
+            AudioClip greetingClip = (activeCharacter == "Senuk") ? senukBalancedClip : mayaBalancedClip;
+            if (greetingClip != null)
+            {
+                PlaySound(greetingClip);
+            }
         }
 
         private void PlaySound(AudioClip clip)

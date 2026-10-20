@@ -68,67 +68,67 @@ namespace SecretOfLostTemple.Assessment
             // ================= LEVER (6 questions) =================
             // Remember 1 (Pre)
             _allQuestions.Add(new QuizQuestion {
-                questionId = "L_Rem_1", questionText = "What are the three main parts of a lever?", type = QuestionType.MultipleChoice,
+                questionId = "L_Rem_1", questionText = "What are the three main components of a lever?", type = QuestionType.MultipleChoice,
                 machineType = "Lever", difficultyTier = 1, bloomLevel = BloomLevel.Remember,
                 options = new List<string> { "Fulcrum, Effort, Load", "Wheel, Axle, Rope", "Base, Height, Length", "Force, Mass, Acceleration" },
-                correctAnswerIndex = 0, explanation = "A lever consists of a rigid beam pivoting on a fulcrum to move a load with effort.",
-                templeContext = "The ancient texts speak of a pivoting stone that controls the hidden door.",
+                correctAnswerIndex = 0, explanation = "A lever is a rigid bar that pivots on a fixed fulcrum to move a load using an applied effort force.",
+                templeContext = "Ancient temple records describe the secret mechanism as balanced on a pivotal stone.",
                 isPreTest = true, isPostTest = false, isRetentionTest = false, pointValue = 10f
             });
             // Remember 2 (Post)
             _allQuestions.Add(new QuizQuestion {
-                questionId = "L_Rem_2", questionText = "Which point does a lever pivot around?", type = QuestionType.MultipleChoice,
+                questionId = "L_Rem_2", questionText = "Around which point does a lever rotate or pivot?", type = QuestionType.MultipleChoice,
                 machineType = "Lever", difficultyTier = 1, bloomLevel = BloomLevel.Remember,
-                options = new List<string> { "The Load", "The Effort", "The Fulcrum", "The Anchor" },
-                correctAnswerIndex = 2, explanation = "The fulcrum is the fixed pivot point of a lever.",
-                templeContext = "Notice how the stone beam balances on this central triangular rock.",
+                options = new List<string> { "Load", "Effort", "Fulcrum", "Anchor" },
+                correctAnswerIndex = 2, explanation = "The fulcrum is the fixed pivot point around which a lever rotates.",
+                templeContext = "Observe how the stone beam balances steadily upon the triangular fulcrum.",
                 isPreTest = false, isPostTest = true, isRetentionTest = false, pointValue = 10f
             });
             // Understand 1 (Retention)
             _allQuestions.Add(new QuizQuestion {
-                questionId = "L_Und_1", questionText = "How does moving the fulcrum closer to the load affect the effort required?", type = QuestionType.MultipleChoice,
+                questionId = "L_Und_1", questionText = "What happens to the required effort force when the fulcrum is moved closer to the load?", type = QuestionType.MultipleChoice,
                 machineType = "Lever", difficultyTier = 2, bloomLevel = BloomLevel.Understand,
-                options = new List<string> { "Increases effort", "Decreases effort", "Effort stays the same", "Makes it impossible" },
-                correctAnswerIndex = 1, explanation = "A shorter load arm and longer effort arm gives you a mechanical advantage, requiring less effort.",
-                templeContext = "By adjusting this fulcrum stone, the heavy gate feels much lighter.",
+                options = new List<string> { "Effort increases", "Effort decreases", "Effort remains unchanged", "Lifting becomes impossible" },
+                correctAnswerIndex = 1, explanation = "A shorter load arm and a longer effort arm provide higher mechanical advantage, requiring less effort.",
+                templeContext = "Adjusting the fulcrum closer allows the heavy temple gate to be lifted effortlessly.",
                 isPreTest = false, isPostTest = false, isRetentionTest = true, pointValue = 15f
             });
             // Understand 2 (Pre)
             _allQuestions.Add(new QuizQuestion {
-                questionId = "L_Und_2", questionText = "Why is a crowbar considered a lever?", type = QuestionType.MultipleChoice,
+                questionId = "L_Und_2", questionText = "Why is a crowbar or hoe considered a lever?", type = QuestionType.MultipleChoice,
                 machineType = "Lever", difficultyTier = 2, bloomLevel = BloomLevel.Understand,
-                options = new List<string> { "It spins", "It has a wheel", "It pivots on a point to lift something", "It rolls heavy stones" },
-                correctAnswerIndex = 2, explanation = "A crowbar uses a pivot point (fulcrum) to lift heavy objects (load).",
-                templeContext = "The temple builders used long wooden beams just like crowbars to pry these statues into place.",
+                options = new List<string> { "Because it rolls", "Because it contains a wheel", "Because it pivots around a point to lift something", "Because it crushes heavy stones" },
+                correctAnswerIndex = 2, explanation = "A crowbar uses a pivot point (fulcrum) to lift heavy objects (load) using applied force (effort).",
+                templeContext = "Temple builders used long wooden beams as crowbars to position the colossal statues.",
                 isPreTest = true, isPostTest = false, isRetentionTest = false, pointValue = 15f
             });
             // Apply 1 (Post)
             _allQuestions.Add(new QuizQuestion {
-                questionId = "L_App_1", questionText = "You need to lift a 100kg stone block. Where should you place the fulcrum?", type = QuestionType.MultipleChoice,
+                questionId = "L_App_1", questionText = "You need to lift a 100 kg stone block. Where should you place the fulcrum?", type = QuestionType.MultipleChoice,
                 machineType = "Lever", difficultyTier = 3, bloomLevel = BloomLevel.Apply,
-                options = new List<string> { "Exactly in the middle", "As close to the stone block as possible", "As far from the stone block as possible", "Directly under your hands" },
-                correctAnswerIndex = 1, explanation = "Placing the fulcrum close to the load maximizes the effort arm's length.",
-                templeContext = "To move this massive obsidian block, position the pivot carefully.",
+                options = new List<string> { "Exactly in the center", "As close to the stone block as possible", "As far from the stone block as possible", "Directly under your hands" },
+                correctAnswerIndex = 1, explanation = "Placing the fulcrum close to the load maximizes the effort arm, providing maximum mechanical advantage.",
+                templeContext = "To lift this massive obsidian block, position the fulcrum carefully near the weight.",
                 isPreTest = false, isPostTest = true, isRetentionTest = false, pointValue = 20f
             });
             // Analyze 1 (Retention)
             _allQuestions.Add(new QuizQuestion {
-                questionId = "L_Ana_1", questionText = "If a Class 2 lever (load in middle) is used instead of a Class 1 lever (fulcrum in middle), what is the trade-off?", type = QuestionType.MultipleChoice,
+                questionId = "L_Ana_1", questionText = "What is the difference when using a second-class lever (load in the middle) instead of a first-class lever?", type = QuestionType.MultipleChoice,
                 machineType = "Lever", difficultyTier = 3, bloomLevel = BloomLevel.Analyze,
-                options = new List<string> { "You move the load a shorter distance", "You must use more effort", "The lever breaks", "It becomes a pulley" },
-                correctAnswerIndex = 0, explanation = "Class 2 levers always provide mechanical advantage, but the load moves less distance than the effort.",
-                templeContext = "This wheelbarrow-like mechanism transports the sacred relics.",
+                options = new List<string> { "The load moves a shorter distance than the effort", "You have to apply greater effort than the load", "The lever breaks under pressure", "It functions as a pulley" },
+                correctAnswerIndex = 0, explanation = "Second-class levers always offer a mechanical advantage (>1), but the load travels a shorter distance than the effort.",
+                templeContext = "This wheelbarrow-like carrier transports sacred artifacts across the temple.",
                 isPreTest = false, isPostTest = false, isRetentionTest = true, pointValue = 25f
             });
 
             // ================= PULLEY (6 questions) =================
             // Remember 1 (Retention)
             _allQuestions.Add(new QuizQuestion {
-                questionId = "P_Rem_1", questionText = "What defines a simple pulley?", type = QuestionType.MultipleChoice,
+                questionId = "P_Rem_1", questionText = "What is a simple pulley?", type = QuestionType.MultipleChoice,
                 machineType = "Pulley", difficultyTier = 1, bloomLevel = BloomLevel.Remember,
-                options = new List<string> { "A wheel with a groove for a rope", "A flat sliding board", "A rigid pivoting bar", "Two interlocked gears" },
-                correctAnswerIndex = 0, explanation = "A pulley is a wheel that carries a flexible rope, cord, or chain on its rim.",
-                templeContext = "Look up! Ropes pass through these grooved wooden wheels attached to the ceiling.",
+                options = new List<string> { "A grooved wheel that carries a rope or cord", "A flat inclined sliding board", "A rigid pivoting beam", "A pair of interlocking gears" },
+                correctAnswerIndex = 0, explanation = "A pulley is a wheel with a grooved rim that guides a flexible rope, belt, or chain.",
+                templeContext = "Look up! Ropes pass smoothly through grooved wooden wheels attached to the temple ceiling.",
                 isPreTest = false, isPostTest = false, isRetentionTest = true, pointValue = 10f
             });
             // Remember 2 (Pre)
@@ -136,44 +136,44 @@ namespace SecretOfLostTemple.Assessment
                 questionId = "P_Rem_2", questionText = "A fixed pulley changes the ___ of the applied force.", type = QuestionType.MultipleChoice,
                 machineType = "Pulley", difficultyTier = 1, bloomLevel = BloomLevel.Remember,
                 options = new List<string> { "Magnitude", "Direction", "Color", "Speed" },
-                correctAnswerIndex = 1, explanation = "A fixed pulley doesn't reduce the effort needed, but lets you pull down to lift something up.",
-                templeContext = "Pulling down on this vine raises the water bucket from the temple well.",
+                correctAnswerIndex = 1, explanation = "A fixed pulley does not reduce the required effort, but it conveniently changes the direction of force.",
+                templeContext = "Pulling this vine downward raises the water bucket from the temple well.",
                 isPreTest = true, isPostTest = false, isRetentionTest = false, pointValue = 10f
             });
             // Understand 1 (Post)
             _allQuestions.Add(new QuizQuestion {
-                questionId = "P_Und_1", questionText = "How does a movable pulley provide a mechanical advantage?", type = QuestionType.MultipleChoice,
+                questionId = "P_Und_1", questionText = "How does a movable pulley provide mechanical advantage?", type = QuestionType.MultipleChoice,
                 machineType = "Pulley", difficultyTier = 2, bloomLevel = BloomLevel.Understand,
-                options = new List<string> { "By changing direction", "By supporting half the load's weight on a fixed anchor", "By making the rope shorter", "By spinning faster" },
-                correctAnswerIndex = 1, explanation = "In a movable pulley, one end of the rope is fixed, taking half the load's weight.",
-                templeContext = "This pulley moves with the block, sharing the heavy burden with the temple wall.",
+                options = new List<string> { "By changing force direction", "By sharing half the load weight with a fixed anchor", "By shortening the rope", "By spinning faster" },
+                correctAnswerIndex = 1, explanation = "In a movable pulley, one end of the rope is fixed to an anchor, supporting half the load weight.",
+                templeContext = "This pulley travels along with the stone block, transferring half its weight onto the temple wall.",
                 isPreTest = false, isPostTest = true, isRetentionTest = false, pointValue = 15f
             });
             // Understand 2 (Retention)
             _allQuestions.Add(new QuizQuestion {
-                questionId = "P_Und_2", questionText = "If you use a block and tackle with 4 rope sections supporting the load, how much effort is needed to lift 100N?", type = QuestionType.MultipleChoice,
+                questionId = "P_Und_2", questionText = "With a pulley system having 4 supporting rope strands, how much effort is needed to lift a 100 N load?", type = QuestionType.MultipleChoice,
                 machineType = "Pulley", difficultyTier = 2, bloomLevel = BloomLevel.Understand,
-                options = new List<string> { "100N", "50N", "25N", "400N" },
-                correctAnswerIndex = 2, explanation = "100N divided by 4 supporting ropes equals 25N of effort.",
-                templeContext = "The grand chandelier requires complex rope systems to be hoisted by a single monk.",
+                options = new List<string> { "100 N", "50 N", "25 N", "400 N" },
+                correctAnswerIndex = 2, explanation = "Dividing the 100 N load by 4 supporting rope segments yields an effort of 25 N.",
+                templeContext = "Lifting the heavy chandelier requires a multi-rope tackle system for a single explorer.",
                 isPreTest = false, isPostTest = false, isRetentionTest = true, pointValue = 15f
             });
             // Apply 1 (Pre)
             _allQuestions.Add(new QuizQuestion {
-                questionId = "P_App_1", questionText = "To lift a cage of artifacts out of a deep pit with the least force, you should use:", type = QuestionType.MultipleChoice,
+                questionId = "P_App_1", questionText = "To hoist a heavy artifact crate from a deep pit with minimum effort, which system should you use?", type = QuestionType.MultipleChoice,
                 machineType = "Pulley", difficultyTier = 3, bloomLevel = BloomLevel.Apply,
-                options = new List<string> { "One fixed pulley", "No pulleys", "A system of multiple pulleys", "A lever" },
-                correctAnswerIndex = 2, explanation = "Adding multiple pulleys creates a block and tackle, greatly reducing the required force.",
-                templeContext = "The artifact pit is deep; combine these ancient wheels to haul the treasure.",
+                options = new List<string> { "A single fixed pulley", "No pulleys", "A multi-pulley system (block and tackle)", "A first-class lever" },
+                correctAnswerIndex = 2, explanation = "Combining multiple pulleys into a block-and-tackle system significantly reduces the input effort needed.",
+                templeContext = "The treasure pit is deep; combine multiple ancient pulleys to retrieve the relic easily.",
                 isPreTest = true, isPostTest = false, isRetentionTest = false, pointValue = 20f
             });
             // Analyze 1 (Post)
             _allQuestions.Add(new QuizQuestion {
-                questionId = "P_Ana_1", questionText = "Why do you have to pull more rope when using a mechanical advantage pulley system?", type = QuestionType.MultipleChoice,
+                questionId = "P_Ana_1", questionText = "When using a high mechanical advantage pulley system, why must you pull more rope?", type = QuestionType.MultipleChoice,
                 machineType = "Pulley", difficultyTier = 3, bloomLevel = BloomLevel.Analyze,
-                options = new List<string> { "Because work equals force times distance", "Because the rope stretches", "Because friction increases", "Because the load gets heavier" },
-                correctAnswerIndex = 0, explanation = "To do the same amount of work with less force, you must apply that force over a greater distance.",
-                templeContext = "Notice how you must pull meters of rope just to lift the gate a few centimeters.",
+                options = new List<string> { "Because Work = Force × Distance", "Because the rope stretches", "Because friction increases", "Because the load gets heavier" },
+                correctAnswerIndex = 0, explanation = "To do the same work with less force, that force must be applied over a proportionally greater distance.",
+                templeContext = "Notice how pulling several meters of rope raises the heavy gate by just a few centimeters.",
                 isPreTest = false, isPostTest = true, isRetentionTest = false, pointValue = 25f
             });
 
@@ -182,112 +182,127 @@ namespace SecretOfLostTemple.Assessment
             _allQuestions.Add(new QuizQuestion {
                 questionId = "IP_Rem_1", questionText = "What is an inclined plane?", type = QuestionType.MultipleChoice,
                 machineType = "InclinedPlane", difficultyTier = 1, bloomLevel = BloomLevel.Remember,
-                options = new List<string> { "A flat, sloped surface", "A spinning disk", "A rigid bar", "A grooved wheel" },
-                correctAnswerIndex = 0, explanation = "An inclined plane is simply a ramp or sloped surface used to raise or lower objects.",
-                templeContext = "The grand staircase was too steep, so they built this smooth stone ramp.",
+                options = new List<string> { "A flat, sloping surface", "A rotating disk", "A rigid pivoting rod", "A grooved wheel" },
+                correctAnswerIndex = 0, explanation = "An inclined plane is a flat surface tilted at an angle, used to raise or lower heavy objects.",
+                templeContext = "Since the stairway was too steep, builders laid a smooth sloping stone ramp alongside it.",
                 isPreTest = true, isPostTest = false, isRetentionTest = false, pointValue = 10f
             });
             // Remember 2 (Retention)
             _allQuestions.Add(new QuizQuestion {
-                questionId = "IP_Rem_2", questionText = "Which of these is an example of an inclined plane?", type = QuestionType.MultipleChoice,
+                questionId = "IP_Rem_2", questionText = "Which of the following is an example of an inclined plane?", type = QuestionType.MultipleChoice,
                 machineType = "InclinedPlane", difficultyTier = 1, bloomLevel = BloomLevel.Remember,
-                options = new List<string> { "A wheelbarrow", "A ramp", "A seesaw", "A flagpole" },
-                correctAnswerIndex = 1, explanation = "A ramp is a classic inclined plane.",
-                templeContext = "The pyramid's blocks were dragged up enormous ramps.",
+                options = new List<string> { "Wheelbarrow", "Ramp", "Seesaw", "Flagpole" },
+                correctAnswerIndex = 1, explanation = "A loading ramp is a classic inclined plane connecting a lower level to an elevated level.",
+                templeContext = "Giant pyramid stones were hauled upward along massive earthen ramps.",
                 isPreTest = false, isPostTest = false, isRetentionTest = true, pointValue = 10f
             });
             // Understand 1 (Post)
             _allQuestions.Add(new QuizQuestion {
-                questionId = "IP_Und_1", questionText = "How does a longer, gentler slope affect the effort needed to push a block up?", type = QuestionType.MultipleChoice,
+                questionId = "IP_Und_1", questionText = "How does a longer, gentler ramp affect the effort needed to push a heavy stone upward?", type = QuestionType.MultipleChoice,
                 machineType = "InclinedPlane", difficultyTier = 2, bloomLevel = BloomLevel.Understand,
-                options = new List<string> { "Increases effort", "Decreases effort", "No change", "Makes it heavier" },
-                correctAnswerIndex = 1, explanation = "A gentler slope spreads the work over a longer distance, requiring less effort.",
-                templeContext = "The builders extended this ramp so the massive statues could be pushed easily.",
+                options = new List<string> { "It increases the effort", "It decreases the effort", "No change", "It makes the stone heavier" },
+                correctAnswerIndex = 1, explanation = "A gentler slope spreads the vertical lifting work across a longer travel distance, reducing the required pushing force.",
+                templeContext = "Builders lengthened the stone ramp so massive guardian statues could be rolled into place easily.",
                 isPreTest = false, isPostTest = true, isRetentionTest = false, pointValue = 15f
             });
             // Understand 2 (Pre)
             _allQuestions.Add(new QuizQuestion {
-                questionId = "IP_Und_2", questionText = "A wedge is a modification of which simple machine?", type = QuestionType.MultipleChoice,
+                questionId = "IP_Und_2", questionText = "A wedge is a modified version of which simple machine?", type = QuestionType.MultipleChoice,
                 machineType = "InclinedPlane", difficultyTier = 2, bloomLevel = BloomLevel.Understand,
                 options = new List<string> { "Lever", "Pulley", "Wheel and Axle", "Inclined Plane" },
-                correctAnswerIndex = 3, explanation = "A wedge is essentially two inclined planes placed back-to-back.",
-                templeContext = "This sharp stone axe used to split wood is a double ramp.",
+                correctAnswerIndex = 3, explanation = "A wedge consists essentially of two inclined planes placed back to back.",
+                templeContext = "The sharp stone axe used for cutting timber acts as a double inclined plane.",
                 isPreTest = true, isPostTest = false, isRetentionTest = false, pointValue = 15f
             });
             // Apply 1 (Retention)
             _allQuestions.Add(new QuizQuestion {
-                questionId = "IP_App_1", questionText = "To raise a sarcophagus 2 meters with minimal force, what kind of ramp should you build?", type = QuestionType.MultipleChoice,
+                questionId = "IP_App_1", questionText = "To raise a sarcophagus 2 meters high with minimum pushing effort, which ramp design should you construct?", type = QuestionType.MultipleChoice,
                 machineType = "InclinedPlane", difficultyTier = 3, bloomLevel = BloomLevel.Apply,
-                options = new List<string> { "A 2-meter long ramp", "A 10-meter long ramp", "A vertical wall", "A step-like structure" },
-                correctAnswerIndex = 1, explanation = "The 10-meter ramp has a gentler slope, reducing the required force.",
-                templeContext = "Choose the longest wooden planks to form the gentlest path for the royal tomb.",
+                options = new List<string> { "A 2-meter long ramp", "A 10-meter long ramp", "A vertical wall", "A step ladder" },
+                correctAnswerIndex = 1, explanation = "The 10-meter ramp has a much gentler incline, minimizing the effort force needed to push the weight upward.",
+                templeContext = "Select the longest timber planks to construct a smooth, low-effort path to the royal altar.",
                 isPreTest = false, isPostTest = false, isRetentionTest = true, pointValue = 20f
             });
             // Analyze 1 (Post)
             _allQuestions.Add(new QuizQuestion {
-                questionId = "IP_Ana_1", questionText = "Why might pushing a block up a ramp be harder than expected in reality?", type = QuestionType.MultipleChoice,
+                questionId = "IP_Ana_1", questionText = "Why might pushing a stone block up a ramp be harder in practice than theoretical calculations suggest?", type = QuestionType.MultipleChoice,
                 machineType = "InclinedPlane", difficultyTier = 3, bloomLevel = BloomLevel.Analyze,
-                options = new List<string> { "Because of gravity", "Because of friction between the block and ramp", "Because ramps generate heat", "Because of air resistance" },
-                correctAnswerIndex = 1, explanation = "Friction opposes motion. While the ramp reduces lifting force, friction adds a new resistance.",
-                templeContext = "The stone blocks drag harshly against the sandy limestone ramp.",
+                options = new List<string> { "Due to gravity", "Due to friction between the block and the ramp", "Because the ramp generates heat", "Due to air resistance" },
+                correctAnswerIndex = 1, explanation = "Friction resists sliding motion. While the ramp reduces lifting effort, friction introduces additional resisting force.",
+                templeContext = "The sandstone blocks drag heavily against the rough ramp surface, creating friction resistance.",
                 isPreTest = false, isPostTest = true, isRetentionTest = false, pointValue = 25f
             });
 
             // ================= WHEEL & AXLE (6 questions) =================
             // Remember 1 (Post)
             _allQuestions.Add(new QuizQuestion {
-                questionId = "WA_Rem_1", questionText = "What consists of a larger disk connected to a smaller cylinder?", type = QuestionType.MultipleChoice,
+                questionId = "WA_Rem_1", questionText = "Which simple machine consists of a large disk attached to a smaller central cylinder?", type = QuestionType.MultipleChoice,
                 machineType = "WheelAndAxle", difficultyTier = 1, bloomLevel = BloomLevel.Remember,
-                options = new List<string> { "A Lever", "An Inclined Plane", "A Wheel and Axle", "A Pulley" },
-                correctAnswerIndex = 2, explanation = "A wheel and axle features a large wheel attached to a smaller axle.",
-                templeContext = "The giant steering wheel is fixed to a sturdy wooden shaft.",
+                options = new List<string> { "Lever", "Inclined Plane", "Wheel and Axle", "Pulley" },
+                correctAnswerIndex = 2, explanation = "A wheel and axle consists of a larger wheel secured to a smaller concentric axle shaft.",
+                templeContext = "The colossal stone steering wheel is rigidly coupled to a central wooden axle.",
                 isPreTest = false, isPostTest = true, isRetentionTest = false, pointValue = 10f
             });
             // Remember 2 (Retention)
             _allQuestions.Add(new QuizQuestion {
-                questionId = "WA_Rem_2", questionText = "Which part of the wheel and axle turns a greater distance?", type = QuestionType.MultipleChoice,
+                questionId = "WA_Rem_2", questionText = "In a wheel and axle system, which part travels a greater distance in one complete rotation?", type = QuestionType.MultipleChoice,
                 machineType = "WheelAndAxle", difficultyTier = 1, bloomLevel = BloomLevel.Remember,
-                options = new List<string> { "The Axle", "The Wheel", "They turn the same distance", "The Base" },
-                correctAnswerIndex = 1, explanation = "The outer rim of the larger wheel covers more distance per rotation than the axle.",
-                templeContext = "Trace the outer edge of this sun dial wheel compared to its center peg.",
+                options = new List<string> { "The axle", "The wheel", "Both travel the same distance", "The base" },
+                correctAnswerIndex = 1, explanation = "The larger outer circumference of the wheel travels a greater linear distance than the smaller axle in each rotation.",
+                templeContext = "Compare the outer rim of the temple sundial wheel against its central mounting shaft.",
                 isPreTest = false, isPostTest = false, isRetentionTest = true, pointValue = 10f
             });
             // Understand 1 (Pre)
             _allQuestions.Add(new QuizQuestion {
-                questionId = "WA_Und_1", questionText = "Applying force to the larger wheel to turn the axle creates a mechanical advantage in...", type = QuestionType.MultipleChoice,
+                questionId = "WA_Und_1", questionText = "Applying effort to the larger wheel to rotate the smaller axle provides a mechanical advantage in...", type = QuestionType.MultipleChoice,
                 machineType = "WheelAndAxle", difficultyTier = 2, bloomLevel = BloomLevel.Understand,
                 options = new List<string> { "Speed", "Force", "Friction", "Distance" },
-                correctAnswerIndex = 1, explanation = "Turning the larger wheel multiplies your force on the smaller axle.",
-                templeContext = "By gripping the wide outer ring, you can easily turn the heavy central gear.",
+                correctAnswerIndex = 1, explanation = "Turning the larger wheel multiplies your input force on the smaller axle (e.g., a steering wheel or doorknob).",
+                templeContext = "By turning the wide outer ring, you effortlessly turn the heavy central sanctuary gear.",
                 isPreTest = true, isPostTest = false, isRetentionTest = false, pointValue = 15f
             });
             // Understand 2 (Post)
             _allQuestions.Add(new QuizQuestion {
-                questionId = "WA_Und_2", questionText = "Applying force to the axle to turn the wheel creates a mechanical advantage in...", type = QuestionType.MultipleChoice,
+                questionId = "WA_Und_2", questionText = "Applying force to the axle to spin the outer wheel provides an advantage in...", type = QuestionType.MultipleChoice,
                 machineType = "WheelAndAxle", difficultyTier = 2, bloomLevel = BloomLevel.Understand,
-                options = new List<string> { "Speed and Distance", "Force", "Weight", "Balance" },
-                correctAnswerIndex = 0, explanation = "Turning the axle requires more force, but the outer wheel moves faster and farther (like a car axle).",
-                templeContext = "The fast-spinning ancient fan operates by turning the central rod rapidly.",
+                options = new List<string> { "Speed and distance", "Force", "Weight", "Balance" },
+                correctAnswerIndex = 0, explanation = "Turning the axle requires greater effort force, but causes the outer wheel rim to move much faster and farther.",
+                templeContext = "The rapidly rotating temple windmill operates by driving its central spindle shaft.",
                 isPreTest = false, isPostTest = true, isRetentionTest = false, pointValue = 15f
             });
             // Apply 1 (Retention)
             _allQuestions.Add(new QuizQuestion {
-                questionId = "WA_App_1", questionText = "To make it easier to open a heavy temple door using a doorknob, you should...", type = QuestionType.MultipleChoice,
+                questionId = "WA_App_1", questionText = "To make opening a heavy temple door using a doorknob easier, what design should you choose?", type = QuestionType.MultipleChoice,
                 machineType = "WheelAndAxle", difficultyTier = 3, bloomLevel = BloomLevel.Apply,
-                options = new List<string> { "Use a smaller doorknob", "Use a larger doorknob", "Remove the doorknob", "Push harder" },
-                correctAnswerIndex = 1, explanation = "A larger doorknob (wheel) increases the mechanical advantage over the latch (axle).",
-                templeContext = "The giant golden knobs were designed to let even a child open the massive gates.",
+                options = new List<string> { "Use a smaller doorknob", "Use a larger diameter doorknob", "Remove the knob", "Push directly on the hinges" },
+                correctAnswerIndex = 1, explanation = "A larger diameter knob (wheel) provides greater mechanical advantage over the latch spindle (axle).",
+                templeContext = "Giant circular golden knobs enable even an explorer to turn massive temple latches.",
                 isPreTest = false, isPostTest = false, isRetentionTest = true, pointValue = 20f
             });
             // Analyze 1 (Pre)
             _allQuestions.Add(new QuizQuestion {
-                questionId = "WA_Ana_1", questionText = "How does the ratio of the wheel radius to the axle radius affect the machine?", type = QuestionType.MultipleChoice,
+                questionId = "WA_Ana_1", questionText = "How does the ratio of wheel radius to axle radius affect the machine mechanical advantage?", type = QuestionType.MultipleChoice,
                 machineType = "WheelAndAxle", difficultyTier = 3, bloomLevel = BloomLevel.Analyze,
-                options = new List<string> { "A larger ratio means greater mechanical advantage", "A larger ratio means less advantage", "The ratio has no effect", "It only affects speed, not force" },
-                correctAnswerIndex = 0, explanation = "Mechanical advantage is calculated by dividing the radius of the wheel by the radius of the axle.",
-                templeContext = "The engineers calculated the exact size of this capstan to ensure the guards could lift the portcullis.",
+                options = new List<string> { "A larger radius ratio produces greater mechanical advantage", "A larger radius ratio reduces mechanical advantage", "The ratio has no effect", "It only affects speed, not force" },
+                correctAnswerIndex = 0, explanation = "Mechanical advantage is calculated as Wheel Radius divided by Axle Radius; increasing this ratio multiplies force further.",
+                templeContext = "Temple engineers calculated the precise wheel-to-axle diameter ratio so gates could be lifted smoothly.",
                 isPreTest = true, isPostTest = false, isRetentionTest = false, pointValue = 25f
             });
+
+            // Ensure all Sinhala question texts, contexts, options, and explanations are preprocessed for ligatures
+            foreach (var q in _allQuestions)
+            {
+                q.questionText = SecretOfLostTemple.Core.SinhalaTextHelper.Preprocess(q.questionText);
+                q.templeContext = SecretOfLostTemple.Core.SinhalaTextHelper.Preprocess(q.templeContext);
+                q.explanation = SecretOfLostTemple.Core.SinhalaTextHelper.Preprocess(q.explanation);
+                if (q.options != null)
+                {
+                    for (int i = 0; i < q.options.Count; i++)
+                    {
+                        q.options[i] = SecretOfLostTemple.Core.SinhalaTextHelper.Preprocess(q.options[i]);
+                    }
+                }
+            }
         }
 
         /// <summary>

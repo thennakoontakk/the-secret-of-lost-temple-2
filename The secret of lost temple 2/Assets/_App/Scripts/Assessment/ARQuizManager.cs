@@ -91,6 +91,41 @@ namespace SecretOfLostTemple.Assessment
             if (audioSource == null) audioSource = gameObject.AddComponent<AudioSource>();
         }
 
+        private void EnsureSinhalaFont()
+        {
+            var font = Resources.Load<Font>("SinhalaFont");
+            if (font == null) return;
+            if (questionText != null)
+            {
+                questionText.font = font;
+                questionText.fontSize = 36; // 34-38px for primary school children
+                questionText.lineSpacing = 1.25f; // Comfortable line spacing
+            }
+            if (explanationText != null)
+            {
+                explanationText.font = font;
+                explanationText.fontSize = 30;
+                explanationText.lineSpacing = 1.25f;
+            }
+            if (feedbackText != null)
+            {
+                feedbackText.font = font;
+                feedbackText.fontSize = 32;
+            }
+            if (answerTexts != null)
+            {
+                foreach (var at in answerTexts)
+                {
+                    if (at != null)
+                    {
+                        at.font = font;
+                        at.fontSize = 32; // 30-34px bold
+                        at.fontStyle = FontStyle.Bold;
+                    }
+                }
+            }
+        }
+
         public void StartPreTest()
         {
             StartQuiz(QuestionBank.GetPreTestQuestions(), "pretest");
@@ -142,8 +177,9 @@ namespace SecretOfLostTemple.Assessment
 
             questionStartTime = Time.time;
             answerSubmitted = false;
+            EnsureSinhalaFont();
             QuizQuestion q = currentQuiz[index];
-            questionText.text = $"{q.templeContext}\n\n{q.questionText}";
+            questionText.text = SecretOfLostTemple.Core.SinhalaTextHelper.Preprocess($"{q.templeContext}\n\n{q.questionText}");
             explanationText.text = "";
             feedbackText.text = "";
             scoreText.text = $"Score: {score}";
@@ -163,7 +199,7 @@ namespace SecretOfLostTemple.Assessment
 
                     if (answerTexts != null && i < answerTexts.Length && answerTexts[i] != null)
                     {
-                        answerTexts[i].text = q.options[i];
+                        answerTexts[i].text = SecretOfLostTemple.Core.SinhalaTextHelper.Preprocess(q.options[i]);
                         answerTexts[i].color = Color.white;
                     }
 
@@ -199,7 +235,7 @@ namespace SecretOfLostTemple.Assessment
                     if (btnImg != null) btnImg.color = new Color(0.12f, 0.78f, 0.35f, 1f); // Vivid Emerald Green
                     if (answerTexts != null && i < answerTexts.Length && answerTexts[i] != null)
                     {
-                        answerTexts[i].text = $"<b>✓ {q.options[i]}</b>";
+                        answerTexts[i].text = $"<b>✓ {SecretOfLostTemple.Core.SinhalaTextHelper.Preprocess(q.options[i])}</b>";
                         answerTexts[i].color = Color.white;
                     }
                     if (isCorrect) StartCoroutine(PulseButton(answerButtons[i].transform));
@@ -209,7 +245,7 @@ namespace SecretOfLostTemple.Assessment
                     if (btnImg != null) btnImg.color = new Color(0.85f, 0.22f, 0.22f, 1f); // Vivid Coral Red
                     if (answerTexts != null && i < answerTexts.Length && answerTexts[i] != null)
                     {
-                        answerTexts[i].text = $"<b>✗ {q.options[i]}</b>";
+                        answerTexts[i].text = $"<b>✗ {SecretOfLostTemple.Core.SinhalaTextHelper.Preprocess(q.options[i])}</b>";
                         answerTexts[i].color = new Color(1f, 0.9f, 0.9f, 1f);
                     }
                     StartCoroutine(ShakeButton(answerButtons[i].transform));
@@ -297,7 +333,7 @@ namespace SecretOfLostTemple.Assessment
                 feedbackText.color = Color.red;
                 if (incorrectFeedbackEffect) Instantiate(incorrectFeedbackEffect, transform.position, Quaternion.identity);
             }
-            explanationText.text = explanation;
+            explanationText.text = SecretOfLostTemple.Core.SinhalaTextHelper.Preprocess(explanation);
         }
 
         private IEnumerator WaitAndNextQuestion()

@@ -54,3 +54,12 @@ desktop.ini
 # Plastic SCM
 **/.plastic/
 
+# Scratch & Debug captures
+/*.png
+/*.py
+/*.ps1
+/fulcrum_texture.png
+**/scratch_*
+WebDashboard/phone_records.json
+
+

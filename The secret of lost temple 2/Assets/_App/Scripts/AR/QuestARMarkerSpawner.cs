@@ -178,7 +178,11 @@ namespace SecretOfLostTemple.AR
             if (oldGuidance != null) oldGuidance.gameObject.SetActive(false);
 
             var existingHud = overlayRoot.Find("BookPageScannerHUD");
-            if (existingHud != null) return;
+            if (existingHud != null)
+            {
+                if (Application.isPlaying) Destroy(existingHud.gameObject);
+                else DestroyImmediate(existingHud.gameObject);
+            }
 
             Font font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
 
@@ -190,125 +194,176 @@ namespace SecretOfLostTemple.AR
             hudRt.offsetMin = Vector2.zero;
             hudRt.offsetMax = Vector2.zero;
 
-            // --- A. TOP NAVIGATION & CAMERA STATUS BAR ---
-            var topBar = CreatePanel("TopScannerBar", hudRoot.transform, new Vector2(0.5f, 1f), new Vector2(0f, -16f), new Vector2(1840f, 76f), new Color(0.10f, 0.07f, 0.04f, 0.88f));
+            // Load Temple Aesthetic Sprites (Top Banner, Bottom Console, Target Card)
+            Sprite sTopBanner = Resources.Load<Sprite>("scanner_top_banner");
+            Sprite sTargetCard = Resources.Load<Sprite>("scanner_target_card");
+            Sprite sBottomConsole = Resources.Load<Sprite>("scanner_bottom_console");
 
-            // Back to StoryBook Button
-            var backBtn = CreateStyledButton("Btn_BackToStory", topBar.transform, font, new Vector2(0f, 0.5f), new Vector2(150f, 0f), new Vector2(260f, 52f),
-                new Color(0.35f, 0.22f, 0.10f, 0.95f), "⬅ BACK TO STORY", 18, () =>
-                {
-                    if (SecretOfLostTemple.Story.StoryBookViewerController.StoryActivityActive)
-                        SecretOfLostTemple.Story.StoryBookViewerController.ReturnToStory(false);
-                    else
-                        SceneManager.LoadScene("HomeMapScene");
-                });
+            // --- A. TOP STONE & JUNGLE VINE BANNER (Header Bar) ---
+            var topBar = CreatePanel("TopScannerBar", hudRoot.transform, new Vector2(0.5f, 1f), new Vector2(0f, -6f), new Vector2(1500f, 250f), Color.clear);
+            var topBarImg = topBar.GetComponent<Image>();
+            if (sTopBanner != null)
+            {
+                topBarImg.sprite = sTopBanner;
+                topBarImg.color = Color.white;
+                topBarImg.preserveAspect = true;
+            }
 
-            // Header Title
-            var titleTxt = CreateText("HeaderTitle", topBar.transform, font, new Vector2(0.5f, 0.5f), new Vector2(0f, 0f), new Vector2(960f, 60f),
-                "📖 <b>CHAPTER 1: THE SACRED LEVER — STORYBOOK PAGE 9 SCANNER</b>", 22, new Color(1f, 0.90f, 0.55f), TextAnchor.MiddleCenter);
+            // Invisible clickable button layered over the left "BACK TO STORY" section of banner
+            var backBtnGo = new GameObject("Btn_BackToStory", typeof(RectTransform), typeof(Image), typeof(Button));
+            backBtnGo.transform.SetParent(topBar.transform, false);
+            var rtBack = (RectTransform)backBtnGo.transform;
+            rtBack.anchorMin = new Vector2(0.01f, 0.15f);
+            rtBack.anchorMax = new Vector2(0.24f, 0.85f);
+            rtBack.offsetMin = Vector2.zero;
+            rtBack.offsetMax = Vector2.zero;
+            var backImg = backBtnGo.GetComponent<Image>();
+            backImg.color = Color.clear; // Invisible raycast hit zone over carved wooden back button
+            var backBtn = backBtnGo.GetComponent<Button>();
+            backBtn.onClick.AddListener(() =>
+            {
+                if (SecretOfLostTemple.Story.StoryBookViewerController.StoryActivityActive)
+                    SecretOfLostTemple.Story.StoryBookViewerController.ReturnToStory(false);
+                else
+                    SceneManager.LoadScene("HomeMapScene");
+            });
 
-            // Live Camera Badge
-            var camBadge = CreatePanel("CameraBadge", topBar.transform, new Vector2(1f, 0.5f), new Vector2(-170f, 0f), new Vector2(300f, 46f), new Color(0.08f, 0.28f, 0.16f, 0.92f));
-            cameraStateBadgeText = CreateText("CamStatusText", camBadge.transform, font, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(280f, 40f),
-                "📹 OPENING CAMERA...", 16, new Color(0.4f, 1f, 0.65f), TextAnchor.MiddleCenter);
+            // Camera status text reference (empty by default so baked "CAMERA ACTIVE" artwork shines)
+            cameraStateBadgeText = CreateText("CamStatusText", topBar.transform, font, new Vector2(1f, 0.5f), new Vector2(-155f, 0f), new Vector2(240f, 40f),
+                "", 18, new Color(0.4f, 1f, 0.65f), TextAnchor.MiddleCenter);
 
-            // --- B. WIDE LANDSCAPE STORYBOOK PAGE VIEWFINDER (4:3 Book Page Ratio, NOT a square QR box!) ---
-            var bookFrame = new GameObject("BookPageViewfinder", typeof(RectTransform));
+            // --- B. CENTRAL CODE-BASED AR MARKER PLACEHOLDER (VIEWFINDER & CORNERS) ---
+            // Built purely with code - no image sprite required, completely eliminating cropping or stretching
+            var bookFrame = new GameObject("BookPageViewfinder", typeof(RectTransform), typeof(Image));
             bookFrame.transform.SetParent(hudRoot.transform, false);
             var bfRt = (RectTransform)bookFrame.transform;
             bfRt.anchorMin = bfRt.anchorMax = bfRt.pivot = new Vector2(0.5f, 0.5f);
-            bfRt.anchoredPosition = new Vector2(-110f, 18f);
-            bfRt.sizeDelta = new Vector2(820f, 540f); // Wide landscape storybook page frame
+            bfRt.anchoredPosition = new Vector2(-150f, -20f);
+            bfRt.sizeDelta = new Vector2(760f, 490f);
 
-            Color goldCorner = new Color(1f, 0.82f, 0.28f, 0.92f);
-            float armLen = 64f;
-            float armThick = 6f;
+            var bfImg = bookFrame.GetComponent<Image>();
+            // Subtle translucent aperture fill so camera feed is bright and clear
+            bfImg.color = new Color(0.02f, 0.05f, 0.03f, 0.10f);
+            bfImg.raycastTarget = false;
 
-            // Top-Left L-Corner
-            CreateCornerBracket(bookFrame.transform, "Corner_TL", new Vector2(0f, 1f), new Vector2(0f, 0f), armLen, armThick, 1f, -1f, goldCorner);
-            // Top-Right L-Corner
-            CreateCornerBracket(bookFrame.transform, "Corner_TR", new Vector2(1f, 1f), new Vector2(0f, 0f), armLen, armThick, -1f, -1f, goldCorner);
-            // Bottom-Left L-Corner
-            CreateCornerBracket(bookFrame.transform, "Corner_BL", new Vector2(0f, 0f), new Vector2(0f, 0f), armLen, armThick, 1f, 1f, goldCorner);
-            // Bottom-Right L-Corner
-            CreateCornerBracket(bookFrame.transform, "Corner_BR", new Vector2(1f, 0f), new Vector2(0f, 0f), armLen, armThick, -1f, 1f, goldCorner);
+            // 1. Four perimeter border guidelines (subtle golden framing)
+            Color guideBorderCol = new Color(1f, 0.85f, 0.35f, 0.35f);
+            CreateLine(bookFrame.transform, "Border_T", new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0.5f, 1f), Vector2.zero, new Vector2(0f, 2f), guideBorderCol);
+            CreateLine(bookFrame.transform, "Border_B", new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0.5f, 0f), Vector2.zero, new Vector2(0f, 2f), guideBorderCol);
+            CreateLine(bookFrame.transform, "Border_L", new Vector2(0f, 0f), new Vector2(0f, 1f), new Vector2(0f, 0.5f), Vector2.zero, new Vector2(2f, 0f), guideBorderCol);
+            CreateLine(bookFrame.transform, "Border_R", new Vector2(1f, 0f), new Vector2(1f, 1f), new Vector2(1f, 0.5f), Vector2.zero, new Vector2(2f, 0f), guideBorderCol);
 
-            // Subtle top caption inside book viewfinder
-            CreateText("ViewfinderCaption", bookFrame.transform, font, new Vector2(0.5f, 1f), new Vector2(0f, -26f), new Vector2(760f, 34f),
-                "✨ <b>ALIGN PRINTED STORYBOOK PAGE 9 ILLUSTRATION HERE</b> ✨", 17, new Color(1f, 0.95f, 0.75f, 0.9f), TextAnchor.MiddleCenter);
+            // 2. Four Ornate Golden AR Corner Brackets (Code-Generated)
+            Color cornerCol = new Color(1f, 0.82f, 0.22f, 0.95f);
+            Color cornerInnerCol = new Color(1f, 0.95f, 0.60f, 0.80f);
+            float cLen = 65f;
+            float cThick = 5f;
 
-            // Animated Horizontal Golden Scan Beam
-            var beamGo = CreatePanel("GoldenScanBeam", bookFrame.transform, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(790f, 4f), new Color(1f, 0.85f, 0.25f, 0.85f));
-            scanBeamRect = (RectTransform)beamGo.transform;
+            // Outer brackets
+            CreateCornerBracket(bookFrame.transform, "Corner_TL", new Vector2(0f, 1f), Vector2.zero, cLen, cThick, 1f, -1f, cornerCol);
+            CreateCornerBracket(bookFrame.transform, "Corner_TR", new Vector2(1f, 1f), Vector2.zero, cLen, cThick, -1f, -1f, cornerCol);
+            CreateCornerBracket(bookFrame.transform, "Corner_BL", new Vector2(0f, 0f), Vector2.zero, cLen, cThick, 1f, 1f, cornerCol);
+            CreateCornerBracket(bookFrame.transform, "Corner_BR", new Vector2(1f, 0f), Vector2.zero, cLen, cThick, -1f, 1f, cornerCol);
 
-            // --- C. TARGET PAGE 9 ILLUSTRATION REFERENCE CARD (Right Side) ---
-            var refCard = CreatePanel("TargetPageReferenceCard", hudRoot.transform, new Vector2(1f, 0.5f), new Vector2(-190f, 18f), new Vector2(320f, 360f), new Color(0.12f, 0.09f, 0.05f, 0.92f));
+            // Inner stepped accents
+            CreateCornerBracket(bookFrame.transform, "CornerInner_TL", new Vector2(0f, 1f), new Vector2(10f, -10f), 26f, 3f, 1f, -1f, cornerInnerCol);
+            CreateCornerBracket(bookFrame.transform, "CornerInner_TR", new Vector2(1f, 1f), new Vector2(-10f, -10f), 26f, 3f, -1f, -1f, cornerInnerCol);
+            CreateCornerBracket(bookFrame.transform, "CornerInner_BL", new Vector2(0f, 0f), new Vector2(10f, 10f), 26f, 3f, 1f, 1f, cornerInnerCol);
+            CreateCornerBracket(bookFrame.transform, "CornerInner_BR", new Vector2(1f, 0f), new Vector2(-10f, 10f), 26f, 3f, -1f, 1f, cornerInnerCol);
 
-            CreateText("RefHeader", refCard.transform, font, new Vector2(0.5f, 1f), new Vector2(0f, -24f), new Vector2(290f, 36f),
-                "🎯 <b>TARGET MARKER PAGE</b>", 17, new Color(1f, 0.86f, 0.40f), TextAnchor.MiddleCenter);
+            // 3. Center Target Reticle Crosshairs
+            var centerReticle = new GameObject("CenterReticle", typeof(RectTransform));
+            centerReticle.transform.SetParent(bookFrame.transform, false);
+            var crRt = (RectTransform)centerReticle.transform;
+            crRt.anchorMin = crRt.anchorMax = crRt.pivot = new Vector2(0.5f, 0.5f);
+            crRt.sizeDelta = new Vector2(50f, 50f);
 
-            var previewHolder = CreatePanel("Page9PreviewFrame", refCard.transform, new Vector2(0.5f, 0.5f), new Vector2(0f, 12f), new Vector2(280f, 200f), new Color(0.22f, 0.18f, 0.12f, 1f));
-            var previewImgGo = new GameObject("Page9Image", typeof(RectTransform), typeof(Image));
-            previewImgGo.transform.SetParent(previewHolder.transform, false);
-            var pimRt = (RectTransform)previewImgGo.transform;
-            pimRt.anchorMin = Vector2.zero;
-            pimRt.anchorMax = Vector2.one;
-            pimRt.offsetMin = new Vector2(6f, 6f);
-            pimRt.offsetMax = new Vector2(-6f, -6f);
-            var pim = previewImgGo.GetComponent<Image>();
-            pim.preserveAspect = true;
+            Color reticleCol = new Color(1f, 0.85f, 0.35f, 0.60f);
+            CreateLine(centerReticle.transform, "Reticle_H", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(44f, 2f), reticleCol);
+            CreateLine(centerReticle.transform, "Reticle_V", new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(2f, 44f), reticleCol);
+            CreatePanel("Reticle_Dot", centerReticle.transform, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(8f, 8f), new Color(1f, 0.95f, 0.6f, 0.85f));
 
-            Sprite targetSprite = SecretOfLostTemple.Story.StoryBookViewerController.ActiveTargetPageSprite;
-            if (targetSprite == null && referenceLibrary != null && referenceLibrary.count > 0)
-            {
-                var refTex = referenceLibrary[0].texture;
-                if (refTex != null)
-                {
-                    targetSprite = Sprite.Create(refTex, new Rect(0, 0, refTex.width, refTex.height), new Vector2(0.5f, 0.5f));
-                }
-            }
-            if (targetSprite != null)
-            {
-                pim.sprite = targetSprite;
-                pim.color = Color.white;
-            }
-            else
-            {
-                pim.color = new Color(0.25f, 0.38f, 0.22f, 1f);
-            }
+            // 4. Top Badge on Viewfinder: "ALIGN STORYBOOK PAGE 9 HERE"
+            var topBadge = CreatePanel("PlaceholderTopBadge", bookFrame.transform, new Vector2(0.5f, 1f), new Vector2(0f, 22f), new Vector2(360f, 34f), new Color(0.12f, 0.08f, 0.04f, 0.90f));
+            CreateLine(topBadge.transform, "BadgeBorder_B", new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0.5f, 0f), Vector2.zero, new Vector2(0f, 2f), new Color(1f, 0.82f, 0.25f, 0.8f));
+            CreateText("BadgeText", topBadge.transform, font, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(350f, 30f),
+                "<b><color=#FFE066>⛶ ALIGN STORYBOOK PAGE 9 HERE</color></b>", 15, Color.white, TextAnchor.MiddleCenter);
 
-            CreateText("RefFooter", refCard.transform, font, new Vector2(0.5f, 0f), new Vector2(0f, 42f), new Vector2(290f, 68f),
-                "<b>StoryBook — Page 9</b>\n<size=15><color=#d8cfa8>Point camera at the 'SCAN ME' Lever illustration to unlock the challenge!</color></size>",
-                16, Color.white, TextAnchor.MiddleCenter);
+            // 5. Code-generated Animated Scan Laser Beam (pure code, zero image asset)
+            var beamGo = new GameObject("GoldenScanBeam", typeof(RectTransform));
+            beamGo.transform.SetParent(bookFrame.transform, false);
+            var beamRt = (RectTransform)beamGo.transform;
+            beamRt.anchorMin = beamRt.anchorMax = beamRt.pivot = new Vector2(0.5f, 0.5f);
+            beamRt.sizeDelta = new Vector2(740f, 20f);
 
-            // --- D. BOTTOM SCAN PROGRESS & ACTION CONSOLE ---
-            var bottomBar = CreatePanel("BottomScannerConsole", hudRoot.transform, new Vector2(0.5f, 0f), new Vector2(0f, 22f), new Vector2(1280f, 130f), new Color(0.10f, 0.07f, 0.04f, 0.93f));
+            CreatePanel("LaserGlow", beamGo.transform, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(740f, 16f), new Color(1f, 0.80f, 0.20f, 0.22f));
+            CreatePanel("LaserCore", beamGo.transform, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(730f, 3f), new Color(1f, 0.98f, 0.70f, 0.95f));
+            CreatePanel("PipL", beamGo.transform, new Vector2(0f, 0.5f), new Vector2(4f, 0f), new Vector2(6f, 6f), new Color(1f, 0.9f, 0.4f, 0.95f));
+            CreatePanel("PipR", beamGo.transform, new Vector2(1f, 0.5f), new Vector2(-4f, 0f), new Vector2(6f, 6f), new Color(1f, 0.9f, 0.4f, 0.95f));
 
-            scanStatusText = CreateText("LiveScanInstruction", bottomBar.transform, font, new Vector2(0f, 1f), new Vector2(440f, -32f), new Vector2(820f, 44f),
-                "📸 <b>Point Camera at StoryBook Page 9 ('SCAN ME' Lever Illustration)</b>", 20, new Color(1f, 0.94f, 0.72f), TextAnchor.MiddleLeft);
+            scanBeamRect = beamRt;
 
-            // Progress Bar Track
-            var progBg = CreatePanel("ScanProgressTrack", bottomBar.transform, new Vector2(0f, 0f), new Vector2(440f, 34f), new Vector2(820f, 32f), new Color(0.05f, 0.04f, 0.03f, 0.95f));
-            var fillGo = new GameObject("ScanProgressFill", typeof(RectTransform), typeof(Image));
-            fillGo.transform.SetParent(progBg.transform, false);
+            // 6. Dynamic Scanning Progress Bar below Viewfinder
+            var progressTrack = CreatePanel("ScanProgressTrack", bookFrame.transform, new Vector2(0.5f, 0f), new Vector2(0f, -14f), new Vector2(560f, 8f), new Color(0.12f, 0.12f, 0.12f, 0.75f));
+            var fillGo = CreatePanel("ProgressFill", progressTrack.transform, new Vector2(0f, 0.5f), Vector2.zero, new Vector2(0f, 8f), new Color(0.35f, 0.95f, 0.55f, 0.95f));
             var fillRt = (RectTransform)fillGo.transform;
-            fillRt.anchorMin = new Vector2(0f, 0f);
-            fillRt.anchorMax = new Vector2(0f, 1f);
             fillRt.pivot = new Vector2(0f, 0.5f);
-            fillRt.anchoredPosition = Vector2.zero;
-            fillRt.sizeDelta = new Vector2(0f, 0f);
             scanProgressFill = fillGo.GetComponent<Image>();
-            scanProgressFill.color = new Color(0.20f, 0.88f, 0.48f, 0.95f);
 
-            scanProgressLabel = CreateText("ScanProgressPercent", progBg.transform, font, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(800f, 28f),
-                "Waiting for Page 9 Marker in Camera View... 0%", 15, Color.white, TextAnchor.MiddleCenter);
+            scanProgressLabel = CreateText("ProgressLabel", bookFrame.transform, font, new Vector2(0.5f, 0f), new Vector2(0f, -32f), new Vector2(680f, 28f),
+                "<b><color=#FFF0AA>Point camera at Page 9 illustration or tap 'Scan Your Storybook'</color></b>", 16, Color.white, TextAnchor.MiddleCenter);
+            scanStatusText = scanProgressLabel;
 
-            // Direct "SCAN NOW / LOCK MARKER" Button on the right of Bottom Console
-            CreateStyledButton("Btn_LockMarkerNow", bottomBar.transform, font, new Vector2(1f, 0.5f), new Vector2(-200f, 0f), new Vector2(340f, 82f),
-                new Color(0.14f, 0.58f, 0.28f, 0.98f), "📸 SCAN & LOCK MARKER\n<size=14>Open 3D Lever Challenge</size>", 19, () =>
-                {
-                    SimulateMarkerScan();
-                });
+            // --- C. RIGHT TARGET MARKER PAGE CARD ---
+            var refCard = CreatePanel("TargetPageReferenceCard", hudRoot.transform, new Vector2(1f, 0.5f), new Vector2(-45f, -20f), new Vector2(420f, 450f), Color.clear);
+            var rcImg = refCard.GetComponent<Image>();
+            if (sTargetCard != null)
+            {
+                rcImg.sprite = sTargetCard;
+                rcImg.color = Color.white;
+                rcImg.preserveAspect = true;
+            }
+
+            // --- D. BOTTOM SCAN CONSOLE BANNER (Wood/Stone with Camera Icon) ---
+            var bottomBar = CreatePanel("BottomScannerConsole", hudRoot.transform, new Vector2(0.5f, 0f), new Vector2(-150f, 16f), new Vector2(720f, 195f), Color.clear);
+            var botImg = bottomBar.GetComponent<Image>();
+            if (sBottomConsole != null)
+            {
+                botImg.sprite = sBottomConsole;
+                botImg.color = Color.white;
+                botImg.preserveAspect = true;
+            }
+
+            // Bottom bar click zone to trigger scan / unlock mechanism
+            var bottomBtnGo = new GameObject("Btn_BottomScanAction", typeof(RectTransform), typeof(Image), typeof(Button));
+            bottomBtnGo.transform.SetParent(bottomBar.transform, false);
+            var rtBotBtn = (RectTransform)bottomBtnGo.transform;
+            rtBotBtn.anchorMin = Vector2.zero;
+            rtBotBtn.anchorMax = Vector2.one;
+            rtBotBtn.sizeDelta = Vector2.zero;
+            var botBtnImg = bottomBtnGo.GetComponent<Image>();
+            botBtnImg.color = Color.clear;
+            var botBtn = bottomBtnGo.GetComponent<Button>();
+            botBtn.onClick.AddListener(() =>
+            {
+                SimulateMarkerScan();
+            });
+        }
+
+        private static GameObject CreateLine(Transform parent, string name, Vector2 anchorMin, Vector2 anchorMax, Vector2 pivot, Vector2 pos, Vector2 size, Color color)
+        {
+            var go = new GameObject(name, typeof(RectTransform), typeof(Image));
+            go.transform.SetParent(parent, false);
+            var rt = (RectTransform)go.transform;
+            rt.anchorMin = anchorMin;
+            rt.anchorMax = anchorMax;
+            rt.pivot = pivot;
+            rt.anchoredPosition = pos;
+            rt.sizeDelta = size;
+            var img = go.GetComponent<Image>();
+            img.color = color;
+            img.raycastTarget = false;
+            return go;
         }
 
         private static GameObject CreatePanel(string name, Transform parent, Vector2 anchor, Vector2 anchoredPos, Vector2 size, Color bgColor)
@@ -542,10 +597,10 @@ namespace SecretOfLostTemple.AR
 
         private void UpdateScannerVisualsAndCameraDetection()
         {
-            // 1. Animate golden scan laser line smoothly across the book viewfinder
+            // 1. Animate golden scan laser line smoothly across the code-based marker placeholder
             if (scanBeamRect != null)
             {
-                float yOffset = Mathf.Sin(Time.unscaledTime * 2.4f) * 235f;
+                float yOffset = Mathf.Sin(Time.unscaledTime * 2.4f) * 200f;
                 scanBeamRect.anchoredPosition = new Vector2(0f, yOffset);
             }
 
@@ -556,10 +611,10 @@ namespace SecretOfLostTemple.AR
 
             if (cameraStateBadgeText != null)
             {
-                if (camPlaying || arTrackingReady)
-                    cameraStateBadgeText.text = "🟢 <b>LIVE CAMERA ACTIVE</b>";
+                if (!camPlaying && !arTrackingReady)
+                    cameraStateBadgeText.text = "<color=#FF7777>⚠️ CAMERA WAITING</color>";
                 else
-                    cameraStateBadgeText.text = "📷 <b>CAMERA READY</b>";
+                    cameraStateBadgeText.text = ""; // Keep clear so baked "CAMERA ACTIVE" artwork shines
             }
 
             // 2. Sample live camera frames to detect when pointed at the marker illustration
@@ -573,32 +628,24 @@ namespace SecretOfLostTemple.AR
             {
                 // Advance scan progress while marker illustration features are held in camera view
                 scanProgress = Mathf.Clamp01(scanProgress + Time.unscaledDeltaTime * 0.48f);
-                if (scanStatusText != null)
-                {
-                    scanStatusText.text = "🔍 <b>Detecting StoryBook Page 9 ('SCAN ME') Marker... Hold Steady!</b>";
-                }
             }
             else
             {
                 scanProgress = Mathf.Max(0f, scanProgress - Time.unscaledDeltaTime * 0.25f);
-                if (scanStatusText != null)
-                {
-                    scanStatusText.text = "📸 <b>Point Camera at StoryBook Page 9 ('SCAN ME' Lever Illustration)</b>";
-                }
             }
 
             if (scanProgressFill != null)
             {
-                float fullWidth = 820f;
-                scanProgressFill.rectTransform.sizeDelta = new Vector2(fullWidth * scanProgress, 0f);
+                float fullWidth = 560f;
+                scanProgressFill.rectTransform.sizeDelta = new Vector2(fullWidth * scanProgress, 8f);
             }
 
             if (scanProgressLabel != null)
             {
                 int pct = Mathf.RoundToInt(scanProgress * 100f);
                 scanProgressLabel.text = pct > 0
-                    ? $"<b>Scanning Page 9 Illustration... {pct}%</b>"
-                    : "Align Page 9 in Viewfinder or Tap 'Scan & Lock Marker'";
+                    ? $"<b><color=#55FF88>🔍 Detecting Page 9 Illustration... {pct}% (Hold Steady)</color></b>"
+                    : "<b><color=#FFF0AA>Point camera at Page 9 illustration or tap 'Scan Your Storybook'</color></b>";
             }
 
             if (scanProgress >= 1f)
