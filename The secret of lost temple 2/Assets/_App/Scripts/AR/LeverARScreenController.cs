@@ -308,6 +308,22 @@ namespace SecretOfLostTemple.AR
             {
                 StartGuidedStoryDialogueSequence();
             }
+
+            // After scanning target image, after 10 seconds quiz should popup!
+            microQuizTimer = 0f;
+            microQuizEnabled = true;
+            if (postScanQuizCoroutine != null) StopCoroutine(postScanQuizCoroutine);
+            postScanQuizCoroutine = StartCoroutine(TriggerQuizAfterDelay(10.0f));
+        }
+
+        private IEnumerator TriggerQuizAfterDelay(float delaySeconds)
+        {
+            Debug.Log($"[MicroQuiz] Target scanned. Timed quiz will popup in {delaySeconds} seconds.");
+            yield return new WaitForSeconds(delaySeconds);
+            if (quizModalPanel == null || !quizModalPanel.activeSelf)
+            {
+                TriggerTimedMicroQuiz();
+            }
         }
 
         private void ApplyAppModeVisibility()
@@ -354,15 +370,15 @@ namespace SecretOfLostTemple.AR
                 ApplyFreePracticeCompactUILayout();
 
                 var scanOverlay = GameObject.Find("ScanningMarkerOverlay");
-                if (scanOverlay != null) scanOverlay.SetActive(false);
+                if (scanOverlay != null) scanOverlay.SetActive(!questMarkerScanned);
 
                 if (tryChallengeButton != null) tryChallengeButton.gameObject.SetActive(false);
                 if (continueStoryVictoryButton != null) continueStoryVictoryButton.gameObject.SetActive(false);
                 if (challengeModalPanel != null) challengeModalPanel.SetActive(false);
                 if (btnSmartHint != null) btnSmartHint.gameObject.SetActive(false);
                 if (smartHintModalPanel != null) smartHintModalPanel.SetActive(false);
-                if (btnARQuiz != null) btnARQuiz.gameObject.SetActive(false);
-                if (quizModalPanel != null) quizModalPanel.SetActive(false);
+                if (btnARQuiz != null) btnARQuiz.gameObject.SetActive(true);
+                if (quizModalPanel != null && !quizModalPanel.activeSelf) quizModalPanel.SetActive(false);
                 if (btnRetentionReport != null) btnRetentionReport.gameObject.SetActive(false);
                 if (retentionModalPanel != null) retentionModalPanel.SetActive(false);
                 if (adaptiveTierBadgeText != null && adaptiveTierBadgeText.transform.parent != null)
@@ -635,6 +651,8 @@ namespace SecretOfLostTemple.AR
                     if (smartHintBodyText == null) smartHintBodyText = smartHintModalPanel.transform.Find("ModalCard/BodyText")?.GetComponent<Text>();
                     if (smartHintCloseBtn == null) smartHintCloseBtn = smartHintModalPanel.transform.Find("ModalCard/Btn_Close")?.GetComponent<Button>();
                 }
+
+                EnsureStarsBadgeBuilt(uiRoot);
             }
 
             if (leverRoot == null)
@@ -869,15 +887,14 @@ namespace SecretOfLostTemple.AR
 
         private void Update()
         {
-            // Timed Micro-Quiz Trigger (Every ~10s of active AR exploration) - RUNS FIRST!
-            if (microQuizEnabled && !isGuidedStoryFlowActive)
+            // Timed Micro-Quiz Trigger (Every ~10s of active AR exploration after scanning marker) - RUNS FIRST!
+            if (microQuizEnabled && !isGuidedStoryFlowActive && questMarkerScanned)
             {
                 bool modalOpen = (quizModalPanel != null && quizModalPanel.activeSelf) ||
                                  (challengeModalPanel != null && challengeModalPanel.activeSelf) ||
                                  (partDetailModalPanel != null && partDetailModalPanel.activeSelf) ||
                                  (smartHintModalPanel != null && smartHintModalPanel.activeSelf) ||
                                  (retentionModalPanel != null && retentionModalPanel.activeSelf) ||
-                                 (howItWorksPanel != null && howItWorksPanel.activeSelf) ||
                                  (storyDialoguePanel != null && storyDialoguePanel.activeSelf);
 
                 if (!modalOpen)
@@ -2993,6 +3010,8 @@ namespace SecretOfLostTemple.AR
         private const float MICRO_QUIZ_INTERVAL = 10f;
         private bool microQuizEnabled = true;
         private Coroutine autoCloseQuizCoroutine = null;
+        private Coroutine postScanQuizCoroutine = null;
+        private Text totalStarsBadgeText = null;
 
         public void TriggerTimedMicroQuiz()
         {
@@ -3127,7 +3146,8 @@ namespace SecretOfLostTemple.AR
             }
             if (quizCategoryText != null)
             {
-                quizCategoryText.text = $"<b>Topic:</b> {q.category}";
+                int totalStars = ResearchProgress.GetInt("LostTemple_Total_Stars", 0);
+                quizCategoryText.text = $"<b>Topic:</b> {q.category}  |  ⭐ <b>Stars:</b> {totalStars}";
                 quizCategoryText.fontSize = 22;
             }
             if (quizQuestionText != null)
@@ -3201,14 +3221,19 @@ namespace SecretOfLostTemple.AR
             }
 
             researchAnswerSubmitted = true;
+            int currentStars = ResearchProgress.GetInt("LostTemple_Total_Stars", 0);
             if (correct)
             {
                 currentQuizScore++;
-                int currentStars = ResearchProgress.GetInt("LostTemple_Total_Stars", 0);
                 currentStars += 1;
-                ResearchProgress.SetInt("LostTemple_Total_Stars", currentStars);
-                PlayerPrefs.Save();
             }
+            else
+            {
+                currentStars = Mathf.Max(0, currentStars - 1);
+            }
+            ResearchProgress.SetInt("LostTemple_Total_Stars", currentStars);
+            PlayerPrefs.Save();
+            UpdateTotalStarsHUD();
 
             // 1. Immediate Visual Feedback on Option Buttons (Right / Wrong on the spot!)
             if (quizOptionButtons != null)
@@ -3284,8 +3309,9 @@ namespace SecretOfLostTemple.AR
                 }
                 else
                 {
+                    int totalStars = ResearchProgress.GetInt("LostTemple_Total_Stars", 0);
                     string correctOptText = (q.correctIndex >= 0 && q.correctIndex < q.options.Length) ? q.options[q.correctIndex] : "";
-                    quizFeedbackText.text = $"<size=24><color=#ff6b6b><b>❌ NOT QUITE! (Correct answer in green)</b></color></size>\n<b>Correct:</b> <color=#55ff88>{correctOptText}</color>\n{q.explanation}";
+                    quizFeedbackText.text = $"<size=24><color=#ff6b6b><b>❌ INCORRECT! ⭐ -1 STAR REDUCED! (Total: {totalStars} ⭐)</b></color></size>\n<b>Correct:</b> <color=#55ff88>{correctOptText}</color>\n{q.explanation}";
                 }
             }
 
@@ -3474,6 +3500,58 @@ namespace SecretOfLostTemple.AR
         private Text storyNarrativeLabel;
         private Button storyChoiceBtnA;
         private Button storyChoiceBtnB;
+
+                private void EnsureStarsBadgeBuilt(Transform uiRoot)
+        {
+            if (uiRoot == null) return;
+            var topBar = uiRoot.Find("TopBar");
+            if (topBar == null) return;
+
+            var existingBadge = topBar.Find("Badge_Stars");
+            if (existingBadge != null)
+            {
+                totalStarsBadgeText = existingBadge.Find("Text")?.GetComponent<Text>();
+                UpdateTotalStarsHUD();
+                return;
+            }
+
+            var badgeGo = new GameObject("Badge_Stars", typeof(RectTransform), typeof(Image));
+            badgeGo.transform.SetParent(topBar, false);
+            var rt = (RectTransform)badgeGo.transform;
+            rt.anchorMin = new Vector2(1f, 0.5f);
+            rt.anchorMax = new Vector2(1f, 0.5f);
+            rt.pivot = new Vector2(1f, 0.5f);
+            rt.anchoredPosition = new Vector2(-460f, 0f);
+            rt.sizeDelta = new Vector2(140f, 42f);
+
+            var img = badgeGo.GetComponent<Image>();
+            img.color = new Color(0.12f, 0.10f, 0.05f, 0.90f);
+
+            var textGo = new GameObject("Text", typeof(RectTransform), typeof(Text));
+            textGo.transform.SetParent(badgeGo.transform, false);
+            var trt = (RectTransform)textGo.transform;
+            trt.anchorMin = Vector2.zero;
+            trt.anchorMax = Vector2.one;
+            trt.sizeDelta = Vector2.zero;
+
+            totalStarsBadgeText = textGo.GetComponent<Text>();
+            totalStarsBadgeText.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            totalStarsBadgeText.fontSize = 17;
+            totalStarsBadgeText.fontStyle = FontStyle.Bold;
+            totalStarsBadgeText.alignment = TextAnchor.MiddleCenter;
+            totalStarsBadgeText.color = new Color(1f, 0.85f, 0.20f, 1f);
+
+            UpdateTotalStarsHUD();
+        }
+
+        public void UpdateTotalStarsHUD()
+        {
+            int currentStars = ResearchProgress.GetInt("LostTemple_Total_Stars", 0);
+            if (totalStarsBadgeText != null)
+            {
+                totalStarsBadgeText.text = $"⭐ <b>{currentStars} STARS</b>";
+            }
+        }
 
         public void UpdateAdaptiveTierHUD()
         {
@@ -3800,6 +3878,12 @@ namespace SecretOfLostTemple.AR
         {
             if (researchAnswerSubmitted) return;
             researchAnswerSubmitted = true;
+
+            int currentStars = ResearchProgress.GetInt("LostTemple_Total_Stars", 0);
+            currentStars = Mathf.Max(0, currentStars - 1);
+            ResearchProgress.SetInt("LostTemple_Total_Stars", currentStars);
+            PlayerPrefs.Save();
+            UpdateTotalStarsHUD();
             if (quizOptionButtons != null)
             {
                 for (int i = 0; i < quizOptionButtons.Length; i++)
@@ -3827,8 +3911,9 @@ namespace SecretOfLostTemple.AR
             }
             if (quizFeedbackText != null)
             {
+                int totalStars = ResearchProgress.GetInt("LostTemple_Total_Stars", 0);
                 string correctOptText = (currQ.correctIndex >= 0 && currQ.correctIndex < currQ.options.Length) ? currQ.options[currQ.correctIndex] : "";
-                quizFeedbackText.text = $"<size=24><color=#ff6b6b><b>⏱️ TIME'S UP! (Correct answer in green)</b></color></size>\n<b>Correct:</b> <color=#55ff88>{correctOptText}</color>\n{currQ.explanation}";
+                quizFeedbackText.text = $"<size=24><color=#ff6b6b><b>⏱️ TIME'S UP! ⭐ -1 STAR REDUCED! (Total: {totalStars} ⭐)</b></color></size>\n<b>Correct:</b> <color=#55ff88>{correctOptText}</color>\n{currQ.explanation}";
             }
 
             if (quizNextButton != null)

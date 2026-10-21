@@ -118,9 +118,10 @@ namespace SecretOfLostTemple.AR
             {
                 if (sceneTitleText != null) sceneTitleText.text = "🏛️ <b>AR SANDBOX</b> • SPATIAL LAB";
                 if (hintButton != null) hintButton.gameObject.SetActive(false);
-                if (startQuizButton != null) startQuizButton.gameObject.SetActive(false);
+                if (startQuizButton != null) startQuizButton.gameObject.SetActive(true);
                 if (storyDialoguePanel != null) storyDialoguePanel.SetActive(false);
-                if (quizContainerPanel != null) quizContainerPanel.SetActive(false);
+                // In Sandbox, allow quiz container
+                if (quizContainerPanel != null && !quizContainerPanel.activeSelf) quizContainerPanel.SetActive(false);
                 if (telemetryPanel != null) telemetryPanel.SetActive(false);
 
                 var bottomBar = GameObject.Find("BottomMachineBar");

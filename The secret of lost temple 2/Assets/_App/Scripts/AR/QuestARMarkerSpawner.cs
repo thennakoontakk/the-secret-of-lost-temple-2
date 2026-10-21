@@ -76,7 +76,7 @@ namespace SecretOfLostTemple.AR
 
             string activeScene = SceneManager.GetActiveScene().name;
             string appMode = PlayerPrefs.GetString("LostTemple_App_Mode", "Quest");
-            isQuestMode = (activeScene == "MainARScene" && appMode != "Sandbox" && appMode != "PhysicsLab");
+            isQuestMode = (activeScene == "MainARScene" && appMode != "PhysicsLab");
 
             if (!isQuestMode)
             {
@@ -544,8 +544,8 @@ namespace SecretOfLostTemple.AR
         private void SpawnAndAnchorLever(ARTrackedImage trackedImage, bool shouldBeActive)
         {
             if (questLeverPrefab == null) return;
-            float scaleToUse = 0.12f;
-            float elevation = 0.025f; // Elevate slightly above the marker center so the 3D lever sits higher in the viewport
+            float scaleToUse = physicalScale;
+            float elevation = surfaceElevationOffset > 0f ? surfaceElevationOffset : 0.025f; // Elevate slightly above the marker center so the 3D lever sits higher in the viewport
 
             if (leverAnchor == null)
             {

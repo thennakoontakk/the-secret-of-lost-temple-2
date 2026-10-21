@@ -28,10 +28,7 @@ namespace SecretOfLostTemple.Adaptive
         public int tier3Count;
     }
 
-    /// <summary>
-    /// 3-tier progressive hint system.
-    /// Provides tiered guidance based on time elapsed and error rates.
-    /// </summary>
+    
     public class HintSystem : MonoBehaviour
     {
         private static HintSystem instance;

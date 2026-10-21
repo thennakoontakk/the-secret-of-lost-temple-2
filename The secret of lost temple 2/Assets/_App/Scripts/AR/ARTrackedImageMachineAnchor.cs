@@ -70,7 +70,7 @@ namespace SecretOfLostTemple.AR
             }
 
             string appMode = PlayerPrefs.GetString("LostTemple_App_Mode", "Quest");
-            isQuestMode = (appMode != "Sandbox" && appMode != "PhysicsLab");
+            isQuestMode = (appMode != "PhysicsLab");
             activeMachine = PlayerPrefs.GetString("Sandbox_Selected_Machine", "Lever");
 
             if (leverMachineRoot != null)
@@ -154,7 +154,7 @@ namespace SecretOfLostTemple.AR
         public void SetupForMode()
         {
             string appMode = PlayerPrefs.GetString("LostTemple_App_Mode", "Quest");
-            isQuestMode = (appMode != "Sandbox" && appMode != "PhysicsLab");
+            isQuestMode = (appMode != "PhysicsLab");
             activeMachine = PlayerPrefs.GetString("Sandbox_Selected_Machine", "Lever");
 
             var templeEnv = GameObject.Find("TempleEnvironmentRoot");

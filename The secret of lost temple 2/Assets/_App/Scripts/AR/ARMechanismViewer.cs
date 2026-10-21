@@ -25,7 +25,7 @@ namespace SecretOfLostTemple.AR
         [SerializeField] private float maxScale = 3.0f;
         [SerializeField] private float pinchScaleSpeed = 0.005f;
         [SerializeField] private float scrollScaleSpeed = 0.25f;
-        [SerializeField] private float scaleSmoothTime = 0.12f;
+        // [SerializeField] private float scaleSmoothTime = 0.12f;
 
         [Header("Interactive: 1-Finger Force Tilt")]
         [SerializeField] private float maxTiltAngle = 14f;

@@ -5,14 +5,10 @@ using UnityEngine;
 
 namespace SecretOfLostTemple.Adaptive
 {
-    /// <summary>
-    /// Represents the difficulty tier for the adaptive difficulty system.
-    /// </summary>
-    public enum DifficultyTier { Apprentice = 1, Scholar = 2, Master = 3 }
+    
+    public enum DifficultyTier { Apprentice = 1, Explorer = 1, Scholar = 2, Expert = 2, Master = 3, Champion = 3 }
 
-    /// <summary>
-    /// Configuration for a specific difficulty tier.
-    /// </summary>
+    
     [Serializable]
     public class DifficultyProfile
     {
@@ -25,10 +21,7 @@ namespace SecretOfLostTemple.Adaptive
         public bool showHintButton;
     }
 
-    /// <summary>
-    /// 3-tier adaptive difficulty system.
-    /// Tracks student performance and adjusts difficulty parameters accordingly.
-    /// </summary>
+   
     public class AdaptiveDifficultyEngine : MonoBehaviour
     {
         private static AdaptiveDifficultyEngine instance;
@@ -83,9 +76,7 @@ namespace SecretOfLostTemple.Adaptive
             }
         }
 
-        /// <summary>
-        /// Records the result of a task and evaluates if a difficulty change is needed.
-        /// </summary>
+        
         public void RecordTaskResult(bool success, float timeSpent)
         {
             if (ResearchData.Store.IsStudy && !ResearchData.Store.Current.adaptive) return;
@@ -107,9 +98,7 @@ namespace SecretOfLostTemple.Adaptive
             SaveProgress();
         }
 
-        /// <summary>
-        /// Evaluates current performance and adjusts tier if thresholds are met.
-        /// </summary>
+       
         private void EvaluateAndAdjust()
         {
             if (consecutiveSuccesses >= consecutiveSuccessToPromote && currentTier < DifficultyTier.Master)
@@ -124,18 +113,13 @@ namespace SecretOfLostTemple.Adaptive
             }
         }
 
-        /// <summary>
-        /// Retrieves the profile data for the current difficulty tier.
-        /// </summary>
+        
         public DifficultyProfile GetCurrentProfile()
         {
             return Array.Find(profiles, p => p.tier == currentTier);
         }
 
-        /// <summary>
-        /// Manually override the current difficulty tier.
-        /// </summary>
-        public void SetTier(DifficultyTier tier)
+                public void SetTier(DifficultyTier tier)
         {
             if (currentTier != tier)
             {
@@ -147,9 +131,7 @@ namespace SecretOfLostTemple.Adaptive
             }
         }
 
-        /// <summary>
-        /// Resets the progression tracking and sets tier to Apprentice.
-        /// </summary>
+       
         public void ResetProgress()
         {
             consecutiveSuccesses = 0;

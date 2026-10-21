@@ -912,9 +912,9 @@ namespace SecretOfLostTemple.Home
             PlayerPrefs.SetString("LostTemple_App_Mode", "Sandbox");
             PlayerPrefs.SetString("Sandbox_Selected_Machine", machineName);
             PlayerPrefs.Save();
-            SetStatus($"Entering Free Practice: {machineName} Spatial Lab...");
+            SetStatus($"Entering AR Sandbox: {machineName} Spatial Lab...");
             CloseSandboxModal();
-            StartCoroutine(LoadSceneRoutine("FreePracticeScene"));
+            StartCoroutine(LoadSceneRoutine("MainARScene"));
         }
 
         public void On3DPhysicsClicked()

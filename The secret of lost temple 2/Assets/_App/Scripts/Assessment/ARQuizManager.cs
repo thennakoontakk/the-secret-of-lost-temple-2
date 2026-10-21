@@ -34,9 +34,7 @@ namespace SecretOfLostTemple.Assessment
         public List<QuestionResult> questionResults = new List<QuestionResult>();
     }
 
-    /// <summary>
-    /// Manages in-situ 3D AR quiz panels spawned in the AR world.
-    /// </summary>
+    
     public class ARQuizManager : MonoBehaviour
     {
         public static ARQuizManager Instance { get; private set; }
@@ -270,13 +268,20 @@ namespace SecretOfLostTemple.Assessment
                 attemptCount = 1
             });
 
+            int currentStars = ResearchProgress.GetInt("LostTemple_Total_Stars", 0);
             if (isCorrect)
             {
                 score += coinsPerCorrectAnswer;
+                currentStars += 1;
+                ResearchProgress.SetInt("LostTemple_Total_Stars", currentStars);
+                PlayerPrefs.Save();
                 if (audioSource != null && correctSound != null) audioSource.PlayOneShot(correctSound);
             }
             else
             {
+                currentStars = Mathf.Max(0, currentStars - 1);
+                ResearchProgress.SetInt("LostTemple_Total_Stars", currentStars);
+                PlayerPrefs.Save();
                 if (audioSource != null && incorrectSound != null) audioSource.PlayOneShot(incorrectSound);
             }
 

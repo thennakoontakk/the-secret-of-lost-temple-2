@@ -87,7 +87,7 @@ namespace SecretOfLostTemple.AR
 
             // MainARScene is exclusively for Expedition Marker Scan (Quest Mode).
             // FreePracticeScene and Physics3DLabScene are pure 3D virtual scenes and do not use the camera.
-            isCameraScene = (sceneName == "MainARScene" && appMode != "PhysicsLab" && appMode != "Sandbox");
+            isCameraScene = (sceneName == "MainARScene" && appMode != "PhysicsLab");
 
             if (!isCameraScene)
             {
