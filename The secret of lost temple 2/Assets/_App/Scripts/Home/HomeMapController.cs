@@ -118,6 +118,7 @@ namespace SecretOfLostTemple.Home
 
         private void Start()
         {
+            if (physics3DButton != null) physics3DButton.gameObject.SetActive(false);
             InitializePlayerProfile();
             SetupButtonListeners();
             SetupButtonLabels();
@@ -257,7 +258,7 @@ namespace SecretOfLostTemple.Home
 
             if (rankTierText != null) rankTierText.text = actualRankTier;
 
-            SetStatus("Tap Start Expedition, Free Practice, or Physics Lab to explore!");
+            SetStatus("Tap Start Expedition or Sandbox to explore!");
         }
 
         private void SetupButtonLabels()
@@ -266,7 +267,7 @@ namespace SecretOfLostTemple.Home
 
             ApplyCarvedGoldenButtonLabel(questButton, "START EXPEDITION", 38, montserrat);
             ApplyCarvedGoldenButtonLabel(sandboxButton, "FREE PRACTICE", 36, montserrat);
-            ApplyCarvedGoldenButtonLabel(physics3DButton, "PHYSICS LAB", 36, montserrat);
+            if (physics3DButton != null) ApplyCarvedGoldenButtonLabel(physics3DButton, "PHYSICS LAB", 36, montserrat);
             ApplyCarvedGoldenButtonLabel(researchDashboardButton, "RESEARCHER PANEL", 24, montserrat);
 
             // Apply to Chapter buttons (e.g. Lever AR)

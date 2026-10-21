@@ -815,8 +815,8 @@ namespace SecretOfLostTemple.EditorScripts
             GameObject sbBtnObj = new GameObject("Button_SandboxMode");
             sbBtnObj.transform.SetParent(canvasObj.transform, false);
             RectTransform sbRt = sbBtnObj.AddComponent<RectTransform>();
-            sbRt.anchorMin = new Vector2(0.83f, 0.44f);
-            sbRt.anchorMax = new Vector2(0.98f, 0.78f);
+            sbRt.anchorMin = new Vector2(0.83f, 0.24f);
+            sbRt.anchorMax = new Vector2(0.98f, 0.68f);
             sbRt.anchoredPosition = Vector2.zero;
             sbRt.sizeDelta = Vector2.zero;
             Button sbBtn = sbBtnObj.AddComponent<Button>();
@@ -826,20 +826,7 @@ namespace SecretOfLostTemple.EditorScripts
             sbImg.preserveAspect = true;
             AddCarvedGoldenButtonLabel(sbBtnObj, "FREE PRACTICE", 36, montserratFont, new Vector2(0.05f, 0.03f), new Vector2(0.95f, 0.28f));
 
-            // 3D Physics Mode Card
-            GameObject physBtnObj = new GameObject("Button_3DPhysicsMode");
-            physBtnObj.transform.SetParent(canvasObj.transform, false);
-            RectTransform physRt = physBtnObj.AddComponent<RectTransform>();
-            physRt.anchorMin = new Vector2(0.83f, 0.08f);
-            physRt.anchorMax = new Vector2(0.98f, 0.42f);
-            physRt.anchoredPosition = Vector2.zero;
-            physRt.sizeDelta = Vector2.zero;
-            Button physBtn = physBtnObj.AddComponent<Button>();
-            Image physImg = physBtnObj.AddComponent<Image>();
-            if (physics3DSprite != null) physImg.sprite = physics3DSprite;
-            physImg.color = Color.white;
-            physImg.preserveAspect = true;
-            AddCarvedGoldenButtonLabel(physBtnObj, "PHYSICS LAB", 36, montserratFont, new Vector2(0.05f, 0.03f), new Vector2(0.95f, 0.28f));
+// 3D Physics button removed as per user requirement
 
             // --- 9. STATUS TEXT (Montserrat-Bold, 28px, 3D Outline & Shadow) ---
             GameObject statusTxtObj = new GameObject("StatusText");
@@ -850,7 +837,7 @@ namespace SecretOfLostTemple.EditorScripts
             stRt.sizeDelta = Vector2.zero;
             Text statusText = statusTxtObj.AddComponent<Text>();
             if (montserratFont != null) statusText.font = montserratFont;
-            statusText.text = "Tap Start Expedition, Free Practice, or Physics Lab to explore!";
+            statusText.text = "Tap Start Expedition or Sandbox to explore!";
             statusText.fontSize = 28;
             statusText.fontStyle = FontStyle.Bold;
             statusText.color = new Color(1f, 0.949f, 0.659f, 1f); // #FFF2A8 Rich Warm Gold
@@ -878,7 +865,7 @@ namespace SecretOfLostTemple.EditorScripts
             so.FindProperty("questButton").objectReferenceValue = questBtn;
             so.FindProperty("logoutButton").objectReferenceValue = exitBtn;
             so.FindProperty("sandboxButton").objectReferenceValue = sbBtn;
-            so.FindProperty("physics3DButton").objectReferenceValue = physBtn;
+            // so.FindProperty("physics3DButton").objectReferenceValue = physBtn;
             so.FindProperty("starCountText").objectReferenceValue = starValText;
             so.FindProperty("rankTierText").objectReferenceValue = rankValText;
             so.FindProperty("statusInfoText").objectReferenceValue = statusText;
@@ -890,7 +877,7 @@ namespace SecretOfLostTemple.EditorScripts
             // Set OnClick persistent listeners directly on buttons
             UnityEditor.Events.UnityEventTools.AddPersistentListener(questBtn.onClick, mapCtrl.EnterLevel1AR);
             UnityEditor.Events.UnityEventTools.AddPersistentListener(sbBtn.onClick, mapCtrl.OnSandboxClicked);
-            UnityEditor.Events.UnityEventTools.AddPersistentListener(physBtn.onClick, mapCtrl.On3DPhysicsClicked);
+            // UnityEditor.Events.UnityEventTools.AddPersistentListener(physBtn.onClick, mapCtrl.On3DPhysicsClicked);
             UnityEditor.Events.UnityEventTools.AddPersistentListener(exitBtn.onClick, mapCtrl.OnLogoutClicked);
 
             EditorSceneManager.SaveScene(scene, scenePath);
